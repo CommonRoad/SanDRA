@@ -20,11 +20,13 @@ class Decider:
     def __init__(
         self,
         scenario_path,
+        timestep: int,
         config: SaLaRAConfiguration,
         role_prompt: Optional[str] = None,
         goal_prompt: Optional[str] = None,
         save_path: Optional[str] = None,
     ):
+        self.timestep = timestep
         self.config: SaLaRAConfiguration = config
         self.action_ranking = None
         self.scenario_path = scenario_path
@@ -34,7 +36,7 @@ class Decider:
         self.planning_problem = copy.deepcopy(
             list(planning_problem_set.planning_problem_dict.values())[0]
         )
-        self.describer = Describer(self.scenario, self.planning_problem, config, role_prompt, goal_prompt)
+        self.describer = Describer(self.scenario, self.planning_problem, timestep, config, role=role_prompt, goal=goal_prompt)
         self.save_path = save_path
 
     def _parse_action_ranking(self, ranking: dict) -> list[Action]:

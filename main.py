@@ -7,11 +7,14 @@ from src.utils import extract_scenario_and_planning_problem, plot_scenario, plot
 from src.lanelet_network import EgoCenteredLaneletNetwork
 
 
-def main():
+def main(scenario_path: str):
     config = SaLaRAConfiguration()
-    scenario_path = ""
     save_path = scenario_path
-    decider = Decider(scenario_path, config, save_path=save_path)
+    decider = Decider(scenario_path, 0, config, save_path=save_path)
+    print(f"-----------------SYSTEM PROMPT-------------------")
+    print(decider.describer.system_prompt())
+    print(f"-----------------USER PROMPT-------------------")
+    print(decider.describer.user_prompt())
 
 
 if __name__ == "__main__":
@@ -24,13 +27,4 @@ if __name__ == "__main__":
     ]
 
     scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")
-
-    scenario, planning_problem = extract_scenario_and_planning_problem(os.path.join(scenario_folder, scenario_paths[-1]))
-    ego_lane_id = find_lanelet_id_from_state(planning_problem.initial_state, scenario.lanelet_network)
-    lanelet_network = EgoCenteredLaneletNetwork(scenario.lanelet_network, ego_lane_id)
-    print()
-
-        # lanelets = scenario.lanelet_network.lanelets
-        # for lanelet in lanelets:
-        #     if lanelet.successor is not None and len(lanelet.successor) > 1:
-        #         plot_lanelet(lanelet, scenario.lanelet_network)
+    main(os.path.join(scenario_folder, scenario_paths[-1]))

@@ -59,6 +59,7 @@ class EgoCenteredLaneletNetwork:
     def __init__(self, lanelet_network: LaneletNetwork, ego_lane_id):
         frontier = {ego_lane_id}
         visited = set()
+        self.lanelet_network = lanelet_network
         self.ego_node = None
         self.nodes: dict[int, LaneletNode] = {}
 
@@ -83,6 +84,7 @@ class EgoCenteredLaneletNetwork:
                     if lanelet.successor[0] not in visited:
                         frontier.add(lanelet.successor[0])
                 elif len(lanelet.successor) > 1:
+                    # TODO: add support for branching lanelets
                     pass
             else:
                 if left_outgoings := node.incoming_element.successors_left:
@@ -111,3 +113,52 @@ class EgoCenteredLaneletNetwork:
         for node in self.nodes.values():
             node.instantiate_next_nodes(self.nodes)
             node.calculate_routes()
+
+    def describe(self, dead_ends=False) -> str:
+        ego_node = self.ego_node
+        description = ""
+
+        if ego_node.next_node_dict[LateralAction.TURN_LEFT] is not None or ego_node.next_node_dict[LateralAction.TURN_RIGHT] is not None:
+            description += "You are currently approaching an intersection.\n"
+
+        lane_count_ahead = 0
+        for action in [LateralAction.KEEP_LEFT, LateralAction.KEEP_STRAIGHT, LateralAction.KEEP_RIGHT]:
+            lane_count_ahead += int(ego_node.next_node_dict[action] is not None)
+        if lane_count_ahead == 0 and dead_ends:
+            description += "Ahead of you is a dead end.\n"
+        elif lane_count_ahead > 1:
+            description += f"Ahead of you, the current lane is branching into {lane_count_ahead} different lanes.\n"
+
+        if ego_node.next_node_dict[LateralAction.CHANGE_LEFT] is None:
+            description += f"There is no lane left of your current lane.\n"
+        else:
+            direction = "same" if self.ego_node.lanelet.adj_left_same_direction else "opposite"
+            description += f"There is a {direction}-direction lane left of your current lane.\n"
+
+        if ego_node.next_node_dict[LateralAction.CHANGE_RIGHT] is None:
+            description += f"There is no lane right of your current lane.\n"
+        else:
+            direction = "same" if self.ego_node.lanelet.adj_right_same_direction else "opposite"
+            description += f"There is a {direction}-direction lane right of your current lane.\n"
+        return description
+
+    def describe_lanelet(self, lanelet_id: int) -> str:
+        action_to_location: dict[LateralAction, str] = {
+            LateralAction.KEEP_STRAIGHT: "in your current lane",
+            LateralAction.CHANGE_RIGHT: "in the lane to your right",
+            LateralAction.CHANGE_LEFT: "in the lane to your left",
+        }
+        lanelet = self.lanelet_network.find_lanelet_by_id(lanelet_id)
+        if self.ego_node.is_normal():
+            while lanelet is not None:
+                for action, route in self.ego_node.route_dict.items():
+                    if lanelet.lanelet_id in route:
+                        return action_to_location[action]
+                lanelet_successors = lanelet.successor
+                if lanelet_successors is not None and len(lanelet_successors) == 1:
+                    lanelet = self.lanelet_network.find_lanelet_by_id(lanelet_successors[0])
+                else:
+                    break
+        else:
+            pass
+        return ""

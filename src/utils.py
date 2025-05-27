@@ -65,7 +65,12 @@ def extract_ego_vehicle(scenario: Scenario, planning_problem: PlanningProblem) -
 
 
 def find_lanelet_id_from_state(state: TraceState, lanelet_network: LaneletNetwork) -> int:
-    return lanelet_network.find_most_likely_lanelet_by_state([state])[0]
+    try:
+        return lanelet_network.find_most_likely_lanelet_by_state(
+            [state]
+        )[0]
+    except IndexError:
+        return -1
 
 
 def plot_scenario(scenario: Scenario, planning_problem: PlanningProblem, plot_limits=None, save_path: str = None):
@@ -125,7 +130,7 @@ def plot_lanelet(lanelet: Lanelet, lanelet_network: LaneletNetwork, save_path: s
 
 def calculate_relative_orientation(ego_direction: np.ndarray, other_direction: np.ndarray) -> float:
     """
-    Calculates the angle in radians between ego direction and other direction, where ego direction is reference.
+    Calculates the angle in radians between ego direction and other direction.
     Front is 0 PI
     Left is PI/2
     Back is PI
