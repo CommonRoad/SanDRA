@@ -10,9 +10,13 @@ class LongitudinalAction(Enum):
 
 
 class LateralAction(Enum):
-    LEFT = "left"
-    RIGHT = "right"
-    FORWARD = "forward"
+    CHANGE_LEFT = "left"
+    KEEP_LEFT = "left"
+    TURN_LEFT = "left"
+    CHANGE_RIGHT = "right"
+    KEEP_RIGHT = "right"
+    TURN_RIGHT = "right"
+    KEEP_STRAIGHT = "straight"
     STOP = "stop"
 
 
