@@ -14,7 +14,9 @@ class ActionLTL(Enum):
     CHANGE_RIGHT = "FG (InRightAdjacentLane)"
     FOLLOW_LANE = "G (InCurrentLane)"
 
-
     @classmethod
-    def from_action(cls, action: Union[LongitudinalAction, LateralAction]) -> str:
-        return f"LTL {cls[action.name].value}"
+    def from_action(cls, action: Union['LongitudinalAction', 'LateralAction']) -> str:
+        try:
+            return f"LTL {cls[action.name].value}"
+        except KeyError:
+            raise ValueError(f"No LTL mapping for action: {action}")
