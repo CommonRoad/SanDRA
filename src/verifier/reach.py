@@ -1,6 +1,7 @@
 import os.path
 from typing import Optional, Union, List
 
+import enum
 from commonroad.scenario.scenario import Scenario
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import SemanticConfigurationBuilder
@@ -9,10 +10,17 @@ from commonroad_reach_semantic.data_structure.environment_model.semantic_model i
 from commonroad_reach_semantic.data_structure.model_checking.spot_interface import SpotInterface
 from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import SemanticReachableSetInterface
 from commonroad_reach_semantic.data_structure.rule.traffic_rule_interface import TrafficRuleInterface
+from commonroad_reach_semantic.utility import visualization as util_visual
 
 from src.actions import LongitudinalAction, LateralAction
 from src.config import SaLaRAConfiguration, COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
 from src.verifier.action2ltl import ActionLTL
+
+
+class VerificationStatus(enum.Enum):
+    SAFE = "safe"
+    UNSAFE = "unsafe"
+
 
 class ReachVerifier:
     """Verifier using reachability analysis"""
@@ -34,6 +42,7 @@ class ReachVerifier:
             ).build_configuration(
                 str(scenario.scenario_id)
             )
+        self.reach_config.traffic_rule.activated_rules = []
         self.reach_config.general.path_scenario =\
             PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
         self.reach_config.planning.dt = scenario.dt
@@ -90,8 +99,25 @@ class ReachVerifier:
         else:
             return ActionLTL.from_action(action)
 
-    def compute_reachable_sets(self):
-        pass
+    def verify(self, actions: List[Union[LongitudinalAction, LateralAction]]) -> VerificationStatus:
+        """
+        verifies the given actions (in a list)
+        """
+        self.reset(
+            actions=actions,
+        )
 
-    def verify(self, reachable_sets):
-        pass
+        # the formulas corresponding to all actions are conjunctively combined.
+        self.reach_interface.compute_reachable_sets(
+            step_end=self.sandra_config.h,
+            verbose=self.verbose
+        )
+
+        # plot
+        util_visual.plot_scenario_with_reachable_sets(self.reach_interface, save_gif=False)
+
+        # checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
+        if not self.reach_interface.reachable_set[self.sandra_config.h]:
+            return VerificationStatus.UNSAFE
+        else:
+            return VerificationStatus.SAFE
