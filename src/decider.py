@@ -8,6 +8,7 @@ from commonroad.prediction.prediction import TrajectoryPrediction
 
 from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad_reach.data_structure.reach.driving_corridor import DrivingCorridor
+from pydantic import BaseModel
 
 from src.actions import Action
 from src.describer import Describer
@@ -39,19 +40,22 @@ class Decider:
         self.describer = Describer(self.scenario, self.planning_problem, timestep, config, role=role_prompt, goal=goal_prompt)
         self.save_path = save_path
 
-    def _parse_action_ranking(self, ranking: dict) -> list[Action]:
-        pass
+    def _parse_action_ranking(self, llm_response: type[BaseModel]) -> list[Action]:
+        action_ranking = []
+        for action in llm_response.action_ranking:
+            action_ranking.append((action.longitudinal_action, action.lateral_action))
+        return action_ranking
 
     def run(self) -> DrivingCorridor:
         user_prompt = self.describer.user_prompt()
         system_prompt = self.describer.system_prompt()
         schema = self.describer.schema()
-        ranking = get_structured_response(user_prompt, system_prompt, schema, self.config, save_dir=self.save_path)
-        ranking = self._parse_action_ranking(ranking)
+        structured_response = get_structured_response(user_prompt, system_prompt, schema, self.config, save_dir=self.save_path)
+        ranking = self._parse_action_ranking(structured_response)
 
         print("Ranking:")
-        for i, action in enumerate(ranking):
-            print(f"{i + 1}. {action}")
+        for i, (longitudinal, lateral) in enumerate(ranking):
+            print(f"{i + 1}. ({longitudinal}, {lateral})")
 
         dc = None
         for action in ranking:

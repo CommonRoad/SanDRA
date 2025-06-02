@@ -15,6 +15,7 @@ def main(scenario_path: str):
     print(decider.describer.system_prompt())
     print(f"-----------------USER PROMPT-------------------")
     print(decider.describer.user_prompt())
+    decider.run()
 
 
 if __name__ == "__main__":

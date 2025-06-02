@@ -2,7 +2,7 @@ from typing import Optional
 
 from commonroad.scenario.lanelet import LaneletNetwork, Lanelet
 
-from src.actions import LateralAction
+from src.actions import LateralAction, LongitudinalAction
 
 # The basic idea is that the lanelet network is a graph with 2 node types:
 # 1. Normal Lanelet -> from this node, you can only go to your successor, adj_left, or adj_right (if they exist).
@@ -112,6 +112,7 @@ class EgoCenteredLaneletNetwork:
 
         for node in self.nodes.values():
             node.instantiate_next_nodes(self.nodes)
+        for node in self.nodes.values():
             node.calculate_routes()
 
     def describe(self, dead_ends=False) -> str:
@@ -167,3 +168,9 @@ class EgoCenteredLaneletNetwork:
             # TODO: Handle intersection scenarios
             pass
         return ""
+
+    def lateral_actions(self) -> list[str]:
+        return [a.value for a, b in self.ego_node.next_node_dict.items() if b is not None] + [LateralAction.KEEP_STRAIGHT.value]
+
+    def longitudinal_actions(self) -> list[str]:
+        return [x.value for x in LongitudinalAction]
