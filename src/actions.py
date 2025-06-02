@@ -6,8 +6,8 @@ from commonroad_reach_semantic.data_structure.config.semantic_configuration impo
 class LongitudinalAction(Enum):
     ACCELERATE = "accelerate"
     DECELERATE = "decelerate"
-    IDLE = "idle"
-
+    KEEP = "keep"
+    STOP = "stop"
 
 class LateralAction(Enum):
     CHANGE_LEFT = "change_left"
@@ -17,7 +17,6 @@ class LateralAction(Enum):
     KEEP_RIGHT = "keep_right"
     TURN_RIGHT = "turn_right"
     KEEP_STRAIGHT = "straight"
-    STOP = "stop"
 
 
 Action = tuple[LongitudinalAction, LateralAction]
