@@ -157,8 +157,13 @@ class EgoCenteredLaneletNetwork:
                 lanelet_successors = lanelet.successor
                 if lanelet_successors is not None and len(lanelet_successors) == 1:
                     lanelet = self.lanelet_network.find_lanelet_by_id(lanelet_successors[0])
+                elif lanelet_successors is not None and len(lanelet_successors) > 0:
+                    for successor in lanelet_successors:
+                        if successor in self.ego_node.route_dict[LateralAction.KEEP_STRAIGHT]:
+                            return "in a successor lane"
                 else:
                     break
         else:
+            # TODO: Handle intersection scenarios
             pass
         return ""

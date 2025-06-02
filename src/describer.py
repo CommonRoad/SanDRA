@@ -5,6 +5,8 @@ from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.traffic_sign import TrafficSignIDGermany
+from commonroad_crime.data_structure.configuration import CriMeConfiguration
+from commonroad_crime.measure import TTC
 
 from config import SaLaRAConfiguration
 from src.actions import get_all_actions
@@ -13,7 +15,7 @@ from src.utils import find_lanelet_id_from_state, extract_ego_vehicle, calculate
 
 
 class Describer:
-    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int, config: SaLaRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None, scenario_type: Optional[str] = None):
+    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int, config: SaLaRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None, scenario_type: Optional[str] = None, describe_ttc=True):
         self.lanelet_network = None
         self.ego_direction = None
         self.ego_state = None
@@ -26,6 +28,12 @@ class Describer:
         self.goal = "" if goal is None else goal
         self.scenario_type = "" if scenario_type is None else f"You are currently in an {scenario_type} scenario."
         self.actions = get_all_actions()
+
+        self.describe_ttc = describe_ttc
+        if describe_ttc:
+            config = CriMeConfiguration()
+            config.update(ego_id=self.ego_vehicle.obstacle_id, sce=scenario)
+            self.ttc_evaluator = TTC(config)
 
     def update(self, timestep=None):
         if timestep is not None:
@@ -66,6 +74,18 @@ class Describer:
         else:
             return "right of"
 
+    def distance_description(self, obstacle_position: np.ndarray) -> str:
+        dist = np.linalg.norm(obstacle_position - self.ego_state.position)
+        if dist > 0:
+            return f"{dist:.1f} meters in front of"
+        else:
+            return f"{dist:.1f} meters behind"
+
+    def ttc_description(self, obstacle_id: int) -> Optional[str]:
+        if not self.ttc_evaluator or not self.describe_ttc:
+            return None
+        return f"{self.ttc_evaluator.compute(obstacle_id, self.timestep)} sec"
+
     def _describe_traffic_signs(self) -> str:
         max_speed = None
         for traffic_sign in self.scenario.lanelet_network.traffic_signs:
@@ -96,9 +116,12 @@ class Describer:
         vehicle_description = f"It is driving {implicit_lanelet_description}. "
         relative_vehicle_direction = vehicle_state.position - self.ego_state.position
         angle = calculate_relative_orientation(self.ego_direction, relative_vehicle_direction)
-        vehicle_description += f"It is currently located {self.angle_description(angle)} you. "
+        vehicle_description += f"It is located {self.angle_description(angle)} you. "
+        vehicle_description += f"It is {self.distance_description(vehicle_state.position)} you. "
         vehicle_description += f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
         vehicle_description += f"and its acceleration is {self.acceleration_descr(vehicle_state.acceleration)}."
+        if (ttc := self.ttc_description(vehicle.obstacle_id)) is not None:
+            vehicle_description += f" The time-to-collision is {ttc}."
         return vehicle_description
 
     def _get_relevant_obstacles(self) -> list[DynamicObstacle]:

@@ -7,6 +7,7 @@ class LongitudinalAction(Enum):
     ACCELERATE = "accelerate"
     DECELERATE = "decelerate"
     IDLE = "idle"
+    STOP = "stop"
 
 
 class LateralAction(Enum):
@@ -17,7 +18,6 @@ class LateralAction(Enum):
     KEEP_RIGHT = "keep_right"
     TURN_RIGHT = "turn_right"
     KEEP_STRAIGHT = "straight"
-    STOP = "stop"
 
 
 Action = tuple[LongitudinalAction, LateralAction]
