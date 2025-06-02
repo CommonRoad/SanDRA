@@ -22,10 +22,12 @@ class ReachVerifier:
                  sandra_config: SaLaRAConfiguration,
                  verbose=False):
 
+        # basic elements
         self.verbose = verbose
         self.scenario = scenario
         self.sandra_config = sandra_config
 
+        # reachability analysis configurations
         self.reach_config: Optional[SemanticConfiguration] =\
             SemanticConfigurationBuilder(
                 COMMONROAD_REACH_SEMANTIC_ROOT
@@ -37,7 +39,7 @@ class ReachVerifier:
         self.reach_config.planning.dt = scenario.dt
         self.reach_config.update()
 
-        # ==== initialize semantic model and traffic rule interface
+        #initialize semantic model and traffic rule interface
         self.semantic_model = SemanticModel(self.reach_config)
         self.rule_interface = TrafficRuleInterface(self.reach_config, self.semantic_model)
         self.reach_interface = SemanticReachableSetInterface(self.reach_config,
@@ -47,7 +49,7 @@ class ReachVerifier:
     def reset(self,
               reach_config: SemanticConfiguration = None,
               actions: List[Union[LongitudinalAction, LateralAction]] = None):
-        #
+        """resets configurations and actions"""
         if reach_config:
             self.reach_config = reach_config
 
@@ -74,6 +76,7 @@ class ReachVerifier:
             )
 
     def parse_action(self, action: Union[LongitudinalAction, LateralAction]) -> str:
+        """parses action to corresponding LTL formulas (or the correct reach configs)"""
         if action  == LongitudinalAction.ACCELERATE:
             self.reach_config.vehicle.ego.a_lon_min = self.sandra_config.a_lim
             return ""

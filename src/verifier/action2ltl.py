@@ -16,6 +16,7 @@ class ActionLTL(Enum):
 
     @classmethod
     def from_action(cls, action: Union['LongitudinalAction', 'LateralAction']) -> str:
+        """Obtains LTL formula from the given action"""
         try:
             return f"LTL {cls[action.name].value}"
         except KeyError:
