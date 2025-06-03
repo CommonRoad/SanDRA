@@ -1,5 +1,5 @@
-from typing import Optional, Literal
-from pydantic import BaseModel, ConfigDict
+from typing import Optional, Literal, Any
+from openai import BaseModel
 import numpy as np
 
 from commonroad.planning.planning_problem import PlanningProblem
@@ -18,7 +18,23 @@ class Thoughts(BaseModel):
     observation: list[str]
     conclusion: str
     model_config = {
-        "extra": "forbid",  # or 'allow' or 'ignore'
+        "extra": "forbid"
+    }
+
+
+class Action(BaseModel):
+    lateral_action: Literal["placeholder"]
+    longitudinal_action: Literal["placeholder"]
+    model_config = {
+        "extra": "forbid"
+    }
+
+
+class HighLevelDrivingDecision(BaseModel):
+    thoughts: Thoughts
+    action_ranking: list[Action]
+    model_config = {
+        "extra": "forbid"
     }
 
 
@@ -167,21 +183,24 @@ class Describer:
         ego_description += f" and your acceleration is {self.acceleration_descr(self.ego_state.acceleration)}."
         return ego_description
 
-    def schema(self) -> type[BaseModel]:
+    def schema(self) -> dict[str, Any]:
         laterals = self.lanelet_network.lateral_actions()
         longitudinals = self.lanelet_network.longitudinal_actions()
+        schema_dict = HighLevelDrivingDecision.model_json_schema()
+        lateral_action = schema_dict['$defs']['Action']['properties']['lateral_action']
+        lateral_action['enum'] = laterals
+        if len(laterals) == 1:
+            lateral_action['const'] = laterals[0]
+        else:
+            lateral_action.pop('const', None)
+        longitudinal_action = schema_dict['$defs']['Action']['properties']['longitudinal_action']
+        longitudinal_action['enum'] = longitudinals
+        if len(longitudinals) == 1:
+            longitudinal_action['const'] = longitudinals[0]
+        else:
+            longitudinal_action.pop('const', None)
 
-        class Action(BaseModel):
-            lateral_action: Literal[laterals]
-            longitudinal_action: Literal[longitudinals]
-            model_config = ConfigDict(extra="forbid")
-
-        class HighLevelDrivingDecision(BaseModel):
-            thoughts: Thoughts
-            action_ranking: list[Action]
-            model_config = ConfigDict(extra="forbid")
-
-        return HighLevelDrivingDecision
+        return schema_dict
 
     def user_prompt(self) -> str:
         return f"""Here is an overview over your environment:
@@ -213,21 +232,4 @@ Keep these things in mind:
 
 
 if __name__ == "__main__":
-    from src.llm import get_structured_response
-    laterals = "left", "right", "straight"
-    longitudinals = "left", "right", "straight"
-
-    def get_schema() -> type[BaseModel]:
-        class Action(BaseModel):
-            lateral_action: Literal[laterals]
-            longitudinal_action: Literal[longitudinals]
-            model_config = ConfigDict(extra="forbid")
-
-        class HighLevelDrivingDecision(BaseModel):
-            thoughts: Thoughts
-            action_ranking: list[Action]
-            model_config = ConfigDict(extra="forbid")
-
-        return HighLevelDrivingDecision
-    schema = get_schema()
-    print(get_structured_response("Make a decision", "Do as your told", schema, SaLaRAConfiguration()))
+    pass

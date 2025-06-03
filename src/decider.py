@@ -1,14 +1,8 @@
 import copy
-import os
-from typing import Optional
+from typing import Optional, Any
 
-import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
-from commonroad.prediction.prediction import TrajectoryPrediction
-
-from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad_reach.data_structure.reach.driving_corridor import DrivingCorridor
-from pydantic import BaseModel
 
 from src.actions import Action
 from src.describer import Describer
@@ -40,10 +34,10 @@ class Decider:
         self.describer = Describer(self.scenario, self.planning_problem, timestep, config, role=role_prompt, goal=goal_prompt)
         self.save_path = save_path
 
-    def _parse_action_ranking(self, llm_response: type[BaseModel]) -> list[Action]:
+    def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []
-        for action in llm_response.action_ranking:
-            action_ranking.append((action.longitudinal_action, action.lateral_action))
+        for action in llm_response["action_ranking"]:
+            action_ranking.append((action["longitudinal_action"], action["lateral_action"]))
         return action_ranking
 
     def run(self) -> DrivingCorridor:
