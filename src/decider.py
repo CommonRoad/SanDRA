@@ -12,9 +12,9 @@ from pydantic import BaseModel
 
 from src.actions import Action
 from src.describer import Describer
-from src.verifier import is_drivable
+from src.verifier_old import is_drivable
 from src.llm import get_structured_response
-from config import SaLaRAConfiguration
+from src.config import SaLaRAConfiguration
 
 
 class Decider:

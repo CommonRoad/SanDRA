@@ -2,7 +2,7 @@ import os
 from openai import OpenAI, BaseModel
 import json
 
-from config import SaLaRAConfiguration, PROJECT_ROOT
+from src.config import SaLaRAConfiguration, PROJECT_ROOT
 
 
 def get_structured_response(

@@ -9,7 +9,7 @@ from commonroad.scenario.traffic_sign import TrafficSignIDGermany
 from commonroad_crime.data_structure.configuration import CriMeConfiguration
 from commonroad_crime.measure import TTC
 
-from config import SaLaRAConfiguration
+from src.config import SaLaRAConfiguration
 from src.lanelet_network import EgoCenteredLaneletNetwork
 from src.utils import find_lanelet_id_from_state, extract_ego_vehicle, calculate_relative_orientation
 

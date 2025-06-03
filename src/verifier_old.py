@@ -56,7 +56,7 @@ from commonroad_qp_planner.utility.compute_constraints import (
 from commonroad_qp_planner.utils import plot_result, plot_position_constraints
 import xml.etree.ElementTree as ET
 
-from config import COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
+from src.config import COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
 from src.actions import set_speed, get_ltl_formula, Action, LongitudinalAction
 
 
