@@ -1,6 +1,6 @@
 import os.path
 
-from config import SaLaRAConfiguration, PROJECT_ROOT
+from src.config import SaLaRAConfiguration, PROJECT_ROOT
 from src.decider import Decider
 
 from src.utils import extract_scenario_and_planning_problem, plot_scenario, plot_lanelet, extract_ego_vehicle, find_lanelet_id_from_state
