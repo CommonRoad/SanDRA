@@ -131,6 +131,8 @@ class Describer:
     def _describe_vehicle(self, vehicle: DynamicObstacle) -> Optional[str]:
         vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
         vehicle_lanelet_id = find_lanelet_id_from_state(vehicle_state, self.scenario.lanelet_network)
+        if vehicle_lanelet_id < 0:
+            return None
         implicit_lanelet_description = self.lanelet_network.describe_lanelet(vehicle_lanelet_id)
         if not implicit_lanelet_description:
             return None
