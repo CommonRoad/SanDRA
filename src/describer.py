@@ -1,20 +1,30 @@
-from typing import Optional
+from typing import Optional, Literal
+from pydantic import BaseModel, ConfigDict
 import numpy as np
 
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.traffic_sign import TrafficSignIDGermany
+from commonroad_crime.data_structure.configuration import CriMeConfiguration
+from commonroad_crime.measure import TTC
 
 from config import SaLaRAConfiguration
-from src.actions import get_all_actions
 from src.lanelet_network import EgoCenteredLaneletNetwork
 from src.utils import find_lanelet_id_from_state, extract_ego_vehicle, calculate_relative_orientation
 
 
+class Thoughts(BaseModel):
+    observation: list[str]
+    conclusion: str
+    model_config = {
+        "extra": "forbid",  # or 'allow' or 'ignore'
+    }
+
+
 class Describer:
-    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int, config: SaLaRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None, scenario_type: Optional[str] = None):
-        self.lanelet_network = None
+    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int, config: SaLaRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None, scenario_type: Optional[str] = None, describe_ttc=True):
+        self.lanelet_network: EgoCenteredLaneletNetwork = None
         self.ego_direction = None
         self.ego_state = None
         self.config = config
@@ -22,10 +32,16 @@ class Describer:
         self.scenario = scenario
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.update(timestep=timestep)
+
         self.role = "" if role is None else role
         self.goal = "" if goal is None else goal
         self.scenario_type = "" if scenario_type is None else f"You are currently in an {scenario_type} scenario."
-        self.actions = get_all_actions()
+
+        self.describe_ttc = describe_ttc
+        if describe_ttc:
+            config = CriMeConfiguration()
+            config.update(ego_id=self.ego_vehicle.obstacle_id, sce=scenario)
+            self.ttc_evaluator = TTC(config)
 
     def update(self, timestep=None):
         if timestep is not None:
@@ -66,6 +82,15 @@ class Describer:
         else:
             return "right of"
 
+    def distance_description(self, obstacle_position: np.ndarray) -> str:
+        dist = np.linalg.norm(obstacle_position - self.ego_state.position)
+        return f"{dist:.1f} meters"
+
+    def ttc_description(self, obstacle_id: int) -> Optional[str]:
+        if not self.ttc_evaluator or not self.describe_ttc:
+            return None
+        return f"{self.ttc_evaluator.compute(obstacle_id, self.timestep)} sec"
+
     def _describe_traffic_signs(self) -> str:
         max_speed = None
         for traffic_sign in self.scenario.lanelet_network.traffic_signs:
@@ -96,9 +121,12 @@ class Describer:
         vehicle_description = f"It is driving {implicit_lanelet_description}. "
         relative_vehicle_direction = vehicle_state.position - self.ego_state.position
         angle = calculate_relative_orientation(self.ego_direction, relative_vehicle_direction)
-        vehicle_description += f"It is currently located {self.angle_description(angle)} you. "
+        vehicle_description += f"It is located {self.angle_description(angle)} you, "
+        vehicle_description += f"with a relative distance of {self.distance_description(vehicle_state.position)}. "
         vehicle_description += f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
         vehicle_description += f"and its acceleration is {self.acceleration_descr(vehicle_state.acceleration)}."
+        if (ttc := self.ttc_description(vehicle.obstacle_id)) is not None:
+            vehicle_description += f" The time-to-collision is {ttc}."
         return vehicle_description
 
     def _get_relevant_obstacles(self) -> list[DynamicObstacle]:
@@ -139,44 +167,21 @@ class Describer:
         ego_description += f" and your acceleration is {self.acceleration_descr(self.ego_state.acceleration)}."
         return ego_description
 
-    def schema(self) -> dict:
-        return {
-            "additionalProperties": False,
-            "properties": {
-                "reasoning": {"$ref": "#/$defs/Reasoning"},
-                "action_ranking": {
-                    "items": {
-                        "enum": self.actions,
-                        "type": "string"
-                    },
-                    "title": "Action Ranking",
-                    "description": "Rank all available actions from best to worst",
-                    "type": "array"
-                }
-            },
-            "required": ["reasoning", "action_ranking"],
-            "title": "Response",
-            "type": "object",
-            "$defs": {
-                "Reasoning": {
-                    "additionalProperties": False,
-                    "properties": {
-                        "observations": {
-                            "items": {"type": "string"},
-                            "title": "Observations",
-                            "type": "array"
-                        },
-                        "decision": {
-                            "title": "Decision",
-                            "type": "string"
-                        }
-                    },
-                    "required": ["observations", "decision"],
-                    "title": "Reasoning",
-                    "type": "object"
-                }
-            }
-        }
+    def schema(self) -> type[BaseModel]:
+        laterals = self.lanelet_network.lateral_actions()
+        longitudinals = self.lanelet_network.longitudinal_actions()
+
+        class Action(BaseModel):
+            lateral_action: Literal[laterals]
+            longitudinal_action: Literal[longitudinals]
+            model_config = ConfigDict(extra="forbid")
+
+        class HighLevelDrivingDecision(BaseModel):
+            thoughts: Thoughts
+            action_ranking: list[Action]
+            model_config = ConfigDict(extra="forbid")
+
+        return HighLevelDrivingDecision
 
     def user_prompt(self) -> str:
         return f"""Here is an overview over your environment:
@@ -188,13 +193,41 @@ class Describer:
 """
 
     def system_prompt(self) -> str:
-        return f"""You are driving a car and need to decide what to do next.
+        laterals = self.lanelet_network.lateral_actions()
+        laterals_str = "\n".join([f"    - {x}" for x in laterals])
+        longitudinals = self.lanelet_network.longitudinal_actions()
+        longitudinals_str = "\n".join([f"    - {x}" for x in longitudinals])
+        return f"""You are driving a car and need to make a high-level driving decision.
 {self.role}
 {self.goal}
-Considering the current traffic, what would you do in this kind of situation?
-First observe the environment and formulate your decision in natural language. Then rank the following {len(self.actions)} actions from best to worst:
-{self.actions}
+First observe the environment and formulate your decision in natural language. Then return a ranking of the advisable actions which consist of {len(laterals) * len(longitudinals)} combinations:
+Longitudinal actions:
+{longitudinals_str}
+Lateral actions:
+{laterals_str}
 Keep these things in mind:
 1) You are currently driving in Germany and have to adhere to German traffic rules.
 2) The best action is at index 0 in the array.
+3) You need to enumerate all combinations in your action ranking.
 """
+
+
+if __name__ == "__main__":
+    from src.llm import get_structured_response
+    laterals = "left", "right", "straight"
+    longitudinals = "left", "right", "straight"
+
+    def get_schema() -> type[BaseModel]:
+        class Action(BaseModel):
+            lateral_action: Literal[laterals]
+            longitudinal_action: Literal[longitudinals]
+            model_config = ConfigDict(extra="forbid")
+
+        class HighLevelDrivingDecision(BaseModel):
+            thoughts: Thoughts
+            action_ranking: list[Action]
+            model_config = ConfigDict(extra="forbid")
+
+        return HighLevelDrivingDecision
+    schema = get_schema()
+    print(get_structured_response("Make a decision", "Do as your told", schema, SaLaRAConfiguration()))

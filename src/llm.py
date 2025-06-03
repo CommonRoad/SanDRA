@@ -1,17 +1,18 @@
 import os
-from openai import BaseModel, OpenAI
+from openai import OpenAI, BaseModel
 import json
+
 from config import SaLaRAConfiguration, PROJECT_ROOT
 
 
 def get_structured_response(
     user_prompt: str,
     system_prompt: str,
-    schema: BaseModel | dict,
+    schema: type[BaseModel],
     config: SaLaRAConfiguration,
     save_dir: str = None,
     temperature: float = 0.6,
-) -> dict:
+) -> type[BaseModel]:
     """
     Query the API with a message consisting of:
     1. System Prompt
@@ -20,17 +21,14 @@ def get_structured_response(
     and save both request and response in text and json formats.
     """
     client = OpenAI(api_key=config.api_key)
-    if isinstance(schema, dict):
-        name = schema["title"]
-    else:
-        name = schema.__name__
-        schema = schema.model_json_schema()
+    name = schema.__name__
+    schema_dict = schema.model_json_schema()
 
     response_text_format = {
         "format": {
             "type": "json_schema",
             "name": name,
-            "schema": schema,
+            "schema": schema_dict,
             "strict": True,
         }
     }
@@ -48,7 +46,7 @@ def get_structured_response(
         prompt_json = {
             "system": system_prompt,
             "user": user_prompt,
-            "schema": json.dumps(schema),
+            "schema": json.dumps(schema_dict),
         }
         save_path = os.path.join(PROJECT_ROOT, "outputs", save_dir)
         save_json = {
@@ -60,4 +58,4 @@ def get_structured_response(
         with open(os.path.join(save_path, "output.json"), "w") as file:
             json.dump(save_json, file)
 
-    return content_json
+    return schema(**content_json)
