@@ -1,2 +1,2 @@
-# SaLaRA
-Safe LLM-Based Decision Making for Automated Vehicles Using Reachability Analysis
+# SanDRA
+Safe large language model-based Decision making framework for automated vehicles using Reachability Analysis

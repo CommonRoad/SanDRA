@@ -9,7 +9,7 @@ from commonroad.scenario.traffic_sign import TrafficSignIDGermany
 from commonroad_crime.data_structure.configuration import CriMeConfiguration
 from commonroad_crime.measure import TTC
 
-from sandra.config import SaLaRAConfiguration
+from sandra.config import SanDRAConfiguration
 from sandra.lanelet_network import EgoCenteredLaneletNetwork
 from sandra.utils import find_lanelet_id_from_state, extract_ego_vehicle, calculate_relative_orientation
 
@@ -39,7 +39,7 @@ class HighLevelDrivingDecision(BaseModel):
 
 
 class Describer:
-    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int, config: SaLaRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None, scenario_type: Optional[str] = None, describe_ttc=True):
+    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int, config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None, scenario_type: Optional[str] = None, describe_ttc=True):
         self.lanelet_network: EgoCenteredLaneletNetwork = None
         self.ego_direction = None
         self.ego_state = None

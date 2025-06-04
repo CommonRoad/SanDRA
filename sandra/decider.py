@@ -8,7 +8,7 @@ from sandra.actions import Action
 from sandra.describer import Describer
 from sandra.verifier_old import is_drivable
 from sandra.llm import get_structured_response
-from sandra.config import SaLaRAConfiguration
+from sandra.config import SanDRAConfiguration
 
 
 class Decider:
@@ -16,13 +16,13 @@ class Decider:
         self,
         scenario_path,
         timestep: int,
-        config: SaLaRAConfiguration,
+        config: SanDRAConfiguration,
         role_prompt: Optional[str] = None,
         goal_prompt: Optional[str] = None,
         save_path: Optional[str] = None,
     ):
         self.timestep = timestep
-        self.config: SaLaRAConfiguration = config
+        self.config: SanDRAConfiguration = config
         self.action_ranking = None
         self.scenario_path = scenario_path
         self.scenario, planning_problem_set = CommonRoadFileReader(scenario_path).open(

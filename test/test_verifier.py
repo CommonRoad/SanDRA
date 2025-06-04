@@ -7,7 +7,7 @@ import unittest
 
 from commonroad.common.file_reader import CommonRoadFileReader
 
-from sandra.config import SaLaRAConfiguration, PROJECT_ROOT
+from sandra.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.verifier.reach import ReachVerifier, VerificationStatus
 from sandra.verifier.action2ltl import ActionLTL
 from sandra.actions import LongitudinalAction, LateralAction
@@ -21,7 +21,7 @@ class TestReachVerifier(unittest.TestCase):
         self.scenario, _ = CommonRoadFileReader(path_scenario).open(
             lanelet_assignment=True
         )
-        self.config = SaLaRAConfiguration()
+        self.config = SanDRAConfiguration()
 
         self.reach_ver = ReachVerifier(self.scenario,
                                        self.config)

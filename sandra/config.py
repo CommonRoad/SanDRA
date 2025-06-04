@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class SaLaRAConfiguration:
+class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
     model_name = "gpt-4.1"
 

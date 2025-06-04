@@ -4,14 +4,14 @@ from typing import Any
 from openai import OpenAI, BaseModel
 import json
 
-from sandra.config import SaLaRAConfiguration, PROJECT_ROOT
+from sandra.config import SanDRAConfiguration, PROJECT_ROOT
 
 
 def get_structured_response(
     user_prompt: str,
     system_prompt: str,
     schema: dict[str, Any],
-    config: SaLaRAConfiguration,
+    config: SanDRAConfiguration,
     save_dir: str = None,
     temperature: float = 0.6,
 ) -> dict[str, Any]:

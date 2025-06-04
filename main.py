@@ -1,6 +1,6 @@
 import os.path
 
-from sandra.config import SaLaRAConfiguration, PROJECT_ROOT
+from sandra.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.decider import Decider
 from sandra.llm import get_structured_response
 
@@ -9,7 +9,7 @@ from sandra.lanelet_network import EgoCenteredLaneletNetwork
 
 
 def main(scenario_path: str):
-    config = SaLaRAConfiguration()
+    config = SanDRAConfiguration()
     save_path = scenario_path
     decider = Decider(scenario_path, 0, config)
     print(f"-----------------SYSTEM PROMPT-------------------")
