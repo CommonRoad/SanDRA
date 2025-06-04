@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "sandra"
+version = "0.0.1"
+readme = "README.md"
+license = "Apache-2.0"
+authors = ["Sebastian Illing <sebastian.illing@vodafone.de>, Yuanfei Lin <yuanfei.lin@tum.de>, Cyber-Physical Systems Group, Technical University of Munich"]
+description = "Safe large language model-based decision making framework for automated vehicles using reachability analysis"
+keywords = [
+    "automated driving",
+    "decision making",
+    "safety",
+    "large language models",
+    "reachability analysis"
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: Apache Software License"
+    "Operating System :: POSIX :: Linux",
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"  # Adjust according to your project's needs
+openai = "~=1.82.0"
+pydantic = "~=2.11.5"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.test.dependencies]
+coverage = "^6.5.0"
+
+[tool.poetry.group.test]
+optional = true
+
