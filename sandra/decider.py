@@ -31,20 +31,31 @@ class Decider:
         self.planning_problem = copy.deepcopy(
             list(planning_problem_set.planning_problem_dict.values())[0]
         )
-        self.describer = Describer(self.scenario, self.planning_problem, timestep, config, role=role_prompt, goal=goal_prompt)
+        self.describer = Describer(
+            self.scenario,
+            self.planning_problem,
+            timestep,
+            config,
+            role=role_prompt,
+            goal=goal_prompt,
+        )
         self.save_path = save_path
 
     def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []
         for action in llm_response["action_ranking"]:
-            action_ranking.append((action["longitudinal_action"], action["lateral_action"]))
+            action_ranking.append(
+                (action["longitudinal_action"], action["lateral_action"])
+            )
         return action_ranking
 
     def run(self) -> DrivingCorridor:
         user_prompt = self.describer.user_prompt()
         system_prompt = self.describer.system_prompt()
         schema = self.describer.schema()
-        structured_response = get_structured_response(user_prompt, system_prompt, schema, self.config, save_dir=self.save_path)
+        structured_response = get_structured_response(
+            user_prompt, system_prompt, schema, self.config, save_dir=self.save_path
+        )
         ranking = self._parse_action_ranking(structured_response)
 
         print("Ranking:")

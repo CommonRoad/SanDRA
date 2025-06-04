@@ -110,11 +110,11 @@ def initialize_scenario_xml(xml_file_path: str, goal_lane_id: Optional[str]):
 
 
 def plan(
-        formula: str,
-        speed: LongitudinalAction,
-        stop_at_lateral=False,
-        stop_at_longitudinal=False,
-        num_time_steps: int = 20,
+    formula: str,
+    speed: LongitudinalAction,
+    stop_at_lateral=False,
+    stop_at_longitudinal=False,
+    num_time_steps: int = 20,
 ) -> DrivingCorridor | DynamicObstacle:
     name_scenario = "scenario"
     spec = [formula]
@@ -337,7 +337,7 @@ def plan(
 
 
 def is_drivable(
-        scenario_path: str, action: Optional[Action], only_longitudinal=True
+    scenario_path: str, action: Optional[Action], only_longitudinal=True
 ) -> Optional[DrivingCorridor]:
     if action:
         lon_action, lat_action = action

@@ -15,7 +15,7 @@ class ActionLTL(Enum):
     FOLLOW_LANE = "G (InCurrentLane)"
 
     @classmethod
-    def from_action(cls, action: Union['LongitudinalAction', 'LateralAction']) -> str:
+    def from_action(cls, action: Union["LongitudinalAction", "LateralAction"]) -> str:
         """Obtains LTL formula from the given action"""
         try:
             return f"LTL {cls[action.name].value}"

@@ -9,16 +9,24 @@ from commonroad.scenario.lanelet import LaneletNetwork, Lanelet
 from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import TraceState
-from commonroad.visualization.draw_params import MPDrawParams, LaneletNetworkParams, TrajectoryParams, ShapeParams
+from commonroad.visualization.draw_params import (
+    MPDrawParams,
+    LaneletNetworkParams,
+    TrajectoryParams,
+    ShapeParams,
+)
 from commonroad.visualization.mp_renderer import MPRenderer
-from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import SemanticReachableSetInterface
+from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import (
+    SemanticReachableSetInterface,
+)
 from commonroad_reach_semantic.utility import visualization as util_visual
 
 from sandra.common.config import SUPPRESS_PLOTS
 
 if SUPPRESS_PLOTS:
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
 
 
 def plot_reachable_set(reach_interface: SemanticReachableSetInterface):
@@ -42,7 +50,9 @@ def plot_reachable_set(reach_interface: SemanticReachableSetInterface):
     util_visual.plot_scenario_with_reachable_sets(reach_interface, save_gif=True)
 
 
-def extract_scenario_and_planning_problem(absolute_scenario_path: str) -> tuple[Scenario, PlanningProblem]:
+def extract_scenario_and_planning_problem(
+    absolute_scenario_path: str,
+) -> tuple[Scenario, PlanningProblem]:
     scenario, planning_problem_set = CommonRoadFileReader(absolute_scenario_path).open(
         True
     )
@@ -52,7 +62,9 @@ def extract_scenario_and_planning_problem(absolute_scenario_path: str) -> tuple[
     return scenario, planning_problem
 
 
-def extract_ego_vehicle(scenario: Scenario, planning_problem: PlanningProblem) -> DynamicObstacle:
+def extract_ego_vehicle(
+    scenario: Scenario, planning_problem: PlanningProblem
+) -> DynamicObstacle:
     ego_vehicle = None
     for vehicle in scenario.dynamic_obstacles:
         diff: np.ndarray = (
@@ -63,16 +75,21 @@ def extract_ego_vehicle(scenario: Scenario, planning_problem: PlanningProblem) -
     return ego_vehicle
 
 
-def find_lanelet_id_from_state(state: TraceState, lanelet_network: LaneletNetwork) -> int:
+def find_lanelet_id_from_state(
+    state: TraceState, lanelet_network: LaneletNetwork
+) -> int:
     try:
-        return lanelet_network.find_most_likely_lanelet_by_state(
-            [state]
-        )[0]
+        return lanelet_network.find_most_likely_lanelet_by_state([state])[0]
     except IndexError:
         return -1
 
 
-def plot_scenario(scenario: Scenario, planning_problem: PlanningProblem, plot_limits=None, save_path: str = None):
+def plot_scenario(
+    scenario: Scenario,
+    planning_problem: PlanningProblem,
+    plot_limits=None,
+    save_path: str = None,
+):
     rnd = MPRenderer(figsize=(12, 8), plot_limits=plot_limits)
     params = MPDrawParams()
     params.lanelet_network.traffic_sign.draw_traffic_signs = True
@@ -87,7 +104,9 @@ def plot_predicted_trajectory(
     assert isinstance(
         vehicle.prediction, TrajectoryPrediction
     ), "Can not plot a prediction which is not a TrajectoryPrediction object."
-    rnd = MPRenderer(figsize=(12, 8), focus_obstacle=vehicle, plot_limits=[-30, 30, -30, 30])
+    rnd = MPRenderer(
+        figsize=(12, 8), focus_obstacle=vehicle, plot_limits=[-30, 30, -30, 30]
+    )
     params = LaneletNetworkParams()
     params.traffic_sign.draw_traffic_signs = True
     scenario.lanelet_network.draw(rnd, draw_params=params)
@@ -100,7 +119,9 @@ def plot_predicted_trajectory(
     rnd.render(show=True, filename=save_path)
 
 
-def plot_lanelet(lanelet: Lanelet, lanelet_network: LaneletNetwork, save_path: str = None):
+def plot_lanelet(
+    lanelet: Lanelet, lanelet_network: LaneletNetwork, save_path: str = None
+):
     # draw network
     rnd = MPRenderer(figsize=(12, 8))
     params = LaneletNetworkParams()
@@ -127,7 +148,9 @@ def plot_lanelet(lanelet: Lanelet, lanelet_network: LaneletNetwork, save_path: s
     rnd.render(show=True, filename=save_path)
 
 
-def calculate_relative_orientation(ego_direction: np.ndarray, other_direction: np.ndarray) -> float:
+def calculate_relative_orientation(
+    ego_direction: np.ndarray, other_direction: np.ndarray
+) -> float:
     """
     Calculates the angle in radians between ego direction and other direction.
     Front is 0 PI

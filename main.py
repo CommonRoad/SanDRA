@@ -16,7 +16,9 @@ def main(scenario_path: str):
     user_prompt = decider.describer.user_prompt()
     system_prompt = decider.describer.system_prompt()
     schema = decider.describer.schema()
-    structured_response = get_structured_response(user_prompt, system_prompt, schema, decider.config)
+    structured_response = get_structured_response(
+        user_prompt, system_prompt, schema, decider.config
+    )
     ranking = decider._parse_action_ranking(structured_response)
 
     print("Ranking:")
@@ -30,7 +32,7 @@ if __name__ == "__main__":
         "DEU_AachenBendplatz-1_80_T-19.xml",
         "DEU_AachenFrankenburg-1_2120_T-39.xml",
         "DEU_AachenHeckstrasse-1_30520_T-539.xml",
-        "DEU_LocationALower-11_10_T-1.xml"
+        "DEU_LocationALower-11_10_T-1.xml",
     ]
 
     scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")

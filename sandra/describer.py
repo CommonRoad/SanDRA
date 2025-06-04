@@ -11,35 +11,43 @@ from commonroad_crime.measure import TTC
 
 from sandra.common.config import SanDRAConfiguration
 from sandra.lanelet_network import EgoCenteredLaneletNetwork
-from sandra.utils import find_lanelet_id_from_state, extract_ego_vehicle, calculate_relative_orientation
+from sandra.utils import (
+    find_lanelet_id_from_state,
+    extract_ego_vehicle,
+    calculate_relative_orientation,
+)
 
 
 class Thoughts(BaseModel):
     observation: list[str]
     conclusion: str
-    model_config = {
-        "extra": "forbid"
-    }
+    model_config = {"extra": "forbid"}
 
 
 class Action(BaseModel):
     lateral_action: Literal["placeholder"]
     longitudinal_action: Literal["placeholder"]
-    model_config = {
-        "extra": "forbid"
-    }
+    model_config = {"extra": "forbid"}
 
 
 class HighLevelDrivingDecision(BaseModel):
     thoughts: Thoughts
     action_ranking: list[Action]
-    model_config = {
-        "extra": "forbid"
-    }
+    model_config = {"extra": "forbid"}
 
 
 class Describer:
-    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int, config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None, scenario_type: Optional[str] = None, describe_ttc=True):
+    def __init__(
+        self,
+        scenario: Scenario,
+        planning_problem: PlanningProblem,
+        timestep: int,
+        config: SanDRAConfiguration,
+        role: Optional[str] = None,
+        goal: Optional[str] = None,
+        scenario_type: Optional[str] = None,
+        describe_ttc=True,
+    ):
         self.lanelet_network: EgoCenteredLaneletNetwork = None
         self.ego_direction = None
         self.ego_state = None
@@ -51,7 +59,11 @@ class Describer:
 
         self.role = "" if role is None else role
         self.goal = "" if goal is None else goal
-        self.scenario_type = "" if scenario_type is None else f"You are currently in an {scenario_type} scenario."
+        self.scenario_type = (
+            ""
+            if scenario_type is None
+            else f"You are currently in an {scenario_type} scenario."
+        )
 
         self.describe_ttc = describe_ttc
         if describe_ttc:
@@ -71,7 +83,10 @@ class Describer:
                 np.sin(self.ego_state.orientation),
             ]
         )
-        self.lanelet_network = EgoCenteredLaneletNetwork(self.scenario.lanelet_network, find_lanelet_id_from_state(self.ego_state, self.scenario.lanelet_network))
+        self.lanelet_network = EgoCenteredLaneletNetwork(
+            self.scenario.lanelet_network,
+            find_lanelet_id_from_state(self.ego_state, self.scenario.lanelet_network),
+        )
 
     @staticmethod
     def velocity_descr(v: float, to_km=True) -> str:
@@ -91,7 +106,7 @@ class Describer:
     def angle_description(theta: float) -> str:
         if abs(0 - theta) < np.pi / 4:
             return "in front of"
-        elif abs(np.pi/2 - theta) < np.pi / 4:
+        elif abs(np.pi / 2 - theta) < np.pi / 4:
             return "left of"
         elif abs(np.pi - theta) < np.pi / 4:
             return "behind"
@@ -111,14 +126,21 @@ class Describer:
         max_speed = None
         for traffic_sign in self.scenario.lanelet_network.traffic_signs:
             for traffic_sign_element in traffic_sign.traffic_sign_elements:
-                if traffic_sign_element.traffic_sign_element_id == TrafficSignIDGermany.MAX_SPEED:
+                if (
+                    traffic_sign_element.traffic_sign_element_id
+                    == TrafficSignIDGermany.MAX_SPEED
+                ):
                     max_speed = float(traffic_sign_element.additional_values[0])
 
         # TODO: Add support for more traffic rules
-        traffic_signs_description = "These are all the traffic rules that currently apply to you:"
+        traffic_signs_description = (
+            "These are all the traffic rules that currently apply to you:"
+        )
         initial_len = len(traffic_signs_description)
         if max_speed is not None:
-            traffic_signs_description += f"\nThe maximum speed is {self.velocity_descr(max_speed)}."
+            traffic_signs_description += (
+                f"\nThe maximum speed is {self.velocity_descr(max_speed)}."
+            )
 
         if len(traffic_signs_description) > initial_len:
             return traffic_signs_description
@@ -130,18 +152,26 @@ class Describer:
 
     def _describe_vehicle(self, vehicle: DynamicObstacle) -> Optional[str]:
         vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
-        vehicle_lanelet_id = find_lanelet_id_from_state(vehicle_state, self.scenario.lanelet_network)
+        vehicle_lanelet_id = find_lanelet_id_from_state(
+            vehicle_state, self.scenario.lanelet_network
+        )
         if vehicle_lanelet_id < 0:
             return None
-        implicit_lanelet_description = self.lanelet_network.describe_lanelet(vehicle_lanelet_id)
+        implicit_lanelet_description = self.lanelet_network.describe_lanelet(
+            vehicle_lanelet_id
+        )
         if not implicit_lanelet_description:
             return None
         vehicle_description = f"It is driving {implicit_lanelet_description}. "
         relative_vehicle_direction = vehicle_state.position - self.ego_state.position
-        angle = calculate_relative_orientation(self.ego_direction, relative_vehicle_direction)
+        angle = calculate_relative_orientation(
+            self.ego_direction, relative_vehicle_direction
+        )
         vehicle_description += f"It is located {self.angle_description(angle)} you, "
         vehicle_description += f"with a relative distance of {self.distance_description(vehicle_state.position)}. "
-        vehicle_description += f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
+        vehicle_description += (
+            f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
+        )
         vehicle_description += f"and its acceleration is {self.acceleration_descr(vehicle_state.acceleration)}."
         if (ttc := self.ttc_description(vehicle.obstacle_id)) is not None:
             vehicle_description += f" The time-to-collision is {ttc}."
@@ -153,7 +183,9 @@ class Describer:
 
     def _describe_obstacles(self) -> str:
         # TODO: Add support for static obstacles
-        obstacle_description = "Here is an overview over all relevant obstacles surrounding you:\n"
+        obstacle_description = (
+            "Here is an overview over all relevant obstacles surrounding you:\n"
+        )
         initial_len = len(obstacle_description)
         indent = "    "
         for obstacle in self._get_relevant_obstacles():
@@ -161,7 +193,7 @@ class Describer:
                 ObstacleType.CAR,
                 ObstacleType.BUS,
                 ObstacleType.BICYCLE,
-                ObstacleType.TRUCK
+                ObstacleType.TRUCK,
             ]:
                 try:
                     temp = self._describe_vehicle(obstacle)
@@ -170,9 +202,13 @@ class Describer:
                     obstacle_description += f"{indent}- {obstacle.obstacle_type.value} {obstacle.obstacle_id}: "
                     obstacle_description += temp + "\n"
                 except IndexError:
-                    print(f"WARNING: Skipped {obstacle.obstacle_id} due to mysterious IndexError.")
+                    print(
+                        f"WARNING: Skipped {obstacle.obstacle_id} due to mysterious IndexError."
+                    )
             elif obstacle.obstacle_type == ObstacleType.PEDESTRIAN:
-                print(f"WARNING: Skipped {obstacle.obstacle_id} because it is a pedestrian.")
+                print(
+                    f"WARNING: Skipped {obstacle.obstacle_id} because it is a pedestrian."
+                )
             else:
                 raise ValueError(f"Unexpected obstacle type: {obstacle.obstacle_type}")
         if len(obstacle_description) == initial_len:
@@ -181,7 +217,9 @@ class Describer:
 
     def _describe_ego_state(self) -> str:
         ego_description = self.lanelet_network.describe()
-        ego_description += f"Your velocity is {self.velocity_descr(self.ego_state.velocity)}"
+        ego_description += (
+            f"Your velocity is {self.velocity_descr(self.ego_state.velocity)}"
+        )
         ego_description += f" and your acceleration is {self.acceleration_descr(self.ego_state.acceleration)}."
         return ego_description
 
@@ -189,18 +227,20 @@ class Describer:
         laterals = self.lanelet_network.lateral_actions()
         longitudinals = self.lanelet_network.longitudinal_actions()
         schema_dict = HighLevelDrivingDecision.model_json_schema()
-        lateral_action = schema_dict['$defs']['Action']['properties']['lateral_action']
-        lateral_action['enum'] = laterals
+        lateral_action = schema_dict["$defs"]["Action"]["properties"]["lateral_action"]
+        lateral_action["enum"] = laterals
         if len(laterals) == 1:
-            lateral_action['const'] = laterals[0]
+            lateral_action["const"] = laterals[0]
         else:
-            lateral_action.pop('const', None)
-        longitudinal_action = schema_dict['$defs']['Action']['properties']['longitudinal_action']
-        longitudinal_action['enum'] = longitudinals
+            lateral_action.pop("const", None)
+        longitudinal_action = schema_dict["$defs"]["Action"]["properties"][
+            "longitudinal_action"
+        ]
+        longitudinal_action["enum"] = longitudinals
         if len(longitudinals) == 1:
-            longitudinal_action['const'] = longitudinals[0]
+            longitudinal_action["const"] = longitudinals[0]
         else:
-            longitudinal_action.pop('const', None)
+            longitudinal_action.pop("const", None)
 
         return schema_dict
 

@@ -29,8 +29,12 @@ class LaneletNode:
                     self.incoming_element = incoming
                     break
 
-        self.next_node_dict: dict[LateralAction, Optional[LaneletNode | int]] = {a: None for a in LateralAction}
-        self.route_dict: dict[LateralAction, Optional[Route]] = {a: None for a in LateralAction}
+        self.next_node_dict: dict[LateralAction, Optional[LaneletNode | int]] = {
+            a: None for a in LateralAction
+        }
+        self.route_dict: dict[LateralAction, Optional[Route]] = {
+            a: None for a in LateralAction
+        }
 
     def is_normal(self) -> bool:
         return self.incoming_element is None
@@ -80,7 +84,9 @@ class EgoCenteredLaneletNetwork:
 
             if node.is_normal():
                 if len(lanelet.successor) == 1:
-                    node.next_node_dict[LateralAction.KEEP_STRAIGHT] = lanelet.successor[0]
+                    node.next_node_dict[LateralAction.KEEP_STRAIGHT] = (
+                        lanelet.successor[0]
+                    )
                     if lanelet.successor[0] not in visited:
                         frontier.add(lanelet.successor[0])
                 elif len(lanelet.successor) > 1:
@@ -88,21 +94,29 @@ class EgoCenteredLaneletNetwork:
                     pass
             else:
                 if left_outgoings := node.incoming_element.successors_left:
-                    assert len(left_outgoings) == 1, "Can not handle multiple intersection outgoings at the moment."
+                    assert (
+                        len(left_outgoings) == 1
+                    ), "Can not handle multiple intersection outgoings at the moment."
                     left_outgoing_id = next(iter(left_outgoings))
                     node.next_node_dict[LateralAction.TURN_LEFT] = left_outgoing_id
                     if left_outgoing_id not in visited:
                         frontier.add(left_outgoing_id)
                 if right_outgoings := node.incoming_element.successors_right:
-                    assert len(right_outgoings) == 1, "Can not handle multiple intersection outgoings at the moment."
+                    assert (
+                        len(right_outgoings) == 1
+                    ), "Can not handle multiple intersection outgoings at the moment."
                     right_outgoing_id = next(iter(right_outgoings))
                     node.next_node_dict[LateralAction.TURN_RIGHT] = right_outgoing_id
                     if right_outgoing_id not in visited:
                         frontier.add(right_outgoing_id)
                 if straight_outgoings := node.incoming_element.successors_straight:
-                    assert len(right_outgoings) == 1, "Can not handle multiple intersection outgoings at the moment."
+                    assert (
+                        len(right_outgoings) == 1
+                    ), "Can not handle multiple intersection outgoings at the moment."
                     straight_outgoing_id = next(iter(straight_outgoings))
-                    node.next_node_dict[LateralAction.KEEP_STRAIGHT] = straight_outgoing_id
+                    node.next_node_dict[LateralAction.KEEP_STRAIGHT] = (
+                        straight_outgoing_id
+                    )
                     if straight_outgoing_id not in visited:
                         frontier.add(straight_outgoing_id)
 
@@ -119,11 +133,18 @@ class EgoCenteredLaneletNetwork:
         ego_node = self.ego_node
         description = ""
 
-        if ego_node.next_node_dict[LateralAction.TURN_LEFT] is not None or ego_node.next_node_dict[LateralAction.TURN_RIGHT] is not None:
+        if (
+            ego_node.next_node_dict[LateralAction.TURN_LEFT] is not None
+            or ego_node.next_node_dict[LateralAction.TURN_RIGHT] is not None
+        ):
             description += "You are currently approaching an intersection.\n"
 
         lane_count_ahead = 0
-        for action in [LateralAction.KEEP_LEFT, LateralAction.KEEP_STRAIGHT, LateralAction.KEEP_RIGHT]:
+        for action in [
+            LateralAction.KEEP_LEFT,
+            LateralAction.KEEP_STRAIGHT,
+            LateralAction.KEEP_RIGHT,
+        ]:
             lane_count_ahead += int(ego_node.next_node_dict[action] is not None)
         if lane_count_ahead == 0 and dead_ends:
             description += "Ahead of you is a dead end.\n"
@@ -133,14 +154,22 @@ class EgoCenteredLaneletNetwork:
         if ego_node.next_node_dict[LateralAction.CHANGE_LEFT] is None:
             description += f"There is no lane left of your current lane.\n"
         else:
-            direction = "same" if self.ego_node.lanelet.adj_left_same_direction else "opposite"
-            description += f"There is a {direction}-direction lane left of your current lane.\n"
+            direction = (
+                "same" if self.ego_node.lanelet.adj_left_same_direction else "opposite"
+            )
+            description += (
+                f"There is a {direction}-direction lane left of your current lane.\n"
+            )
 
         if ego_node.next_node_dict[LateralAction.CHANGE_RIGHT] is None:
             description += f"There is no lane right of your current lane.\n"
         else:
-            direction = "same" if self.ego_node.lanelet.adj_right_same_direction else "opposite"
-            description += f"There is a {direction}-direction lane right of your current lane.\n"
+            direction = (
+                "same" if self.ego_node.lanelet.adj_right_same_direction else "opposite"
+            )
+            description += (
+                f"There is a {direction}-direction lane right of your current lane.\n"
+            )
         return description
 
     def describe_lanelet(self, lanelet_id: int) -> str:
@@ -157,10 +186,15 @@ class EgoCenteredLaneletNetwork:
                         return action_to_location[action]
                 lanelet_successors = lanelet.successor
                 if lanelet_successors is not None and len(lanelet_successors) == 1:
-                    lanelet = self.lanelet_network.find_lanelet_by_id(lanelet_successors[0])
+                    lanelet = self.lanelet_network.find_lanelet_by_id(
+                        lanelet_successors[0]
+                    )
                 elif lanelet_successors is not None and len(lanelet_successors) > 0:
                     for successor in lanelet_successors:
-                        if successor in self.ego_node.route_dict[LateralAction.KEEP_STRAIGHT]:
+                        if (
+                            successor
+                            in self.ego_node.route_dict[LateralAction.KEEP_STRAIGHT]
+                        ):
                             return "in a successor lane"
                 else:
                     break
@@ -170,7 +204,9 @@ class EgoCenteredLaneletNetwork:
         return ""
 
     def lateral_actions(self) -> list[str]:
-        return [a.value for a, b in self.ego_node.next_node_dict.items() if b is not None] + [LateralAction.KEEP_STRAIGHT.value]
+        return [
+            a.value for a, b in self.ego_node.next_node_dict.items() if b is not None
+        ] + [LateralAction.KEEP_STRAIGHT.value]
 
     def longitudinal_actions(self) -> list[str]:
         return [x.value for x in LongitudinalAction]

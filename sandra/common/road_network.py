@@ -160,10 +160,11 @@ class RoadNetwork:
             ValueError: If multiple lanes match the given lanelet IDs.
         """
         lanelet_id_set = set(lanelet_ids)
-        matching_lanes =  [
-        lane for lane in self.lanes
-        if lanelet_id_set.issubset(set(lane.contained_ids))
-    ]
+        matching_lanes = [
+            lane
+            for lane in self.lanes
+            if lanelet_id_set.issubset(set(lane.contained_ids))
+        ]
 
         if len(matching_lanes) == 0:
             return None
@@ -187,9 +188,7 @@ class RoadNetwork:
         """
         id_set = set(lanelet_ids)
         return [
-            lane
-            for lane in self.lanes
-            if any(l in id_set for l in lane.contained_ids)
+            lane for lane in self.lanes if any(l in id_set for l in lane.contained_ids)
         ]
 
 
@@ -203,15 +202,16 @@ class EgoLaneNetwork:
         self.lane_right_adjacent: Optional[List[Lane]] = None
 
     @classmethod
-    def from_route_planner(cls,
-                           lanelet_network: LaneletNetwork,
-                           planning_problem: PlanningProblem,
-                           road_network: RoadNetwork) -> 'EgoLaneNetwork':
+    def from_route_planner(
+        cls,
+        lanelet_network: LaneletNetwork,
+        planning_problem: PlanningProblem,
+        road_network: RoadNetwork,
+    ) -> "EgoLaneNetwork":
 
         # get the high-level route
         route_planner = RoutePlanner(
-            lanelet_network=lanelet_network,
-            planning_problem=planning_problem
+            lanelet_network=lanelet_network, planning_problem=planning_problem
         )
         route_generator = route_planner.plan_routes()
         route = route_generator.retrieve_shortest_route()
@@ -221,7 +221,9 @@ class EgoLaneNetwork:
         if ego_lane is None:
             warnings.warn("Ego lane could not be identified from route IDs.")
             # todo: discussion
-            ego_lanelet = lanelet_network.find_most_likely_lanelet_by_state([planning_problem.initial_state])
+            ego_lanelet = lanelet_network.find_most_likely_lanelet_by_state(
+                [planning_problem.initial_state]
+            )
             ego_lane = road_network.get_lanes_by_lanelet_ids(ego_lanelet)[0]
 
         instance = cls(road_network=road_network)
@@ -229,8 +231,12 @@ class EgoLaneNetwork:
 
         start_lanelet = lanelet_network.find_lanelet_by_id(route_ids[0])
         if start_lanelet.adj_left and start_lanelet.adj_left_same_direction:
-            instance.lane_left_adjacent = road_network.get_lanes_by_lanelet_ids([start_lanelet.adj_left])
+            instance.lane_left_adjacent = road_network.get_lanes_by_lanelet_ids(
+                [start_lanelet.adj_left]
+            )
         if start_lanelet.adj_right and start_lanelet.adj_right_same_direction:
-            instance.lane_right_adjacent = road_network.get_lanes_by_lanelet_ids([start_lanelet.adj_right])
+            instance.lane_right_adjacent = road_network.get_lanes_by_lanelet_ids(
+                [start_lanelet.adj_right]
+            )
 
         return instance

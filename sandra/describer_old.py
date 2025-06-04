@@ -324,7 +324,7 @@ def clean_action_strings(action_list):
 
             if end_quote != -1:
                 # Extract just the action name
-                cleaned_action = action[start_quote + 1:end_quote]
+                cleaned_action = action[start_quote + 1 : end_quote]
                 cleaned_actions.append(cleaned_action)
         else:
             # If no quotes found, just add the action as is

@@ -16,14 +16,13 @@ class TestReachVerifier(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
         name_scenario = "DEU_Gar-1_1_T-1"
-        path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + '.xml'
+        path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
         self.scenario, _ = CommonRoadFileReader(path_scenario).open(
             lanelet_assignment=True
         )
         self.config = SanDRAConfiguration()
 
-        self.reach_ver = ReachVerifier(self.scenario,
-                                       self.config)
+        self.reach_ver = ReachVerifier(self.scenario, self.config)
 
     def test_action_ltl(self):
         # acceleration
@@ -37,4 +36,3 @@ class TestReachVerifier(unittest.TestCase):
     def test_verification(self):
         status = self.reach_ver.verify([LongitudinalAction.STOP])
         assert status == VerificationStatus.SAFE
-
