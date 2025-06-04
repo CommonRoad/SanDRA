@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
 
-from sandra.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, Lane
 
 class TestReachVerifier(unittest.TestCase):

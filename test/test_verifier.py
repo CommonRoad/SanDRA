@@ -7,9 +7,8 @@ import unittest
 
 from commonroad.common.file_reader import CommonRoadFileReader
 
-from sandra.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.verifier.reach import ReachVerifier, VerificationStatus
-from sandra.verifier.action2ltl import ActionLTL
 from sandra.actions import LongitudinalAction, LateralAction
 
 

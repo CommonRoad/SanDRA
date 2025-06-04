@@ -9,13 +9,12 @@ from commonroad.scenario.lanelet import LaneletNetwork, Lanelet
 from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import TraceState
-from commonroad.scenario.trajectory import Trajectory
 from commonroad.visualization.draw_params import MPDrawParams, LaneletNetworkParams, TrajectoryParams, ShapeParams
 from commonroad.visualization.mp_renderer import MPRenderer
 from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import SemanticReachableSetInterface
 from commonroad_reach_semantic.utility import visualization as util_visual
 
-from sandra.config import SUPPRESS_PLOTS
+from sandra.common.config import SUPPRESS_PLOTS
 
 if SUPPRESS_PLOTS:
     import matplotlib

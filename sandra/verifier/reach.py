@@ -1,4 +1,3 @@
-import os.path
 from typing import Optional, Union, List
 
 import enum
@@ -7,13 +6,12 @@ from commonroad.scenario.scenario import Scenario
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import SemanticConfigurationBuilder
 from commonroad_reach_semantic.data_structure.config.semantic_configuration import SemanticConfiguration
 from commonroad_reach_semantic.data_structure.environment_model.semantic_model import SemanticModel
-from commonroad_reach_semantic.data_structure.model_checking.spot_interface import SpotInterface
 from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import SemanticReachableSetInterface
 from commonroad_reach_semantic.data_structure.rule.traffic_rule_interface import TrafficRuleInterface
 from commonroad_reach_semantic.utility import visualization as util_visual
 
 from sandra.actions import LongitudinalAction, LateralAction
-from sandra.config import SanDRAConfiguration, COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
+from sandra.common.config import SanDRAConfiguration, COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
 from sandra.verifier.action2ltl import ActionLTL
 
 

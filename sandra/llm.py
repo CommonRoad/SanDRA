@@ -1,10 +1,10 @@
 import os
 from typing import Any
 
-from openai import OpenAI, BaseModel
+from openai import OpenAI
 import json
 
-from sandra.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 
 
 def get_structured_response(

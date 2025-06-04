@@ -8,7 +8,7 @@ from sandra.actions import Action
 from sandra.describer import Describer
 from sandra.verifier_old import is_drivable
 from sandra.llm import get_structured_response
-from sandra.config import SanDRAConfiguration
+from sandra.common.config import SanDRAConfiguration
 
 
 class Decider:
