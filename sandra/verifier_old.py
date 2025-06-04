@@ -56,8 +56,8 @@ from commonroad_qp_planner.utility.compute_constraints import (
 from commonroad_qp_planner.utils import plot_result, plot_position_constraints
 import xml.etree.ElementTree as ET
 
-from src.config import COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
-from src.actions import set_speed, get_ltl_formula, Action, LongitudinalAction
+from sandra.config import COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
+from sandra.actions import set_speed, get_ltl_formula, Action, LongitudinalAction
 
 
 def initialize_scenario_xml(xml_file_path: str, goal_lane_id: Optional[str]):

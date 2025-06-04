@@ -7,10 +7,10 @@ import unittest
 
 from commonroad.common.file_reader import CommonRoadFileReader
 
-from src.config import SaLaRAConfiguration, PROJECT_ROOT
-from src.verifier.reach import ReachVerifier, VerificationStatus
-from src.verifier.action2ltl import ActionLTL
-from src.actions import LongitudinalAction, LateralAction
+from sandra.config import SaLaRAConfiguration, PROJECT_ROOT
+from sandra.verifier.reach import ReachVerifier, VerificationStatus
+from sandra.verifier.action2ltl import ActionLTL
+from sandra.actions import LongitudinalAction, LateralAction
 
 
 class TestReachVerifier(unittest.TestCase):

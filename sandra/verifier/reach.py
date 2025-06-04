@@ -12,9 +12,9 @@ from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface imp
 from commonroad_reach_semantic.data_structure.rule.traffic_rule_interface import TrafficRuleInterface
 from commonroad_reach_semantic.utility import visualization as util_visual
 
-from src.actions import LongitudinalAction, LateralAction
-from src.config import SaLaRAConfiguration, COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
-from src.verifier.action2ltl import ActionLTL
+from sandra.actions import LongitudinalAction, LateralAction
+from sandra.config import SaLaRAConfiguration, COMMONROAD_REACH_SEMANTIC_ROOT, PROJECT_ROOT
+from sandra.verifier.action2ltl import ActionLTL
 
 
 class VerificationStatus(enum.Enum):

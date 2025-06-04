@@ -4,7 +4,7 @@ from typing import Any
 from openai import OpenAI, BaseModel
 import json
 
-from src.config import SaLaRAConfiguration, PROJECT_ROOT
+from sandra.config import SaLaRAConfiguration, PROJECT_ROOT
 
 
 def get_structured_response(
@@ -22,7 +22,7 @@ def get_structured_response(
     (3. Image)
     and save both request and response in text and json formats.
     """
-    client = OpenAI(api_key=config.api_key)
+    client = OpenAI(api_key="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")
     name = schema["title"]
     schema_dict = schema
 

@@ -2,7 +2,7 @@ from typing import Optional
 
 from commonroad.scenario.lanelet import LaneletNetwork, Lanelet
 
-from src.actions import LateralAction, LongitudinalAction
+from sandra.actions import LateralAction, LongitudinalAction
 
 # The basic idea is that the lanelet network is a graph with 2 node types:
 # 1. Normal Lanelet -> from this node, you can only go to your successor, adj_left, or adj_right (if they exist).

@@ -1,11 +1,11 @@
 import os.path
 
-from src.config import SaLaRAConfiguration, PROJECT_ROOT
-from src.decider import Decider
-from src.llm import get_structured_response
+from sandra.config import SaLaRAConfiguration, PROJECT_ROOT
+from sandra.decider import Decider
+from sandra.llm import get_structured_response
 
-from src.utils import extract_scenario_and_planning_problem, plot_scenario, plot_lanelet, extract_ego_vehicle, find_lanelet_id_from_state
-from src.lanelet_network import EgoCenteredLaneletNetwork
+from sandra.utils import extract_scenario_and_planning_problem, plot_scenario, plot_lanelet, extract_ego_vehicle, find_lanelet_id_from_state
+from sandra.lanelet_network import EgoCenteredLaneletNetwork
 
 
 def main(scenario_path: str):

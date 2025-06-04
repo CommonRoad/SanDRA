@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Union
 
-from src.actions import LongitudinalAction, LateralAction
+from sandra.actions import LongitudinalAction, LateralAction
 
 
 class ActionLTL(Enum):

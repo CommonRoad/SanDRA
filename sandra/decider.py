@@ -4,11 +4,11 @@ from typing import Optional, Any
 from commonroad.common.file_reader import CommonRoadFileReader
 from commonroad_reach.data_structure.reach.driving_corridor import DrivingCorridor
 
-from src.actions import Action
-from src.describer import Describer
-from src.verifier_old import is_drivable
-from src.llm import get_structured_response
-from src.config import SaLaRAConfiguration
+from sandra.actions import Action
+from sandra.describer import Describer
+from sandra.verifier_old import is_drivable
+from sandra.llm import get_structured_response
+from sandra.config import SaLaRAConfiguration
 
 
 class Decider:
