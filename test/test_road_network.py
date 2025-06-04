@@ -8,7 +8,7 @@ import numpy as np
 from commonroad.common.file_reader import CommonRoadFileReader
 
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, Lane
+from sandra.common.road_network import RoadNetwork, Lane, EgoLaneNetwork
 
 class TestReachVerifier(unittest.TestCase):
     def setUp(self) -> None:
@@ -55,3 +55,38 @@ class TestReachVerifier(unittest.TestCase):
         )
 
         assert len(road_network_2.lanes) == 5
+
+    def test_ego_lane_network(self):
+        road_network_1 = RoadNetwork.from_lanelet_network_and_position(
+            self.scenario.lanelet_network,
+            self.planning_problem.initial_state.position,
+            consider_reversed=True
+        )
+
+        ego_lane_network_1 = EgoLaneNetwork.from_route_planner(
+            self.scenario.lanelet_network,
+            self.planning_problem,
+            road_network_1,
+        )
+
+        assert ego_lane_network_1.lane_right_adjacent is None
+        assert ego_lane_network_1.lane_left_adjacent is None
+
+        self.planning_problem.initial_state.position = np.asarray([19.80, -10.09])
+        self.planning_problem.goal.state_list[0].position.center = np.asarray([51.80, -38.22])
+
+        road_network_2 = RoadNetwork.from_lanelet_network_and_position(
+            self.scenario.lanelet_network,
+            self.planning_problem.initial_state.position, # on lanelet 103
+            consider_reversed=True
+        )
+
+        ego_lane_network_2 = EgoLaneNetwork.from_route_planner(
+            self.scenario.lanelet_network,
+            self.planning_problem,
+            road_network_2,
+        )
+
+        assert ego_lane_network_2.lane_right_adjacent is not None and len(ego_lane_network_2.lane_right_adjacent) == 2
+        assert ego_lane_network_2.lane_left_adjacent is None
+

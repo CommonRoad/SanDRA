@@ -1,3 +1,4 @@
+import warnings
 from typing import Optional, List
 
 import numpy as np
@@ -62,14 +63,7 @@ class RoadNetwork:
         position: np.asarray,
         consider_reversed=True,
     ) -> "RoadNetwork":
-        # route_planner = RoutePlanner(
-        #     lanelet_network=lanelet_network,
-        #     planning_problem=planning_problem
-        # )
-        # route_generator = route_planner.plan_routes()
-        # route = route_generator.retrieve_shortest_route()
 
-        # route_ids = route.lanelet_ids
         initial_lanelet_ids = lanelet_network.find_lanelet_by_position([position])[0]
 
         # Collect predecessors of those lanelets (flattened)
@@ -81,6 +75,7 @@ class RoadNetwork:
         # iterate the lanelet ids (for better clcs, one lanelet easier)
         for lanelet_id in initial_lanelet_ids:
             lanelet = lanelet_network.find_lanelet_by_id(lanelet_id)
+
             lanelet_ids_same_dir.extend(lanelet.predecessor)
 
             # left/right adjacent lanelet in the same direction
@@ -99,7 +94,8 @@ class RoadNetwork:
             merged = []
             for lanelet_id in ids:
                 lanelet = lanelet_network.find_lanelet_by_id(lanelet_id)
-                merged_lanelets, merge_jobs = merge_func(lanelet, lanelet_network)
+                # todo: param
+                merged_lanelets, merge_jobs = merge_func(lanelet, lanelet_network, 500)
                 if not merged_lanelets or not merge_jobs:
                     merged_lanelets = [lanelet]
                     merge_jobs = [[lanelet.lanelet_id]]
@@ -149,28 +145,33 @@ class RoadNetwork:
             lane for lane in self.lanes if any(l in lanelet_set for l in lane.lanelets)
         ]
 
-    def get_unique_lane_by_lanelets(self, lanelets: list[Lanelet]) -> Lane:
+    def get_unique_lane_by_lanelet_ids(self, lanelet_ids: list[int]) -> Optional[Lane]:
         """
-        Returns the unique Lane that contains at least one of the given Lanelets.
+        Returns the unique Lane that contains at least one of the given lanelet IDs.
 
         Args:
-            lanelets: A list of Lanelet objects.
+            lanelet_ids: A list of lanelet IDs (integers).
 
         Returns:
-            The unique Lane instance that includes at least one of the given lanelets.
+            The unique Lane instance that includes at least one of the given lanelet IDs,
+            or None if no match is found.
 
         Raises:
-            ValueError: If zero or multiple lanes match the lanelets.
+            ValueError: If multiple lanes match the given lanelet IDs.
         """
-        lanelet_set = set(lanelets)
-        matching_lanes = [
-            lane for lane in self.lanes if any(l in lanelet_set for l in lane.lanelets)
-        ]
+        lanelet_id_set = set(lanelet_ids)
+        matching_lanes =  [
+        lane for lane in self.lanes
+        if lanelet_id_set.issubset(set(lane.contained_ids))
+    ]
 
         if len(matching_lanes) == 0:
-            raise ValueError("No lane found containing the given lanelets.")
+            return None
         if len(matching_lanes) > 1:
-            raise ValueError("Multiple lanes found containing the given lanelets.")
+            warnings.warn(
+                f"Multiple lanes found containing all given lanelet IDs: {lanelet_ids}. "
+                f"Returning the first match with lane.id = {matching_lanes[0].id}."
+            )
 
         return matching_lanes[0]
 
@@ -188,5 +189,48 @@ class RoadNetwork:
         return [
             lane
             for lane in self.lanes
-            if any(l.lanelet_id in id_set for l in lane.lanelets)
+            if any(l in id_set for l in lane.contained_ids)
         ]
+
+
+class EgoLaneNetwork:
+    def __init__(self, road_network: RoadNetwork):
+        self.road_network = road_network
+
+        self.lane: Optional[Lane] = None
+        # could be multiple
+        self.lane_left_adjacent: Optional[List[Lane]] = None
+        self.lane_right_adjacent: Optional[List[Lane]] = None
+
+    @classmethod
+    def from_route_planner(cls,
+                           lanelet_network: LaneletNetwork,
+                           planning_problem: PlanningProblem,
+                           road_network: RoadNetwork) -> 'EgoLaneNetwork':
+
+        # get the high-level route
+        route_planner = RoutePlanner(
+            lanelet_network=lanelet_network,
+            planning_problem=planning_problem
+        )
+        route_generator = route_planner.plan_routes()
+        route = route_generator.retrieve_shortest_route()
+        route_ids = route.lanelet_ids  # list[int]
+
+        ego_lane = road_network.get_unique_lane_by_lanelet_ids(route_ids)
+        if ego_lane is None:
+            warnings.warn("Ego lane could not be identified from route IDs.")
+            # todo: discussion
+            ego_lanelet = lanelet_network.find_most_likely_lanelet_by_state([planning_problem.initial_state])
+            ego_lane = road_network.get_lanes_by_lanelet_ids(ego_lanelet)[0]
+
+        instance = cls(road_network=road_network)
+        instance.lane = ego_lane
+
+        start_lanelet = lanelet_network.find_lanelet_by_id(route_ids[0])
+        if start_lanelet.adj_left and start_lanelet.adj_left_same_direction:
+            instance.lane_left_adjacent = road_network.get_lanes_by_lanelet_ids([start_lanelet.adj_left])
+        if start_lanelet.adj_right and start_lanelet.adj_right_same_direction:
+            instance.lane_right_adjacent = road_network.get_lanes_by_lanelet_ids([start_lanelet.adj_right])
+
+        return instance
