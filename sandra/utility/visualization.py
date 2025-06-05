@@ -49,41 +49,6 @@ def plot_reachable_set(reach_interface: SemanticReachableSetInterface):
     util_visual.plot_scenario_with_regions(semantic_model, "CVLN")
     util_visual.plot_scenario_with_reachable_sets(reach_interface, save_gif=True)
 
-
-def extract_scenario_and_planning_problem(
-    absolute_scenario_path: str,
-) -> tuple[Scenario, PlanningProblem]:
-    scenario, planning_problem_set = CommonRoadFileReader(absolute_scenario_path).open(
-        True
-    )
-    planning_problem = copy.deepcopy(
-        list(planning_problem_set.planning_problem_dict.values())[0]
-    )
-    return scenario, planning_problem
-
-
-def extract_ego_vehicle(
-    scenario: Scenario, planning_problem: PlanningProblem
-) -> DynamicObstacle:
-    ego_vehicle = None
-    for vehicle in scenario.dynamic_obstacles:
-        diff: np.ndarray = (
-            vehicle.initial_state.position - planning_problem.initial_state.position
-        )
-        if np.linalg.norm(diff) < 0.1:
-            ego_vehicle = vehicle
-    return ego_vehicle
-
-
-def find_lanelet_id_from_state(
-    state: TraceState, lanelet_network: LaneletNetwork
-) -> int:
-    try:
-        return lanelet_network.find_most_likely_lanelet_by_state([state])[0]
-    except IndexError:
-        return -1
-
-
 def plot_scenario(
     scenario: Scenario,
     planning_problem: PlanningProblem,
