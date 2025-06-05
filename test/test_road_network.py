@@ -99,6 +99,8 @@ class TestReachVerifier(unittest.TestCase):
             road_network_2,
         )
 
+        plot_road_network(road_network_2, ego_lane_network_2)
+
         assert (
             ego_lane_network_2.lane_right_adjacent is not None
             and len(ego_lane_network_2.lane_right_adjacent) == 2

@@ -185,7 +185,8 @@ def plot_road_network(
             rnd.draw_polygon(lanelet.polygon.vertices, params)
 
         # Reset color for adjacent lanes
-        params.facecolor = TUMcolor.TUMblue
+        params.facecolor = TUMcolor.TUMgreen
+        params.opacity = 0.2
 
         # Draw left adjacent lanes if they exist
         if ego_lane_network.lane_left_adjacent:
