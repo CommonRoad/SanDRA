@@ -22,9 +22,7 @@ def get_structured_response(
     (3. Image)
     and save both request and response in text and json formats.
     """
-    client = OpenAI(
-        api_key=config.api_key
-    )
+    client = OpenAI(api_key=config.api_key)
     name = schema["title"]
     schema_dict = schema
 

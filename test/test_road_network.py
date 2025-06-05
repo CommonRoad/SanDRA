@@ -9,6 +9,7 @@ from commonroad.common.file_reader import CommonRoadFileReader
 
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, Lane, EgoLaneNetwork
+from sandra.utility.visualization import plot_road_network
 
 
 class TestReachVerifier(unittest.TestCase):
@@ -51,6 +52,8 @@ class TestReachVerifier(unittest.TestCase):
             consider_reversed=True,
         )
 
+        plot_road_network(road_network_1)
+
         assert len(road_network_1.lanes) == 4
 
         road_network_2 = RoadNetwork.from_lanelet_network_and_position(
@@ -73,6 +76,8 @@ class TestReachVerifier(unittest.TestCase):
             self.planning_problem,
             road_network_1,
         )
+
+        plot_road_network(road_network_1, ego_lane_network_1)
 
         assert ego_lane_network_1.lane_right_adjacent is None
         assert ego_lane_network_1.lane_left_adjacent is None

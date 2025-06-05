@@ -1,10 +1,10 @@
-
 import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.lanelet import LaneletNetwork
 from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import TraceState
+
 
 def find_lanelet_id_from_state(
     state: TraceState, lanelet_network: LaneletNetwork
@@ -13,7 +13,6 @@ def find_lanelet_id_from_state(
         return lanelet_network.find_most_likely_lanelet_by_state([state])[0]
     except IndexError:
         return -1
-
 
 
 def extract_ego_vehicle(
