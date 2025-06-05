@@ -120,7 +120,7 @@ class RoadNetwork:
         )
 
         lanes = [
-            Lane(lane_id=i, lanelets=lane_element[0], contained_ids=lane_element[1])
+            Lane(lane_id=i, lanelets=[lane_element[0]], contained_ids=lane_element[1])
             for i, lane_element in enumerate(lane_lanelets)
         ]
 
