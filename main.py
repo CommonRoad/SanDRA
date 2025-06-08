@@ -2,13 +2,22 @@ import os.path
 
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.decider import Decider
+from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.llm import get_structured_response
+from sandra.utility.general import extract_scenario_and_planning_problem
 
 
 def main(scenario_path: str):
     config = SanDRAConfiguration()
     save_path = scenario_path
-    decider = Decider(scenario_path, 0, config)
+    scenario, planning_problem = extract_scenario_and_planning_problem(scenario_path)
+    describer = CommonRoadDescriber(
+            scenario,
+            planning_problem,
+            0,
+            config,
+        )
+    decider = Decider(scenario_path, config, describer)
     print(f"-----------------SYSTEM PROMPT-------------------")
     print(decider.describer.system_prompt())
     print(f"-----------------USER PROMPT-------------------")

@@ -1,9 +1,5 @@
 from enum import Enum
 
-from commonroad_reach_semantic.data_structure.config.semantic_configuration import (
-    SemanticConfiguration,
-)
-
 
 class LongitudinalAction(Enum):
     ACCELERATE = "accelerate"
@@ -13,21 +9,17 @@ class LongitudinalAction(Enum):
 
 
 class LateralAction(Enum):
-    CHANGE_LEFT = "change_left"
-    KEEP_LEFT = "keep_left"
-    TURN_LEFT = "turn_left"
-    CHANGE_RIGHT = "change_right"
-    KEEP_RIGHT = "keep_right"
-    TURN_RIGHT = "turn_right"
-    KEEP_STRAIGHT = "straight"
+    CHANGE_LEFT = "left"
+    CHANGE_RIGHT = "right"
+    KEEP = "straight"
 
 
 Action = tuple[LongitudinalAction, LateralAction]
 
 
 def set_speed(
-    action: LongitudinalAction, semantic_config: SemanticConfiguration
-) -> SemanticConfiguration:
+    action: LongitudinalAction, semantic_config
+):
     if action == LongitudinalAction.ACCELERATE:
         semantic_config.vehicle.ego.a_lon_min = 0
     elif action == LongitudinalAction.DECELERATE:

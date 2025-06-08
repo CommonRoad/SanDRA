@@ -203,10 +203,10 @@ class EgoCenteredLaneletNetwork:
             pass
         return ""
 
-    def lateral_actions(self) -> list[str]:
+    def lateral_actions(self) -> list[LateralAction]:
         return [
-            a.value for a, b in self.ego_node.next_node_dict.items() if b is not None
-        ] + [LateralAction.KEEP_STRAIGHT.value]
+            a for a, b in self.ego_node.next_node_dict.items() if b is not None
+        ] + [LateralAction.KEEP]
 
-    def longitudinal_actions(self) -> list[str]:
-        return [x.value for x in LongitudinalAction]
+    def longitudinal_actions(self) -> list[LongitudinalAction]:
+        return [x for x in LongitudinalAction]

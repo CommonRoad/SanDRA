@@ -1,44 +1,28 @@
-import copy
 from typing import Optional, Any
 
-from commonroad.common.file_reader import CommonRoadFileReader
 from commonroad_reach.data_structure.reach.driving_corridor import DrivingCorridor
 
 from sandra.actions import Action
-from sandra.describer import Describer
+from sandra.describer import DescriberBase
 from sandra.verifier_old import is_drivable
 from sandra.llm import get_structured_response
 from sandra.common.config import SanDRAConfiguration
+from sandra.utility.general import extract_scenario_and_planning_problem
 
 
 class Decider:
     def __init__(
         self,
         scenario_path,
-        timestep: int,
         config: SanDRAConfiguration,
-        role_prompt: Optional[str] = None,
-        goal_prompt: Optional[str] = None,
+        describer: DescriberBase,
         save_path: Optional[str] = None,
     ):
-        self.timestep = timestep
         self.config: SanDRAConfiguration = config
         self.action_ranking = None
         self.scenario_path = scenario_path
-        self.scenario, planning_problem_set = CommonRoadFileReader(scenario_path).open(
-            True
-        )
-        self.planning_problem = copy.deepcopy(
-            list(planning_problem_set.planning_problem_dict.values())[0]
-        )
-        self.describer = Describer(
-            self.scenario,
-            self.planning_problem,
-            timestep,
-            config,
-            role=role_prompt,
-            goal=goal_prompt,
-        )
+        self.scenario, self.planning_problem = extract_scenario_and_planning_problem(scenario_path)
+        self.describer = describer
         self.save_path = save_path
 
     def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:

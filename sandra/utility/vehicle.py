@@ -26,3 +26,23 @@ def extract_ego_vehicle(
         if np.linalg.norm(diff) < 0.1:
             ego_vehicle = vehicle
     return ego_vehicle
+
+
+def calculate_relative_orientation(
+    ego_direction: np.ndarray, other_direction: np.ndarray
+) -> float:
+    """
+    Calculates the angle in radians between ego direction and other direction.
+    Front is 0 PI
+    Left is PI/2
+    Back is PI
+    Right is 3*PI/2
+    """
+    ego_direction /= np.linalg.norm(ego_direction)
+    other_direction /= np.linalg.norm(other_direction)
+    cos_angle = np.dot(ego_direction, other_direction)
+    cross_product = np.cross(ego_direction, other_direction)
+    angle = np.arccos(np.clip(cos_angle, -1.0, 1.0))
+    if cross_product < 0:
+        angle = 2 * np.pi - angle
+    return angle
