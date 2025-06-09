@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Literal
+from typing import Optional, Any, Literal, overload
 from openai import BaseModel
 import numpy as np
 
@@ -144,7 +144,9 @@ class DescriberBase(ABC):
 
     def system_prompt(self) -> str:
         reminders = self._describe_reminders()
-        reminder_description = "   - ".join(reminders)
+        reminder_description = ""
+        for reminder in reminders:
+            reminder_description += f"   - {reminder}\n"
         return f"""You are driving a car and need to make a high-level driving decision.
 {self.role}
 {self.goal}

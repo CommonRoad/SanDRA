@@ -174,3 +174,4 @@ cython_debug/
 .pypirc
 
 outputs/
+sandra/highenv/run/

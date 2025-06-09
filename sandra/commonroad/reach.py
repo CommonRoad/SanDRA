@@ -1,6 +1,4 @@
 from typing import Optional, Union, List
-
-import enum
 from commonroad.scenario.scenario import Scenario
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
@@ -26,22 +24,16 @@ from sandra.common.config import (
     COMMONROAD_REACH_SEMANTIC_ROOT,
     PROJECT_ROOT,
 )
-from sandra.verifier.action2ltl import ActionLTL
+from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
 
 
-class VerificationStatus(enum.Enum):
-    SAFE = "safe"
-    UNSAFE = "unsafe"
-
-
-class ReachVerifier:
+class ReachVerifier(VerifierBase):
     """Verifier using reachability analysis"""
 
-    def __init__(
-        self, scenario: Scenario, sandra_config: SanDRAConfiguration, verbose=False
-    ):
+    def __init__(self, scenario: Scenario, sandra_config: SanDRAConfiguration, verbose=False):
 
         # basic elements
+        super().__init__()
         self.verbose = verbose
         self.scenario = scenario
         self.sandra_config = sandra_config

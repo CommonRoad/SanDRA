@@ -11,7 +11,7 @@ from commonroad_crime.measure import TTC
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
 from sandra.describer import DescriberBase
-from sandra.lanelet_network import EgoCenteredLaneletNetwork
+from sandra.commonroad.lanelet_network import EgoCenteredLaneletNetwork
 from sandra.utility.vehicle import (
     find_lanelet_id_from_state,
     extract_ego_vehicle,

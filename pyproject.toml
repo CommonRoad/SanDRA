@@ -22,6 +22,9 @@ classifiers = [
 python = "^3.10"  # Adjust according to your project's needs
 openai = "~=1.82.0"
 pydantic = "~=2.11.5"
+gymnasium = "~=0.28.1"
+highway-env = "~=1.8.2"
+moviepy = ">=2.2.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
