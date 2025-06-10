@@ -76,7 +76,10 @@ class RoadNetwork:
         for lanelet_id in initial_lanelet_ids:
             lanelet = lanelet_network.find_lanelet_by_id(lanelet_id)
 
-            lanelet_ids_same_dir.extend(lanelet.predecessor)
+            if lanelet.predecessor:
+                lanelet_ids_same_dir.extend(lanelet.predecessor)
+            else:
+                lanelet_ids_same_dir.extend([lanelet_id])
 
             # left/right adjacent lanelet in the same direction
             for side in ["adj_left", "adj_right"]:
@@ -86,9 +89,15 @@ class RoadNetwork:
                 adj_lanelet = lanelet_network.find_lanelet_by_id(adj_id)
                 same_dir_attr = f"{side}_same_direction"
                 if getattr(lanelet, same_dir_attr):
-                    lanelet_ids_same_dir.extend(adj_lanelet.predecessor)
+                    if adj_lanelet.predecessor:
+                        lanelet_ids_same_dir.extend(adj_lanelet.predecessor)
+                    else:
+                        lanelet_ids_same_dir.extend([adj_lanelet.lanelet_id])
                 elif consider_reversed:
-                    lanelet_ids_reversed.extend(adj_lanelet.successor)
+                    if adj_lanelet.successor:
+                        lanelet_ids_reversed.extend(adj_lanelet.successor)
+                    else:
+                        lanelet_ids_reversed.extend([adj_lanelet.lanelet_id])
 
         def merge_lanelets(ids, merge_func):
             merged = []
