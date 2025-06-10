@@ -50,6 +50,34 @@ class TestReachVerifier(unittest.TestCase):
 
         plot_road_network(road_network, ego_lane_network)
 
+        assert len(road_network.lanes) == 2
+
+    def test_ind_bendplatz(self):
+        name_scenario = "DEU_AachenBendplatz-1_80_T-19"
+        path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
+        self.scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
+            lanelet_assignment=True
+        )
+        self.planning_problem = list(
+            planning_problem_set.planning_problem_dict.values()
+        )[0]
+
+        road_network = RoadNetwork.from_lanelet_network_and_position(
+            self.scenario.lanelet_network,
+            self.planning_problem.initial_state.position,
+            consider_reversed=True,
+        )
+
+        ego_lane_network = EgoLaneNetwork.from_route_planner(
+            self.scenario.lanelet_network,
+            self.planning_problem,
+            road_network,
+        )
+
+        plot_road_network(road_network, ego_lane_network)
+
+        assert len(road_network.lanes) == 6
+
     def test_lane_construction(self):
 
         ego_lanelet_id = self.scenario.lanelet_network.find_lanelet_by_position(

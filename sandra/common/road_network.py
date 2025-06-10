@@ -210,6 +210,10 @@ class EgoLaneNetwork:
         self.lane_left_adjacent: Optional[List[Lane]] = None
         self.lane_right_adjacent: Optional[List[Lane]] = None
 
+        # left right adjacent lane but in a reversed direction
+        self.lane_left_reversed: Optional[List[Lane]] = None
+        self.lane_right_reversed: Optional[List[Lane]] = None
+
     @classmethod
     def from_route_planner(
         cls,
@@ -239,13 +243,23 @@ class EgoLaneNetwork:
         instance.lane = ego_lane
 
         start_lanelet = lanelet_network.find_lanelet_by_id(route_ids[0])
-        if start_lanelet.adj_left and start_lanelet.adj_left_same_direction:
-            instance.lane_left_adjacent = road_network.get_lanes_by_lanelet_ids(
-                [start_lanelet.adj_left]
-            )
-        if start_lanelet.adj_right and start_lanelet.adj_right_same_direction:
-            instance.lane_right_adjacent = road_network.get_lanes_by_lanelet_ids(
-                [start_lanelet.adj_right]
-            )
+        if start_lanelet.adj_left:
+            if start_lanelet.adj_left_same_direction:
+                instance.lane_left_adjacent = road_network.get_lanes_by_lanelet_ids(
+                    [start_lanelet.adj_left]
+                )
+            else:
+                instance.lane_left_reversed = road_network.get_lanes_by_lanelet_ids(
+                    [start_lanelet.adj_left]
+                )
+        if start_lanelet.adj_right:
+            if start_lanelet.adj_right_same_direction:
+                instance.lane_right_adjacent = road_network.get_lanes_by_lanelet_ids(
+                    [start_lanelet.adj_right]
+                )
+            else:
+                instance.lane_right_reversed = road_network.get_lanes_by_lanelet_ids(
+                    [start_lanelet.adj_right]
+                )
 
         return instance

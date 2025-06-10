@@ -200,5 +200,20 @@ def plot_road_network(
                 for lanelet in lane_right.lanelets:
                     rnd.draw_polygon(lanelet.polygon.vertices, params)
 
+        params.facecolor = TUMcolor.TUMorange
+        params.opacity = 0.2
+
+        # Draw left reversed adjacent lanes if they exist
+        if ego_lane_network.lane_left_reversed:
+            for lane_left in ego_lane_network.lane_left_reversed:
+                for lanelet in lane_left.lanelets:
+                    rnd.draw_polygon(lanelet.polygon.vertices, params)
+
+        # Draw right reversed adjacent lanes if they exist
+        if ego_lane_network.lane_right_reversed:
+            for lane_right in ego_lane_network.lane_right_reversed:
+                for lanelet in lane_right.lanelets:
+                    rnd.draw_polygon(lanelet.polygon.vertices, params)
+
     # Render and optionally save the figure
     rnd.render(show=True, filename=save_path)
