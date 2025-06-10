@@ -23,13 +23,14 @@ class CommonRoadDescriber(DescriberBase):
     def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int,
                  config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None,
                  scenario_type: Optional[str] = None, describe_ttc=True):
-        super().__init__(timestep, config, role, goal, scenario_type)
         self.lanelet_network: EgoCenteredLaneletNetwork = None
         self.ego_direction = None
         self.ego_state = None
         self.scenario = scenario
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
+        super().__init__(timestep, config, role, goal, scenario_type)
+
         if describe_ttc:
             config = CriMeConfiguration()
             config.update(ego_id=self.ego_vehicle.obstacle_id, sce=scenario)
