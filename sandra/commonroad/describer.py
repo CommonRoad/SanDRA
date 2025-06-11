@@ -10,8 +10,8 @@ from commonroad_crime.measure import TTC
 
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
+from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
 from sandra.describer import DescriberBase
-from sandra.commonroad.lanelet_network import EgoCenteredLaneletNetwork
 from sandra.utility.vehicle import (
     find_lanelet_id_from_state,
     extract_ego_vehicle,
@@ -23,10 +23,11 @@ class CommonRoadDescriber(DescriberBase):
     def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int,
                  config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None,
                  scenario_type: Optional[str] = None, describe_ttc=True):
-        self.lanelet_network: EgoCenteredLaneletNetwork = None
+        self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
         self.ego_state = None
         self.scenario = scenario
+        self.planning_problem = planning_problem
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
         super().__init__(timestep, config, role, goal, scenario_type)
@@ -48,10 +49,8 @@ class CommonRoadDescriber(DescriberBase):
                 np.sin(self.ego_state.orientation),
             ]
         )
-        self.lanelet_network = EgoCenteredLaneletNetwork(
-            self.scenario.lanelet_network,
-            find_lanelet_id_from_state(self.ego_state, self.scenario.lanelet_network),
-        )
+        road_network = RoadNetwork.from_lanelet_network_and_position(self.scenario.lanelet_network, self.ego_state.position)
+        self.ego_lane_network = EgoLaneNetwork.from_route_planner(self.scenario.lanelet_network, self.planning_problem, road_network)
 
     def ttc_description(self, obstacle_id: int) -> Optional[str]:
         if not self.ttc_evaluator or not self.describe_ttc:
@@ -86,6 +85,16 @@ class CommonRoadDescriber(DescriberBase):
         # TODO: Implement this
         return ""
 
+    def _describe_lanelet(self, lanelet_id) -> Optional[str]:
+        if self.ego_lane_network.lane and self.ego_lane_network.lane.contains(lanelet_id):
+            return "your current lane"
+        for (direction, side), lanes in self.ego_lane_network.neighbor_dict.items():
+            lane_list = [] if lanes is None else lanes
+            for lane in lane_list:
+                if lane.contains(lanelet_id):
+                    return f"the {direction}-direction lane to your {side}"
+        return None
+
     def _describe_vehicle(self, vehicle: DynamicObstacle) -> Optional[str]:
         vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
         vehicle_lanelet_id = find_lanelet_id_from_state(
@@ -93,12 +102,12 @@ class CommonRoadDescriber(DescriberBase):
         )
         if vehicle_lanelet_id < 0:
             return None
-        implicit_lanelet_description = self.lanelet_network.describe_lanelet(
+        implicit_lanelet_description = self._describe_lanelet(
             vehicle_lanelet_id
         )
         if not implicit_lanelet_description:
             return None
-        vehicle_description = f"It is driving {implicit_lanelet_description}. "
+        vehicle_description = f"It is driving on {implicit_lanelet_description}. "
         ego_position = self.ego_state.position
         relative_vehicle_direction = vehicle_state.position - ego_position
         angle = calculate_relative_orientation(
@@ -153,9 +162,13 @@ class CommonRoadDescriber(DescriberBase):
         return obstacle_description
 
     def _describe_ego_state(self) -> str:
-        ego_description = self.lanelet_network.describe()
+        ego_description = f"You are currently driving in a {self.scenario_type} scenario." if self.scenario_type else ""
+        for (direction, side), lanes in self.ego_lane_network.neighbor_dict.items():
+            if lanes:
+                quantifier = f"are {direction}-direction lanes" if len(lanes) > 1 else f"is a {direction}-direction lane"
+                ego_description += f" There {quantifier} to your {side}."
         ego_description += (
-            f"Your velocity is {self.velocity_descr(self.ego_state.velocity)}"
+            f"\nYour velocity is {self.velocity_descr(self.ego_state.velocity)}"
         )
         ego_description += f" and your acceleration is {self.acceleration_descr(self.ego_state.acceleration)}."
         return ego_description
@@ -178,7 +191,13 @@ Lateral actions:
         ]
 
     def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:
-        return self.lanelet_network.lateral_actions(), self.lanelet_network.longitudinal_actions()
+        lateral_actions = [LateralAction.KEEP]
+        if self.ego_lane_network.lane_left_adjacent or self.ego_lane_network.lane_left_reversed:
+            lateral_actions.append(LateralAction.CHANGE_LEFT)
+        if self.ego_lane_network.lane_right_adjacent or self.ego_lane_network.lane_right_reversed:
+            lateral_actions.append(LateralAction.CHANGE_RIGHT)
+        longitudinal_actions = [x for x in LongitudinalAction]
+        return lateral_actions, longitudinal_actions
 
 
 if __name__ == "__main__":

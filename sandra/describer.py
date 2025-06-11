@@ -135,9 +135,8 @@ class DescriberBase(ABC):
 
     def user_prompt(self) -> str:
         return f"""Here is an overview over your environment:
-{self.scenario_type}
-{self._describe_traffic_signs()}
 {self._describe_ego_state()}
+{self._describe_traffic_signs()}
 {self._describe_traffic_lights()}
 {self._describe_obstacles()}
 """

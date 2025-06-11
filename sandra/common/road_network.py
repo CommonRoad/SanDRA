@@ -1,3 +1,4 @@
+import os
 import warnings
 from typing import Optional, List
 
@@ -5,6 +6,7 @@ import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.lanelet import Lanelet, LaneletNetwork
 from commonroad_route_planner.route_planner import RoutePlanner
+
 
 
 class Lane:
@@ -48,6 +50,9 @@ class Lane:
     def set_right_adjacent(self, lane: "Lane") -> None:
         assert isinstance(lane, Lane), "right_adjacent must be a Lane instance"
         self.right_adjacent = lane
+
+    def contains(self, lanelet_id: int) -> bool:
+        return lanelet_id in self.contained_ids
 
 
 class RoadNetwork:
@@ -214,6 +219,15 @@ class EgoLaneNetwork:
         self.lane_left_reversed: Optional[List[Lane]] = None
         self.lane_right_reversed: Optional[List[Lane]] = None
 
+    @property
+    def neighbor_dict(self) -> dict[tuple[str, str], Optional[List[Lane]]]:
+        return {
+            ("same", "left"): self.lane_left_adjacent,
+            ("opposite", "left"): self.lane_left_reversed,
+            ("same", "right"): self.lane_right_adjacent,
+            ("opposite", "right"): self.lane_right_reversed,
+        }
+
     @classmethod
     def from_route_planner(
         cls,
@@ -263,3 +277,25 @@ class EgoLaneNetwork:
                 )
 
         return instance
+
+
+if __name__ == "__main__":
+    from sandra.common.config import PROJECT_ROOT
+    from sandra.utility.general import extract_scenario_and_planning_problem
+    from sandra.utility.visualization import plot_road_network, plot_scenario
+    scenario_paths = [
+        "DEU_AachenAseag-1_80_T-99.xml",
+        "DEU_AachenBendplatz-1_80_T-19.xml",
+        "DEU_AachenFrankenburg-1_2120_T-39.xml",
+        "DEU_AachenHeckstrasse-1_30520_T-539.xml",
+        "DEU_LocationALower-11_10_T-1.xml",
+    ]
+
+    scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")
+    scenario, planning_problem = extract_scenario_and_planning_problem(scenario_folder + "/" + scenario_paths[-2])
+    plot_scenario(scenario, planning_problem)
+    road_network = RoadNetwork.from_lanelet_network_and_position(scenario.lanelet_network, planning_problem.initial_state.position)
+    lane_network = EgoLaneNetwork.from_route_planner(scenario.lanelet_network, planning_problem, road_network)
+
+    plot_road_network(road_network, lane_network)
+

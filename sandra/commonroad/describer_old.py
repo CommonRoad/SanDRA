@@ -298,7 +298,7 @@ def get_ego_target_id(
 
 def find_lane_id(state, scenario) -> int:
     try:
-        return scenario.lanelet_network.find_most_likely_lanelet_by_state([state])[0]
+        return scenario.ego_lane_network.find_most_likely_lanelet_by_state([state])[0]
     except IndexError:
         return -1
 
