@@ -1,14 +1,20 @@
 import os.path
 
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.commonroad.reach import ReachVerifier
 from sandra.decider import Decider
+from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.llm import get_structured_response
+from sandra.utility.general import extract_scenario_and_planning_problem
 
 
 def main(scenario_path: str):
     config = SanDRAConfiguration()
     save_path = scenario_path
-    decider = Decider(scenario_path, 0, config)
+    scenario, planning_problem = extract_scenario_and_planning_problem(scenario_path)
+    describer = CommonRoadDescriber(scenario, planning_problem, 0, config)
+    verifier = ReachVerifier(scenario, config)
+    decider = Decider(config, describer, verifier, save_path=save_path)
     print(f"-----------------SYSTEM PROMPT-------------------")
     print(decider.describer.system_prompt())
     print(f"-----------------USER PROMPT-------------------")

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
-    model_name = "gpt-4.1"
+    model_name = "gpt-4.1-mini"
 
     a_lim = 1.0
 
