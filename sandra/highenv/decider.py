@@ -15,10 +15,10 @@ from sandra.highenv.describer import HighEnvDescriber
 
 
 class HighEnvDecider(Decider):
-    def __init__(self, env: Env, observation: TimeToCollisionObservation, config: SanDRAConfiguration):
-        describer = HighEnvDescriber(env, observation, config, 0)
+    def __init__(self, env_wrapper: Env, observation: TimeToCollisionObservation, config: SanDRAConfiguration):
+        describer = HighEnvDescriber(env_wrapper.unwrapped, observation, config, 0)
         super().__init__(config, describer, None)
-        self.env = env
+        self.env_wrapper = env_wrapper
         self.describer = cast(HighEnvDescriber, describer)
         self.lateral_action_to_id: dict[LateralAction, int] = {
             LateralAction.CHANGE_LEFT: 0,
@@ -33,7 +33,7 @@ class HighEnvDecider(Decider):
 
     def run(self):
         done = truncated = False
-        plt.imshow(self.env.render())
+        plt.imshow(self.env_wrapper.render())
         plt.show()
         while not (done or truncated):
             longitudinal_action, lateral_action = self.decide()
@@ -41,12 +41,12 @@ class HighEnvDecider(Decider):
                 action = self.lateral_action_to_id[lateral_action]
             else:
                 action = self.longitudinal_action_to_id[longitudinal_action]
-            obs, reward, done, truncated, info = self.env.step(action)
+            obs, reward, done, truncated, info = self.env_wrapper.step(action)
             self.describer.update_with_observation(obs)
-            self.env.render()
-            plt.imshow(self.env.render())
+            self.env_wrapper.render()
+            plt.imshow(self.env_wrapper.render())
             plt.show()
-        self.env.close()
+        self.env_wrapper.close()
 
 
     @staticmethod
@@ -83,7 +83,7 @@ class HighEnvDecider(Decider):
         env.unwrapped.set_record_video_wrapper(env)
         seed = random.choice(seeds)
         obs, _ = env.reset(seed=seed)
-        return HighEnvDecider(env.unwrapped, obs, SanDRAConfiguration())
+        return HighEnvDecider(env, obs, SanDRAConfiguration())
 
 
 if __name__ == '__main__':

@@ -30,6 +30,28 @@ class TestHighEnvDecider(unittest.TestCase):
         for not_action in not_actions:
             assert not_action not in system_prompt
 
+    def test_video_generation(self):
+        import os
+        import gymnasium
+        from gymnasium.wrappers import RecordVideo
+        env = gymnasium.make("highway-v0", render_mode='rgb_array')
+        env = RecordVideo(env, video_folder="run",
+                          episode_trigger=lambda e: True)  # record all episodes
+        # Provide the video recorder to the wrapped environment
+        # so it can send it intermediate simulation frames.
+        env.unwrapped.set_record_video_wrapper(env)
+        # Record a video as usual
+        obs, info = env.reset()
+        done = truncated = False
+        while not (done or truncated):
+            action = env.action_space.sample()
+            obs, reward, done, truncated, info = env.step(action)
+            env.render()
+        env.close()
+        assert os.path.exists("run"), "Run folder was not created"
+        assert os.path.exists("run/rl-video-episode-0.mp4"), "Video file was not created"
+        assert os.path.exists("run/rl-video-episode-0.meta.json"), "Meta file was not created"
+
     def test_run(self):
         self.decider.run()
         assert True
