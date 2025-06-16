@@ -79,7 +79,7 @@ class HighwayEnvScenario:
         return result
 
     def _create_vertices_along_line(self, start: np.ndarray, end: np.ndarray, direction: np.ndarray,
-                                    interval: float = 1000.0) -> np.ndarray:
+                                    interval: float = 10.0) -> np.ndarray:
         """
         Creates vertices along a straight line at regular intervals.
         """
@@ -113,7 +113,8 @@ class HighwayEnvScenario:
 
     def _make_commonroad_lanelet(self, lane: StraightLane) -> Lanelet:
         road_network = self.scenario.vehicle.road.network
-
+        # todo: reduce the length of the lane
+        lane.end[0] /= 10
         # Generate lanelet vertices
         left_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start, lane.end, lane.direction))
@@ -131,13 +132,13 @@ class HighwayEnvScenario:
 
         # Add adjacent lanelet ids
         neighbors = road_network.side_lanes(lane_index)
-        next_center_offset = lane.direction_lateral * (lane.width / 2) * 3
+        next_center_offset = lane.direction_lateral * (lane.width)
         adjacent_right = None
         adjacent_right_same_direction = None
         if (
                 adj_right := road_network.get_closest_lane_index(lane.start + next_center_offset,
                                                                  lane.heading)) in neighbors:
-            adjacent_right = adj_right[2]
+            adjacent_right = adj_right[2] + 1
             adjacent_right_lane: StraightLane = cast(StraightLane, road_network.get_lane(adj_right))
             adjacent_right_same_direction = True if adjacent_right_lane.heading == lane.heading else False
         adjacent_left = None
@@ -145,7 +146,7 @@ class HighwayEnvScenario:
         if (
                 adj_left := road_network.get_closest_lane_index(lane.start - next_center_offset,
                                                                 lane.heading)) in neighbors:
-            adjacent_left = adj_left[2]
+            adjacent_left = adj_left[2] + 1
             adjacent_left_lane: StraightLane = cast(StraightLane, road_network.get_lane(adj_left))
             adjacent_left_same_direction = True if adjacent_left_lane.heading == lane.heading else False
 
