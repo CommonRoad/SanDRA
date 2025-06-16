@@ -30,8 +30,9 @@ from commonroad.common.file_writer import CommonRoadFileWriter
 from commonroad.common.file_writer import OverwriteExistingFile
 from commonroad.scenario.scenario import Tag
 
-from sandra.actions import LongitudinalAction
+from sandra.actions import LongitudinalAction, LateralAction
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.commonroad.reach import ReachVerifier
 from sandra.utility.visualization import plot_scenario, plot_predicted_trajectory
 
@@ -284,7 +285,8 @@ class HighwayEnvScenario:
 
         # Add all obstacles
         ego_vehicle_commonroad = self._make_commonroad_obstacle(ego_vehicle, self._next_id())
-        scenario.add_objects(ego_vehicle_commonroad)
+        # todo: the ego should not be added
+        # scenario.add_objects(ego_vehicle_commonroad)
         ego_obstacle_id = ego_vehicle_commonroad.obstacle_id
         for vehicle in road.vehicles[1:]:
             scenario.add_objects(self._make_commonroad_obstacle(vehicle, self._next_id()))
