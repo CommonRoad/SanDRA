@@ -361,9 +361,20 @@ class HighwayEnvScenario:
 
 if __name__ == "__main__":
     scenario_ = HighwayEnvScenario.make()
-    commonrad_scenario, _ ,_  = scenario_.commonroad_representation
-    verifier = ReachVerifier(commonrad_scenario, SanDRAConfiguration())
-    verifier.verify([LongitudinalAction.KEEP])
+    commonrad_scenario, _ , planning_problem  = scenario_.commonroad_representation
+
+    road_network = RoadNetwork.from_lanelet_network_and_position(
+        commonrad_scenario.lanelet_network,
+        planning_problem.initial_state.position,
+    )
+
+    ego_lane_network = EgoLaneNetwork.from_route_planner(
+        commonrad_scenario.lanelet_network,
+        planning_problem,
+        road_network
+    )
+    verifier = ReachVerifier(commonrad_scenario, SanDRAConfiguration(), ego_lane_network)
+    verifier.verify([LongitudinalAction.KEEP, LateralAction.CHANGE_LEFT])
     # scenario_.plot(plot_commonroad=True)
     # while scenario_.step(1):
     #     scenario_.plot(plot_commonroad=True)
