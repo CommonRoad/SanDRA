@@ -48,7 +48,8 @@ class HighwayEnvScenario:
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
         self.dt = dt
         self.time_step = start_time
-        self.prediction_length = 20
+        # todo: better wrap the parameters using SanDRAConfiguration
+        self.prediction_length = SanDRAConfiguration().h + 1
         self.minimum_interval = 1.
         self._ids: set[int] = {0}
         self._lanelet_mapping: dict[LaneIndex, int] = {}

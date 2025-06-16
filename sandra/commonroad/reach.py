@@ -166,7 +166,7 @@ class ReachVerifier(VerifierBase):
 
         # plot
         util_visual.plot_scenario_with_reachable_sets(
-            self.reach_interface, save_gif=False
+            self.reach_interface, save_gif=True
         )
 
         # checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
