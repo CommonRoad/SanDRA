@@ -1,6 +1,5 @@
 import math
-import random
-from typing import cast, Optional
+from typing import cast
 import gymnasium
 import numpy as np
 from commonroad.common.common_lanelet import LineMarking
@@ -8,20 +7,16 @@ from commonroad.common.util import AngleInterval, Interval
 from commonroad.geometry.shape import Rectangle
 from commonroad.planning.goal import GoalRegion
 from commonroad.planning.planning_problem import PlanningProblem, PlanningProblemSet
-from commonroad.prediction.prediction import TrajectoryPrediction
 from commonroad.scenario.lanelet import Lanelet, LaneletNetwork
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.scenario import Scenario, ScenarioID
-from commonroad.scenario.state import InitialState, ExtendedPMState, CustomState
-from commonroad.scenario.trajectory import Trajectory
+from commonroad.scenario.state import InitialState, CustomState
 from crpred.basic_models.constant_velocity_predictor import ConstantVelocityCurvilinearPredictor
 from crpred.utility.config import PredictorParams
 from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
 from highway_env.envs import AbstractEnv
-from highway_env.envs.common.observation import TimeToCollisionObservation
 from highway_env.road.lane import StraightLane, LineType
-from highway_env.road.road import LaneIndex
 from highway_env.vehicle.behavior import IDMVehicle
 from highway_env.vehicle.controller import MDPVehicle
 from matplotlib import pyplot as plt
@@ -51,20 +46,7 @@ class HighwayEnvScenario:
         # todo: better wrap the parameters using SanDRAConfiguration
         self.prediction_length = SanDRAConfiguration().h + 1
         self.minimum_interval = 1.
-        self._ids: set[int] = {0}
-        self._lanelet_mapping: dict[LaneIndex, int] = {}
-
-    def get_lane_id(self, lane_id: LaneIndex | int) -> Optional[LaneIndex | int]:
-        """
-        Convert highway-env lane index to commonroad lanelet_id and vice-versa.
-        """
-        if not isinstance(lane_id, int) and lane_id in self._lanelet_mapping.keys():
-            return self._lanelet_mapping[lane_id]
-        else:
-            for key, value in self._lanelet_mapping.items():
-                if value == lane_id:
-                    return key
-        return None
+        self._ids: set[int] = {-1}
 
     @staticmethod
     def _highenv_coordinate_to_commonroad(coordinates: np.ndarray) -> np.ndarray:
@@ -120,7 +102,7 @@ class HighwayEnvScenario:
         # Generate lanelet vertices
         left_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start, lane.end, lane.direction))
-        center_offset = lane.direction_lateral * lane.width / 2
+        center_offset = lane.direction_lateral * (lane.width / 2)
         center_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start + center_offset, lane.end + center_offset, lane.direction))
         right_offset = lane.direction_lateral * lane.width
@@ -130,25 +112,24 @@ class HighwayEnvScenario:
         # Generate lanelet id
         lane_index = road_network.get_closest_lane_index(lane.start + center_offset, lane.heading)
         lanelet_id = self._next_id()
-        self._lanelet_mapping[lane_index] = lanelet_id
+        assert lanelet_id == lane_index[2], "Commonroad LaneletID should match its HighEnv counterpart."
 
         # Add adjacent lanelet ids
         neighbors = road_network.side_lanes(lane_index)
-        next_center_offset = lane.direction_lateral * (lane.width)
         adjacent_right = None
         adjacent_right_same_direction = None
         if (
-                adj_right := road_network.get_closest_lane_index(lane.start + next_center_offset,
+                adj_right := road_network.get_closest_lane_index(lane.start + 3 * center_offset,
                                                                  lane.heading)) in neighbors:
-            adjacent_right = adj_right[2] + 1
+            adjacent_right = adj_right[2]
             adjacent_right_lane: StraightLane = cast(StraightLane, road_network.get_lane(adj_right))
             adjacent_right_same_direction = True if adjacent_right_lane.heading == lane.heading else False
         adjacent_left = None
         adjacent_left_same_direction = None
         if (
-                adj_left := road_network.get_closest_lane_index(lane.start - next_center_offset,
+                adj_left := road_network.get_closest_lane_index(lane.start - center_offset,
                                                                 lane.heading)) in neighbors:
-            adjacent_left = adj_left[2] + 1
+            adjacent_left = adj_left[2]
             adjacent_left_lane: StraightLane = cast(StraightLane, road_network.get_lane(adj_left))
             adjacent_left_same_direction = True if adjacent_left_lane.heading == lane.heading else False
 
@@ -169,15 +150,6 @@ class HighwayEnvScenario:
         )
 
     def _make_commonroad_obstacle(self, vehicle: MDPVehicle | IDMVehicle, obstacle_id: int) -> DynamicObstacle:
-        def make_extended_pm_state(position: np.ndarray, orientation: float, time_step: int) -> ExtendedPMState:
-            return ExtendedPMState(
-                position=position,
-                velocity=vehicle.speed,
-                orientation=-orientation,
-                acceleration=0.0,
-                time_step=time_step,
-            )
-
         obstacle_type = ObstacleType.CAR
         top_left_corner = vehicle.position
         # First, transform top-left into center coordinates, then
@@ -194,28 +166,13 @@ class HighwayEnvScenario:
             slip_angle=math.atan2(vehicle.velocity[1], vehicle.velocity[0]),
             yaw_rate=0.0,
         )
-        predicted_positions, predicted_orientations = vehicle.predict_trajectory_constant_speed(
-            np.full(self.prediction_length, self.dt, dtype=float))
-        predicted_positions = self._highenv_coordinate_to_commonroad(np.array(predicted_positions))
-        predicted_states = [make_extended_pm_state(a, b, self.time_step + i + 1) for i, (a, b) in
-                            enumerate(zip(predicted_positions, predicted_orientations))]
-        predicted_trajectory = Trajectory(
-            self.time_step + 1,
-            predicted_states,
-        )
-        prediction = TrajectoryPrediction(
-            predicted_trajectory,
-            obstacle_shape,
-        )
 
-        lane_index = vehicle.lane_index
-        lanelet_id = self.get_lane_id(lane_index)
+        lanelet_id = vehicle.lane_index[2]
         return DynamicObstacle(
             obstacle_id,
             obstacle_type,
             obstacle_shape,
             obstacle_state,
-            # prediction=prediction,
             initial_center_lanelet_ids={lanelet_id},
             initial_shape_lanelet_ids={lanelet_id},
             history=[],
@@ -329,7 +286,7 @@ class HighwayEnvScenario:
         self.observation, reward, self.done, self.truncated, info = self._env.step(action_id)
         self.time_step += 0
         self._env.render()
-        self._ids = {0}
+        self._ids = {-1}
         if self.done or self.truncated:
             self._env.close()
             return False
