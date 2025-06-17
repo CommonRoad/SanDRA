@@ -8,7 +8,6 @@ from commonroad.scenario.lanelet import Lanelet, LaneletNetwork
 from commonroad_route_planner.route_planner import RoutePlanner
 
 
-
 class Lane:
     """A series of ordered lanelets representing a lane."""
 
@@ -283,6 +282,7 @@ if __name__ == "__main__":
     from sandra.common.config import PROJECT_ROOT
     from sandra.utility.general import extract_scenario_and_planning_problem
     from sandra.utility.visualization import plot_road_network, plot_scenario
+
     scenario_paths = [
         "DEU_AachenAseag-1_80_T-99.xml",
         "DEU_AachenBendplatz-1_80_T-19.xml",
@@ -292,10 +292,15 @@ if __name__ == "__main__":
     ]
 
     scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")
-    scenario, planning_problem = extract_scenario_and_planning_problem(scenario_folder + "/" + scenario_paths[-2])
+    scenario, planning_problem = extract_scenario_and_planning_problem(
+        scenario_folder + "/" + scenario_paths[-2]
+    )
     plot_scenario(scenario, planning_problem)
-    road_network = RoadNetwork.from_lanelet_network_and_position(scenario.lanelet_network, planning_problem.initial_state.position)
-    lane_network = EgoLaneNetwork.from_route_planner(scenario.lanelet_network, planning_problem, road_network)
+    road_network = RoadNetwork.from_lanelet_network_and_position(
+        scenario.lanelet_network, planning_problem.initial_state.position
+    )
+    lane_network = EgoLaneNetwork.from_route_planner(
+        scenario.lanelet_network, planning_problem, road_network
+    )
 
     plot_road_network(road_network, lane_network)
-
