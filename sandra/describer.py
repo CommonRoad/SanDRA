@@ -77,7 +77,9 @@ class DescriberBase(ABC):
             return "right of"
 
     @staticmethod
-    def distance_description(ego_position: np.ndarray, obstacle_position: np.ndarray) -> str:
+    def distance_description(
+        ego_position: np.ndarray, obstacle_position: np.ndarray
+    ) -> str:
         dist = np.linalg.norm(obstacle_position - ego_position)
         return f"{dist:.1f} meters"
 
@@ -106,7 +108,9 @@ class DescriberBase(ABC):
         pass
 
     @abstractmethod
-    def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:
+    def _get_available_actions(
+        self,
+    ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
         pass
 
     def get_available_actions(self) -> tuple[list[str], list[str]]:

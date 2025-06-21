@@ -17,9 +17,7 @@ class LateralAction(Enum):
 Action = tuple[LongitudinalAction, LateralAction]
 
 
-def set_speed(
-    action: LongitudinalAction, semantic_config
-):
+def set_speed(action: LongitudinalAction, semantic_config):
     if action == LongitudinalAction.ACCELERATE:
         semantic_config.vehicle.ego.a_lon_min = 0
     elif action == LongitudinalAction.DECELERATE:

@@ -27,7 +27,10 @@ class Decider:
         action_ranking = []
         for action in llm_response["action_ranking"]:
             action_ranking.append(
-                (LongitudinalAction(action["longitudinal_action"]), LateralAction(action["lateral_action"]))
+                (
+                    LongitudinalAction(action["longitudinal_action"]),
+                    LateralAction(action["lateral_action"]),
+                )
             )
         return action_ranking
 

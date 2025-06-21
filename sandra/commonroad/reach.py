@@ -31,11 +31,13 @@ from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
 class ReachVerifier(VerifierBase):
     """Verifier using reachability analysis"""
 
-    def __init__(self,
-                 scenario: Scenario,
-                 sandra_config: SanDRAConfiguration,
-                 ego_lane_network: EgoLaneNetwork = None,
-                 verbose=False):
+    def __init__(
+        self,
+        scenario: Scenario,
+        sandra_config: SanDRAConfiguration,
+        ego_lane_network: EgoLaneNetwork = None,
+        verbose=False,
+    ):
 
         # basic elements
         super().__init__()
@@ -133,7 +135,9 @@ class ReachVerifier(VerifierBase):
 
         elif action == LateralAction.KEEP:
             if not self.ego_lane_network.lane:
-                raise AssertionError(f"No current lane assigned to ego for action {action}")
+                raise AssertionError(
+                    f"No current lane assigned to ego for action {action}"
+                )
             clause = self._format_lane_clause([self.ego_lane_network.lane])
             return ActionLTL.from_action(action).replace("InCurrentLane", clause)
 

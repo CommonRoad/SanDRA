@@ -16,10 +16,26 @@ from sandra.utility.vehicle import calculate_relative_orientation
 
 class HighEnvDescriber(DescriberBase):
 
-    def __init__(self, env: AbstractEnv, observation: TimeToCollisionObservation, config: SanDRAConfiguration, timestep: int, obstacle_type: type = IDMVehicle, switch_sides: bool = True):
-        super().__init__(timestep, config, goal="Your goal is to maneuver through the highway as fast as possible while avoiding any collisions.")
+    def __init__(
+        self,
+        env: AbstractEnv,
+        observation: TimeToCollisionObservation,
+        config: SanDRAConfiguration,
+        timestep: int,
+        obstacle_type: type = IDMVehicle,
+        switch_sides: bool = True,
+    ):
+        super().__init__(
+            timestep,
+            config,
+            goal="Your goal is to maneuver through the highway as fast as possible while avoiding any collisions.",
+        )
         self.ego_direction = None
-        assert obstacle_type in [IDMVehicle, AggressiveVehicle, DefensiveVehicle], f"Obstacle type {obstacle_type} is not supported."
+        assert obstacle_type in [
+            IDMVehicle,
+            AggressiveVehicle,
+            DefensiveVehicle,
+        ], f"Obstacle type {obstacle_type} is not supported."
         self.env = env
         self.ego: MDPVehicle = cast(MDPVehicle, env.vehicle)
         self.road: Road = env.road
@@ -29,14 +45,14 @@ class HighEnvDescriber(DescriberBase):
             1: LateralAction.KEEP,
             2: LateralAction.CHANGE_RIGHT,
             3: LateralAction.KEEP,
-            4: LateralAction.KEEP
+            4: LateralAction.KEEP,
         }
         self.id_to_longitudinal_action: dict[int, LongitudinalAction] = {
             0: LongitudinalAction.KEEP,
             1: LongitudinalAction.KEEP,
             2: LongitudinalAction.KEEP,
             3: LongitudinalAction.ACCELERATE,
-            4: LongitudinalAction.DECELERATE
+            4: LongitudinalAction.DECELERATE,
         }
         if switch_sides:
             self.direction_mapping: dict[str, str] = {
@@ -83,16 +99,16 @@ class HighEnvDescriber(DescriberBase):
 
     def _describe_vehicle(self, vehicle) -> Optional[str]:
         lane_idx = vehicle.lane_index
-        vehicle_description = f"It is driving on {self._describe_relative_lane_position(lane_idx[-1])}."
+        vehicle_description = (
+            f"It is driving on {self._describe_relative_lane_position(lane_idx[-1])}."
+        )
         relative_vehicle_direction = vehicle.position - self.ego.position
         angle = calculate_relative_orientation(
             self.ego_direction, relative_vehicle_direction
         )
         vehicle_description += f" It is located {self.angle_description(angle)} you, "
         vehicle_description += f"with a relative distance of {self.distance_description(self.ego.position, vehicle.position)}. "
-        vehicle_description += (
-            f"Its velocity is {self.velocity_descr(vehicle.speed)} "
-        )
+        vehicle_description += f"Its velocity is {self.velocity_descr(vehicle.speed)} "
         vehicle_description += f"and its acceleration is {self.acceleration_descr(vehicle.action['acceleration'])}."
         # todo add ttc from observational matrix
         # if (ttc := self.ttc_description(vehicle.obstacle_id)) is not None:
@@ -105,10 +121,12 @@ class HighEnvDescriber(DescriberBase):
         return vehicle_description
 
     def get_relevant_obstacles(self) -> list:
-        return cast(list, self.road.close_vehicles_to(
-            self.ego, self.env.PERCEPTION_DISTANCE / 3.0, see_behind=True,
-            sort=True
-        ))
+        return cast(
+            list,
+            self.road.close_vehicles_to(
+                self.ego, self.env.PERCEPTION_DISTANCE / 3.0, see_behind=True, sort=True
+            ),
+        )
 
     def _describe_obstacles(self) -> str:
         obstacles = self.get_relevant_obstacles()
@@ -133,11 +151,11 @@ class HighEnvDescriber(DescriberBase):
         ego_lane_idx: LaneIndex = self.ego.lane_index
         side_lanes = self.network.all_side_lanes(ego_lane_idx)
         ego_description += f" There are {len(side_lanes)} lanes on your current road."
+        ego_description += f" Your velocity is {self.velocity_descr(self.ego.speed)}"
+        ego_acceleration = self.ego.action["acceleration"]
         ego_description += (
-            f" Your velocity is {self.velocity_descr(self.ego.speed)}"
+            f" and your acceleration is {self.acceleration_descr(ego_acceleration)}" "."
         )
-        ego_acceleration = self.ego.action['acceleration']
-        ego_description += f" and your acceleration is {self.acceleration_descr(ego_acceleration)}""."
         return ego_description
 
     def _describe_schema(self) -> str:
@@ -153,10 +171,12 @@ Lateral actions:
     def _describe_reminders(self) -> list[str]:
         return [
             "The best action is at index 0 in the array.",
-            "You need to enumerate all combinations in your action ranking."
+            "You need to enumerate all combinations in your action ranking.",
         ]
 
-    def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:
+    def _get_available_actions(
+        self,
+    ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
         availableActions = self.env.get_available_actions()
         laterals = [self.id_to_lateral_action[x] for x in availableActions]
         longitudinals = [self.id_to_longitudinal_action[x] for x in availableActions]
