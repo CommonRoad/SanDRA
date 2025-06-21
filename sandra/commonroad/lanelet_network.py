@@ -204,9 +204,9 @@ class EgoCenteredLaneletNetwork:
         return ""
 
     def lateral_actions(self) -> list[LateralAction]:
-        return [
-            a for a, b in self.ego_node.next_node_dict.items() if b is not None
-        ] + [LateralAction.KEEP]
+        return [a for a, b in self.ego_node.next_node_dict.items() if b is not None] + [
+            LateralAction.KEEP
+        ]
 
     def longitudinal_actions(self) -> list[LongitudinalAction]:
         return [x for x in LongitudinalAction]

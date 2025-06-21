@@ -20,9 +20,17 @@ from sandra.utility.vehicle import (
 
 
 class CommonRoadDescriber(DescriberBase):
-    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int,
-                 config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None,
-                 scenario_type: Optional[str] = None, describe_ttc=True):
+    def __init__(
+        self,
+        scenario: Scenario,
+        planning_problem: PlanningProblem,
+        timestep: int,
+        config: SanDRAConfiguration,
+        role: Optional[str] = None,
+        goal: Optional[str] = None,
+        scenario_type: Optional[str] = None,
+        describe_ttc=True,
+    ):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
         self.ego_state = None
@@ -49,8 +57,12 @@ class CommonRoadDescriber(DescriberBase):
                 np.sin(self.ego_state.orientation),
             ]
         )
-        road_network = RoadNetwork.from_lanelet_network_and_position(self.scenario.lanelet_network, self.ego_state.position)
-        self.ego_lane_network = EgoLaneNetwork.from_route_planner(self.scenario.lanelet_network, self.planning_problem, road_network)
+        road_network = RoadNetwork.from_lanelet_network_and_position(
+            self.scenario.lanelet_network, self.ego_state.position
+        )
+        self.ego_lane_network = EgoLaneNetwork.from_route_planner(
+            self.scenario.lanelet_network, self.planning_problem, road_network
+        )
 
     def ttc_description(self, obstacle_id: int) -> Optional[str]:
         if not self.ttc_evaluator or not self.describe_ttc:
@@ -86,7 +98,9 @@ class CommonRoadDescriber(DescriberBase):
         return ""
 
     def _describe_lanelet(self, lanelet_id) -> Optional[str]:
-        if self.ego_lane_network.lane and self.ego_lane_network.lane.contains(lanelet_id):
+        if self.ego_lane_network.lane and self.ego_lane_network.lane.contains(
+            lanelet_id
+        ):
             return "your current lane"
         for (direction, side), lanes in self.ego_lane_network.neighbor_dict.items():
             lane_list = [] if lanes is None else lanes
@@ -102,9 +116,7 @@ class CommonRoadDescriber(DescriberBase):
         )
         if vehicle_lanelet_id < 0:
             return None
-        implicit_lanelet_description = self._describe_lanelet(
-            vehicle_lanelet_id
-        )
+        implicit_lanelet_description = self._describe_lanelet(vehicle_lanelet_id)
         if not implicit_lanelet_description:
             return None
         vehicle_description = f"It is driving on {implicit_lanelet_description}. "
@@ -162,10 +174,18 @@ class CommonRoadDescriber(DescriberBase):
         return obstacle_description
 
     def _describe_ego_state(self) -> str:
-        ego_description = f"You are currently driving in a {self.scenario_type} scenario." if self.scenario_type else ""
+        ego_description = (
+            f"You are currently driving in a {self.scenario_type} scenario."
+            if self.scenario_type
+            else ""
+        )
         for (direction, side), lanes in self.ego_lane_network.neighbor_dict.items():
             if lanes:
-                quantifier = f"are {direction}-direction lanes" if len(lanes) > 1 else f"is a {direction}-direction lane"
+                quantifier = (
+                    f"are {direction}-direction lanes"
+                    if len(lanes) > 1
+                    else f"is a {direction}-direction lane"
+                )
                 ego_description += f" There {quantifier} to your {side}."
         ego_description += (
             f"\nYour velocity is {self.velocity_descr(self.ego_state.velocity)}"
@@ -187,14 +207,22 @@ Lateral actions:
         return [
             "You are currently driving in Germany and have to adhere to German traffic rules.",
             "The best action is at index 0 in the array.",
-            "You need to enumerate all combinations in your action ranking."
+            "You need to enumerate all combinations in your action ranking.",
         ]
 
-    def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:
+    def _get_available_actions(
+        self,
+    ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
         lateral_actions = [LateralAction.KEEP]
-        if self.ego_lane_network.lane_left_adjacent or self.ego_lane_network.lane_left_reversed:
+        if (
+            self.ego_lane_network.lane_left_adjacent
+            or self.ego_lane_network.lane_left_reversed
+        ):
             lateral_actions.append(LateralAction.CHANGE_LEFT)
-        if self.ego_lane_network.lane_right_adjacent or self.ego_lane_network.lane_right_reversed:
+        if (
+            self.ego_lane_network.lane_right_adjacent
+            or self.ego_lane_network.lane_right_reversed
+        ):
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
         longitudinal_actions = [x for x in LongitudinalAction]
         return lateral_actions, longitudinal_actions

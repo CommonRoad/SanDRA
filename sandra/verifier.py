@@ -42,5 +42,7 @@ class VerifierBase(ABC):
 
 
 class DummyVerifier(VerifierBase):
-    def verify(self, actions: List[Union[LongitudinalAction, LateralAction]]) -> VerificationStatus:
+    def verify(
+        self, actions: List[Union[LongitudinalAction, LateralAction]]
+    ) -> VerificationStatus:
         return VerificationStatus.SAFE
