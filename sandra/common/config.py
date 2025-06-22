@@ -12,7 +12,7 @@ class SanDRAConfiguration:
     h = 20  # time horizon of decision-making
 
 
-COMMONROAD_REACH_SEMANTIC_ROOT = "/home/liny/repairverse/commonroad-reach-semantic"
+COMMONROAD_REACH_SEMANTIC_ROOT = "/home/sebastian/Documents/Uni/GuidedResearch/Repos/commonroad-reach-semantic"
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )

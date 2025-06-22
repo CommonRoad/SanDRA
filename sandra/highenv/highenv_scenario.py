@@ -17,6 +17,7 @@ from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
 from highway_env.envs import AbstractEnv
 from highway_env.road.lane import StraightLane, LineType
+from highway_env.road.road import LaneIndex
 from highway_env.vehicle.behavior import IDMVehicle
 from highway_env.vehicle.controller import MDPVehicle
 from matplotlib import pyplot as plt
@@ -46,7 +47,8 @@ class HighwayEnvScenario:
         # todo: better wrap the parameters using SanDRAConfiguration
         self.prediction_length = SanDRAConfiguration().h + 1
         self.minimum_interval = 1.
-        self._ids: set[int] = {-1}
+        self._commonroad_ids: set[int] = {-1}
+        self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
 
     @staticmethod
     def _highenv_coordinate_to_commonroad(coordinates: np.ndarray) -> np.ndarray:
@@ -95,24 +97,78 @@ class HighwayEnvScenario:
         else:
             raise ValueError(f"Invalid line type: {line_type}")
 
-    def _make_commonroad_lanelet(self, lane: StraightLane) -> Lanelet:
+    @staticmethod
+    def _split_line_vertices(vertices: np.ndarray, maximum_length) -> list[np.ndarray]:
+        """
+        Split line vertices into approximately even parts where each part
+        is shorter than maximum_length.
+        """
+        if len(vertices) < 2:
+            return [vertices]
+
+        # Calculate cumulative distances along the line
+        distances = np.linalg.norm(np.diff(vertices, axis=0), axis=1)
+        cumulative_distances = np.concatenate([[0], np.cumsum(distances)])
+        total_length = cumulative_distances[-1]
+        if total_length <= maximum_length:
+            return [vertices]
+
+        # Calculate number of segments needed
+        num_segments = int(np.ceil(total_length / maximum_length))
+        segment_length = total_length / (num_segments - 1) if num_segments > 1 else total_length
+        split_distances = [i * segment_length for i in range(num_segments)]
+        split_distances[-1] = total_length  # Ensure last point is exactly at the end
+
+        # Find indices corresponding to split distances
+        split_indices = []
+        for split_dist in split_distances:
+            idx = np.searchsorted(cumulative_distances, split_dist)
+            if idx >= len(vertices):
+                idx = len(vertices) - 1
+            split_indices.append(idx)
+
+        # Create overlapping segments
+        segments = []
+        for i in range(len(split_indices) - 1):
+            start_idx = split_indices[i]
+            end_idx = split_indices[i + 1]
+            segment = vertices[start_idx:end_idx + 1]
+            segments.append(segment)
+        return segments
+
+    def convert_highenv_lane_index(self, lane_index: LaneIndex, position: np.ndarray) -> int:
+        lane = self.scenario.vehicle.road.network.get_lane(lane_index)
+        s, _ = lane.local_coordinates(position)
+        current_dist = max(s - lane.length, 0)
+        lanelet_ids: dict[float, int] = self._lanelet_ids[lane_index]
+        intervals = list(lanelet_ids.keys())
+        for i in range(len(lanelet_ids.keys())):
+            if [i]
+
+    def _make_commonroad_lanelet(self, lane: StraightLane, maximum_length: float = 1000) -> Lanelet:
         road_network = self.scenario.vehicle.road.network
-        # todo: reduce the length of the lane
-        lane.end[0] /= 10
         # Generate lanelet vertices
         left_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start, lane.end, lane.direction))
+        left_vertices_per_lanelet = self._split_line_vertices(left_vertices, maximum_length)
         center_offset = lane.direction_lateral * (lane.width / 2)
         center_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start + center_offset, lane.end + center_offset, lane.direction))
+        center_vertices_per_lanelet = self._split_line_vertices(center_vertices, maximum_length)
         right_offset = lane.direction_lateral * lane.width
         right_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start + right_offset, lane.end + right_offset, lane.direction))
+        right_vertices_per_lanelet = self._split_line_vertices(right_vertices, maximum_length)
 
-        # Generate lanelet id
+        num_lanelets = len(left_vertices_per_lanelet)
+        assert num_lanelets == len(center_vertices_per_lanelet) == len(right_vertices_per_lanelet), "Splitting lane into lanelets failed."
+
         lane_index = road_network.get_closest_lane_index(lane.start + center_offset, lane.heading)
-        lanelet_id = self._next_id()
-        assert lanelet_id == lane_index[2], "Commonroad LaneletID should match its HighEnv counterpart."
+        self._lanelet_ids[lane_index] = {}
+        for i, (vs_left, vs_center, vs_right) in enumerate(zip(left_vertices_per_lanelet, center_vertices_per_lanelet, right_vertices_per_lanelet)):
+            dist_from_start = float(np.linalg.norm(vs_left[0] - lane.start))
+            lanelet_id = self._next_id()
+            self._lanelet_ids[lane_index][dist_from_start] = lanelet_id
 
         # Add adjacent lanelet ids
         neighbors = road_network.side_lanes(lane_index)
@@ -155,7 +211,8 @@ class HighwayEnvScenario:
         # First, transform top-left into center coordinates, then
         center = top_left_corner + np.array([vehicle.LENGTH, vehicle.WIDTH])
         center = self._highenv_coordinate_to_commonroad(center)
-        obstacle_shape = Rectangle(vehicle.LENGTH, vehicle.WIDTH, center=np.array([0.0, 0.0]), orientation=vehicle.heading)
+        obstacle_shape = Rectangle(vehicle.LENGTH, vehicle.WIDTH, center=np.array([0.0, 0.0]),
+                                   orientation=(-vehicle.heading))
         obstacle_state = InitialState(
             position=center,
             orientation=(-vehicle.heading),
@@ -178,7 +235,8 @@ class HighwayEnvScenario:
             history=[],
         )
 
-    def _make_commonroad_planning_problem(self, ego_vehicle: MDPVehicle, initial_state: InitialState) -> PlanningProblem:
+    def _make_commonroad_planning_problem(self, ego_vehicle: MDPVehicle,
+                                          initial_state: InitialState) -> PlanningProblem:
         road = ego_vehicle.road
         goal_lane: StraightLane = cast(StraightLane, road.network.get_lane(ego_vehicle.target_lane_index))
         goal_x: float = ego_vehicle.position[0] + ego_vehicle.speed * self.dt * self.prediction_length
@@ -216,9 +274,9 @@ class HighwayEnvScenario:
         """
         Generate unique ids
         """
-        last_id = max(self._ids)
+        last_id = max(self._commonroad_ids)
         next_id = last_id + 1
-        self._ids.add(next_id)
+        self._commonroad_ids.add(next_id)
         return next_id
 
     @property
@@ -243,10 +301,13 @@ class HighwayEnvScenario:
 
         # Add all obstacles
         ego_vehicle_commonroad = self._make_commonroad_obstacle(ego_vehicle, self._next_id())
-        # todo: the ego should not be added
-        # scenario.add_objects(ego_vehicle_commonroad)
         ego_obstacle_id = ego_vehicle_commonroad.obstacle_id
-        for vehicle in road.vehicles[1:]:
+
+        obstacles = cast(list, road.close_vehicles_to(
+            ego_vehicle, self.scenario.PERCEPTION_DISTANCE / 3.0, see_behind=True,
+            sort=True
+        ))
+        for vehicle in obstacles:
             scenario.add_objects(self._make_commonroad_obstacle(vehicle, self._next_id()))
 
         # Add all obstacle predictions
@@ -280,13 +341,13 @@ class HighwayEnvScenario:
         if plot_commonroad:
             scenario, ego_vehicle, planning_problem = self.commonroad_representation
             plot_scenario(scenario, planning_problem, plot_limits=[350, 500, -30, 0])
-            plot_predicted_trajectory(scenario, ego_vehicle)
+            # plot_predicted_trajectory(scenario, ego_vehicle)
 
     def step(self, action_id: int) -> bool:
         self.observation, reward, self.done, self.truncated, info = self._env.step(action_id)
         self.time_step += 0
         self._env.render()
-        self._ids = {-1}
+        self._commonroad_ids = {-1}
         if self.done or self.truncated:
             self._env.close()
             return False
@@ -321,21 +382,25 @@ class HighwayEnvScenario:
 
 if __name__ == "__main__":
     scenario_ = HighwayEnvScenario.make()
-    commonrad_scenario, _ , planning_problem  = scenario_.commonroad_representation
+    commonrad_scenario, _, planning_problem_ = scenario_.commonroad_representation
 
+    position = np.array([396.86446246, -12.17380587])
+    result = commonrad_scenario.lanelet_network.find_lanelet_by_position([position])
+    print(result)
+    assert [x for x in result if x is not None]
     road_network = RoadNetwork.from_lanelet_network_and_position(
         commonrad_scenario.lanelet_network,
-        planning_problem.initial_state.position,
+        planning_problem_.initial_state.position,
     )
 
     ego_lane_network = EgoLaneNetwork.from_route_planner(
         commonrad_scenario.lanelet_network,
-        planning_problem,
+        planning_problem_,
         road_network
     )
-    verifier = ReachVerifier(commonrad_scenario, SanDRAConfiguration(), ego_lane_network)
-    verifier.verify([LongitudinalAction.KEEP, LateralAction.CHANGE_LEFT])
+    # verifier = ReachVerifier(commonrad_scenario, SanDRAConfiguration(), ego_lane_network)
+    # verifier.verify([LongitudinalAction.KEEP, LateralAction.CHANGE_LEFT])
     # scenario_.plot(plot_commonroad=True)
-    # while scenario_.step(1):
-    #     scenario_.plot(plot_commonroad=True)
-    # scenario_.highway_env_representation.close()
+    scenario_.step(1)
+    scenario_.plot(plot_commonroad=True)
+    scenario_.highway_env_representation.close()

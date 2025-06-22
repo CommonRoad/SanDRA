@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import Optional, Any
 import numpy as np
+from openai import BaseModel
 
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
@@ -11,7 +12,7 @@ from commonroad_crime.measure import TTC
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
 from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
-from sandra.describer import DescriberBase
+from sandra.describer import DescriberBase, Thoughts, Action
 from sandra.utility.vehicle import (
     find_lanelet_id_from_state,
     extract_ego_vehicle,
@@ -19,10 +20,16 @@ from sandra.utility.vehicle import (
 )
 
 
+class HighLevelDrivingDecision(BaseModel):
+    thoughts: Thoughts
+    best_combination: Action
+    model_config = {"extra": "forbid"}
+
+
 class CommonRoadDescriber(DescriberBase):
     def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int,
                  config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None,
-                 scenario_type: Optional[str] = None, describe_ttc=True):
+                 scenario_type: Optional[str] = None, describe_ttc=True, k=5, enforce_k=False):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
         self.ego_state = None
@@ -30,6 +37,8 @@ class CommonRoadDescriber(DescriberBase):
         self.planning_problem = planning_problem
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
+        self.k = k
+        self.enforce_k = enforce_k
         super().__init__(timestep, config, role, goal, scenario_type)
 
         if describe_ttc:
@@ -123,9 +132,9 @@ class CommonRoadDescriber(DescriberBase):
             vehicle_description += f" The time-to-collision is {ttc}."
         return vehicle_description
 
-    def _get_relevant_obstacles(self) -> list[DynamicObstacle]:
-        # TODO: Filter out obstacles outside a certain radius
-        return self.scenario.dynamic_obstacles
+    def _get_relevant_obstacles(self, perception_radius=100) -> list[DynamicObstacle]:
+        circle_center = self.ego_state.position
+        return [x for x in self.scenario.dynamic_obstacles if np.linalg.norm(x.prediction.trajectory.state_list[self.timestep].position - circle_center) < perception_radius]
 
     def _describe_obstacles(self) -> str:
         # TODO: Add support for static obstacles
@@ -177,18 +186,20 @@ class CommonRoadDescriber(DescriberBase):
         laterals, longitudinals = self._get_available_actions()
         laterals_str = "\n".join([f"    - {x.value}" for x in laterals])
         longitudinals_str = "\n".join([f"    - {x.value}" for x in longitudinals])
-        return f"""First observe the environment and formulate your decision in natural language. Then return a ranking of the advisable actions which consist of {len(laterals) * len(longitudinals)} combinations:
+        return f"""First observe the environment and formulate your decision in natural language. Then return a ranking of the top-{self.k} advisable action combinations:
 Longitudinal actions:
 {longitudinals_str}
 Lateral actions:
 {laterals_str}"""
 
     def _describe_reminders(self) -> list[str]:
-        return [
+        reminders = [
             "You are currently driving in Germany and have to adhere to German traffic rules.",
-            "The best action is at index 0 in the array.",
             "You need to enumerate all combinations in your action ranking."
         ]
+        if not self.enforce_k:
+            reminders.append("The best action is at index 0 in the array.")
+        return reminders
 
     def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:
         lateral_actions = [LateralAction.KEEP]
@@ -198,6 +209,26 @@ Lateral actions:
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
         longitudinal_actions = [x for x in LongitudinalAction]
         return lateral_actions, longitudinal_actions
+
+    def schema(self) -> dict[str, Any]:
+        laterals, longitudinals = self.get_available_actions()
+        schema_dict = HighLevelDrivingDecision.model_json_schema()
+        lateral_action = schema_dict["$defs"]["Action"]["properties"]["lateral_action"]
+        lateral_action["enum"] = laterals
+        if len(laterals) == 1:
+            lateral_action["const"] = laterals[0]
+        else:
+            lateral_action.pop("const", None)
+        longitudinal_action = schema_dict["$defs"]["Action"]["properties"][
+            "longitudinal_action"
+        ]
+        longitudinal_action["enum"] = longitudinals
+        if len(longitudinals) == 1:
+            longitudinal_action["const"] = longitudinals[0]
+        else:
+            longitudinal_action.pop("const", None)
+
+        return schema_dict
 
 
 if __name__ == "__main__":
