@@ -10,6 +10,7 @@ from highway_env.vehicle.kinematics import Vehicle
 
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
+from sandra.commonroad.describer import HighLevelDrivingDecision
 from sandra.describer import DescriberBase
 from sandra.utility.vehicle import calculate_relative_orientation
 
@@ -24,6 +25,7 @@ class HighEnvDescriber(DescriberBase):
         self.ego: MDPVehicle = cast(MDPVehicle, env.vehicle)
         self.road: Road = env.road
         self.network: RoadNetwork = self.road.network
+        self.k = 5
         self.id_to_lateral_action: dict[int, LateralAction] = {
             0: LateralAction.CHANGE_LEFT,
             1: LateralAction.KEEP,
@@ -161,3 +163,42 @@ Lateral actions:
         laterals = [self.id_to_lateral_action[x] for x in availableActions]
         longitudinals = [self.id_to_longitudinal_action[x] for x in availableActions]
         return list(set(laterals)), list(set(longitudinals))
+
+    def schema(self) -> dict[str, Any]:
+        laterals, longitudinals = self.get_available_actions()
+        schema_dict = HighLevelDrivingDecision.model_json_schema()
+        lateral_action = schema_dict["$defs"]["Action"]["properties"]["lateral_action"]
+        lateral_action["enum"] = laterals
+        if len(laterals) == 1:
+            lateral_action["const"] = laterals[0]
+        else:
+            lateral_action.pop("const", None)
+        longitudinal_action = schema_dict["$defs"]["Action"]["properties"][
+            "longitudinal_action"
+        ]
+        longitudinal_action["enum"] = longitudinals
+        if len(longitudinals) == 1:
+            longitudinal_action["const"] = longitudinals[0]
+        else:
+            longitudinal_action.pop("const", None)
+
+        action_dict = schema_dict["properties"]["best_combination"]
+        variable_name_prefixes = [
+            "second",
+            "third",
+            "fourth",
+            "fifth",
+            "sixth",
+            "seventh",
+            "eighth",
+            "ninth",
+            "tenth",
+        ]
+        added_variable_names = []
+        for prefix in variable_name_prefixes[:self.k-1]:
+            variable_name = f"{prefix}_best_combination"
+            schema_dict["properties"][variable_name] = action_dict
+            added_variable_names.append(variable_name)
+
+        schema_dict["required"] = schema_dict["required"] + added_variable_names
+        return schema_dict

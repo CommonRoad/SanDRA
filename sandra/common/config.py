@@ -5,8 +5,8 @@ from dataclasses import dataclass
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
-    model_name = "gpt-4.1-mini"
-
+    model_name = "qwen3:14b"
+    use_ollama = True
     a_lim = 0.1
 
     h = 20  # time horizon of decision-making
