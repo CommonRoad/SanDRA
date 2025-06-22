@@ -50,3 +50,8 @@ class TestReachVerifier(unittest.TestCase):
             to_goal_region=False
         )[0]
         planner.plan(driving_corridor)
+
+        planner.visualize(
+            driving_corridor=driving_corridor,
+            reach_interface=self.reach_ver.reach_interface,
+        )
