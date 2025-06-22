@@ -3,7 +3,10 @@ name = "sandra"
 version = "0.0.1"
 readme = "README.md"
 license = "Apache-2.0"
-authors = ["Sebastian Illing <sebastian.illing@vodafone.de>, Yuanfei Lin <yuanfei.lin@tum.de>, Cyber-Physical Systems Group, Technical University of Munich"]
+authors = [
+  "Sebastian Illing <sebastian.illing@vodafone.de>",
+  "Yuanfei Lin <yuanfei.lin@tum.de>"
+]
 description = "Safe large language model-based decision making framework for automated vehicles using reachability analysis"
 keywords = [
     "automated driving",
@@ -19,12 +22,20 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10"  # Adjust according to your project's needs
+python = ">=3.10, <3.12"  # Adjust according to your project's needs
 openai = "~=1.82.0"
 pydantic = "~=2.11.5"
 gymnasium = "~=0.28.1"
 highway-env = "~=1.8.2"
 moviepy = ">=2.2.1"
+numpy = "<2.0.0"
+
+# commonroad-crime
+commonroad-io = "~2024.3"
+commonroad-reach = "~=2024.1.3"
+commonroad-drivability-checker = "~2024.2"
+commonroad-route-planner = "~2024.2.0"
+#commonroad-reactive-planner = "~2025.1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
