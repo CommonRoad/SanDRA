@@ -52,11 +52,15 @@ class ReactivePlanner(PlannerBase):
     def reset(self, cosys: CurvilinearCoordinateSystem = None):
         if cosys:
             # todo: fix by aligning the clcs used in planner and reach
-            self.planner.set_reference_path(coordinate_system=CurvilinearCoordinateSystem(cosys.reference_path()))
+            self.planner.set_reference_path(
+                coordinate_system=CurvilinearCoordinateSystem(cosys.reference_path())
+            )
 
     def plan(self, driving_corridor: Dict[int, ConnectedComponent]) -> Trajectory:
         # limit the sampling space
         self.planner.sampling_space.set_corridor(driving_corridor)
         self.planner.set_desired_velocity(current_speed=self.planner.x_0.velocity)
+
+        # planning for the current time step
         optimal = self.planner.plan()
         return optimal[0]

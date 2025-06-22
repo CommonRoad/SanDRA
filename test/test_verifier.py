@@ -21,7 +21,9 @@ class TestReachVerifier(unittest.TestCase):
         self.scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
             lanelet_assignment=True
         )
-        self.planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
+        self.planning_problem = list(
+            planning_problem_set.planning_problem_dict.values()
+        )[0]
 
         self.config = SanDRAConfiguration()
 
@@ -43,11 +45,8 @@ class TestReachVerifier(unittest.TestCase):
     def test_reactive_planning(self):
         self.reach_ver.verify([LongitudinalAction.STOP])
         planner = ReactivePlanner(self.scenario, self.planning_problem)
-        planner.reset(
-            self.reach_ver.reach_config.planning.CLCS
-        )
-        driving_corridor = self.reach_ver.reach_interface.extract_driving_corridors(to_goal_region=False)[0]
-        planner.plan(
-            driving_corridor
-        )
-
+        planner.reset(self.reach_ver.reach_config.planning.CLCS)
+        driving_corridor = self.reach_ver.reach_interface.extract_driving_corridors(
+            to_goal_region=False
+        )[0]
+        planner.plan(driving_corridor)
