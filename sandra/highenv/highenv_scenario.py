@@ -47,6 +47,7 @@ class HighwayEnvScenario:
         self.minimum_interval = 1.
         self._commonroad_ids: set[int] = {-1}
         self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
+        self.maximum_lanelet_length = 1000
 
     @staticmethod
     def _highenv_coordinate_to_commonroad(coordinates: np.ndarray) -> np.ndarray:
@@ -95,9 +96,9 @@ class HighwayEnvScenario:
         else:
             raise ValueError(f"Invalid line type: {line_type}")
 
-    def _make_commonroad_lanelet(self, lane: StraightLane, maximum_length=1000) -> Lanelet:
+    def _make_commonroad_lanelet(self, lane: StraightLane) -> Lanelet:
         road_network = self.scenario.vehicle.road.network
-        end = np.linalg.norm(lane.direction) * maximum_length
+        end = lane.start + lane.direction * self.maximum_lanelet_length
         # Generate lanelet vertices
         left_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start, end, lane.direction))
@@ -246,10 +247,14 @@ class HighwayEnvScenario:
         ego_obstacle_id = ego_vehicle_commonroad.obstacle_id
 
         obstacles = cast(list, road.close_vehicles_to(
-            ego_vehicle, self.scenario.PERCEPTION_DISTANCE / 3.0, see_behind=True,
+            ego_vehicle, self.scenario.PERCEPTION_DISTANCE, see_behind=True,
             sort=True
         ))
-        for vehicle in obstacles:
+        for vehicle in road.vehicles:
+            vehicle_lane = road.network.get_lane(vehicle.lane_index)
+            s, _ = vehicle_lane.local_coordinates(vehicle.position)
+            if s > self.maximum_lanelet_length or vehicle not in obstacles:
+                continue
             scenario.add_objects(self._make_commonroad_obstacle(vehicle, self._next_id()))
 
         # Add all obstacle predictions
@@ -326,10 +331,6 @@ if __name__ == "__main__":
     scenario_ = HighwayEnvScenario.make()
     commonrad_scenario, _, planning_problem_ = scenario_.commonroad_representation
 
-    position = np.array([396.86446246, -12.17380587])
-    result = commonrad_scenario.lanelet_network.find_lanelet_by_position([position])
-    print(result)
-    assert [x for x in result if x is not None]
     road_network = RoadNetwork.from_lanelet_network_and_position(
         commonrad_scenario.lanelet_network,
         planning_problem_.initial_state.position,

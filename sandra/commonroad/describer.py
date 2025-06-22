@@ -37,7 +37,7 @@ class CommonRoadDescriber(DescriberBase):
         self.planning_problem = planning_problem
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
-        assert k >= 1
+        assert 1 <= k <= 10, f"Unsupported k {k}"
         self.k = k
         self.enforce_k = enforce_k
         super().__init__(timestep, config, role, goal, scenario_type)
@@ -229,6 +229,25 @@ Lateral actions:
         else:
             longitudinal_action.pop("const", None)
 
+        action_dict = schema_dict["properties"]["best_combination"]
+        variable_name_prefixes = [
+            "second",
+            "third",
+            "fourth",
+            "fifth",
+            "sixth",
+            "seventh",
+            "eighth",
+            "ninth",
+            "tenth",
+        ]
+        added_variable_names = []
+        for prefix in variable_name_prefixes[:self.k-1]:
+            variable_name = f"{prefix}_best_combination"
+            schema_dict["properties"][variable_name] = action_dict
+            added_variable_names.append(variable_name)
+
+        schema_dict["required"] = schema_dict["required"] + added_variable_names
         return schema_dict
 
 
