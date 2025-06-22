@@ -9,6 +9,7 @@ from commonroad.common.file_reader import CommonRoadFileReader
 
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.commonroad.reach import ReachVerifier, VerificationStatus
+from sandra.commonroad.plan import ReactivePlanner
 from sandra.actions import LongitudinalAction, LateralAction
 
 
@@ -17,9 +18,11 @@ class TestReachVerifier(unittest.TestCase):
         super().setUp()
         name_scenario = "DEU_Gar-1_1_T-1"
         path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
-        self.scenario, _ = CommonRoadFileReader(path_scenario).open(
+        self.scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
             lanelet_assignment=True
         )
+        self.planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
+
         self.config = SanDRAConfiguration()
 
         self.reach_ver = ReachVerifier(self.scenario, self.config)
@@ -36,3 +39,15 @@ class TestReachVerifier(unittest.TestCase):
     def test_verification(self):
         status = self.reach_ver.verify([LongitudinalAction.STOP])
         assert status == VerificationStatus.SAFE
+
+    def test_reactive_planning(self):
+        self.reach_ver.verify([LongitudinalAction.STOP])
+        planner = ReactivePlanner(self.scenario, self.planning_problem)
+        planner.reset(
+            self.reach_ver.reach_config.planning.CLCS
+        )
+        driving_corridor = self.reach_ver.reach_interface.extract_driving_corridors(to_goal_region=False)[0]
+        planner.plan(
+            driving_corridor
+        )
+
