@@ -37,6 +37,7 @@ class CommonRoadDescriber(DescriberBase):
         self.planning_problem = planning_problem
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
+        assert k >= 1
         self.k = k
         self.enforce_k = enforce_k
         super().__init__(timestep, config, role, goal, scenario_type)

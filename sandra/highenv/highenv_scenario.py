@@ -26,11 +26,9 @@ from commonroad.common.file_writer import CommonRoadFileWriter
 from commonroad.common.file_writer import OverwriteExistingFile
 from commonroad.scenario.scenario import Tag
 
-from sandra.actions import LongitudinalAction, LateralAction
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
-from sandra.commonroad.reach import ReachVerifier
-from sandra.utility.visualization import plot_scenario, plot_predicted_trajectory
+from sandra.utility.visualization import plot_scenario
 
 
 class HighwayEnvScenario:
@@ -97,78 +95,23 @@ class HighwayEnvScenario:
         else:
             raise ValueError(f"Invalid line type: {line_type}")
 
-    @staticmethod
-    def _split_line_vertices(vertices: np.ndarray, maximum_length) -> list[np.ndarray]:
-        """
-        Split line vertices into approximately even parts where each part
-        is shorter than maximum_length.
-        """
-        if len(vertices) < 2:
-            return [vertices]
-
-        # Calculate cumulative distances along the line
-        distances = np.linalg.norm(np.diff(vertices, axis=0), axis=1)
-        cumulative_distances = np.concatenate([[0], np.cumsum(distances)])
-        total_length = cumulative_distances[-1]
-        if total_length <= maximum_length:
-            return [vertices]
-
-        # Calculate number of segments needed
-        num_segments = int(np.ceil(total_length / maximum_length))
-        segment_length = total_length / (num_segments - 1) if num_segments > 1 else total_length
-        split_distances = [i * segment_length for i in range(num_segments)]
-        split_distances[-1] = total_length  # Ensure last point is exactly at the end
-
-        # Find indices corresponding to split distances
-        split_indices = []
-        for split_dist in split_distances:
-            idx = np.searchsorted(cumulative_distances, split_dist)
-            if idx >= len(vertices):
-                idx = len(vertices) - 1
-            split_indices.append(idx)
-
-        # Create overlapping segments
-        segments = []
-        for i in range(len(split_indices) - 1):
-            start_idx = split_indices[i]
-            end_idx = split_indices[i + 1]
-            segment = vertices[start_idx:end_idx + 1]
-            segments.append(segment)
-        return segments
-
-    def convert_highenv_lane_index(self, lane_index: LaneIndex, position: np.ndarray) -> int:
-        lane = self.scenario.vehicle.road.network.get_lane(lane_index)
-        s, _ = lane.local_coordinates(position)
-        current_dist = max(s - lane.length, 0)
-        lanelet_ids: dict[float, int] = self._lanelet_ids[lane_index]
-        intervals = list(lanelet_ids.keys())
-        for i in range(len(lanelet_ids.keys())):
-            if [i]
-
-    def _make_commonroad_lanelet(self, lane: StraightLane, maximum_length: float = 1000) -> Lanelet:
+    def _make_commonroad_lanelet(self, lane: StraightLane, maximum_length=1000) -> Lanelet:
         road_network = self.scenario.vehicle.road.network
+        end = np.linalg.norm(lane.direction) * maximum_length
         # Generate lanelet vertices
         left_vertices = self._highenv_coordinate_to_commonroad(
-            self._create_vertices_along_line(lane.start, lane.end, lane.direction))
-        left_vertices_per_lanelet = self._split_line_vertices(left_vertices, maximum_length)
+            self._create_vertices_along_line(lane.start, end, lane.direction))
         center_offset = lane.direction_lateral * (lane.width / 2)
         center_vertices = self._highenv_coordinate_to_commonroad(
-            self._create_vertices_along_line(lane.start + center_offset, lane.end + center_offset, lane.direction))
-        center_vertices_per_lanelet = self._split_line_vertices(center_vertices, maximum_length)
+            self._create_vertices_along_line(lane.start + center_offset, end + center_offset, lane.direction))
         right_offset = lane.direction_lateral * lane.width
         right_vertices = self._highenv_coordinate_to_commonroad(
-            self._create_vertices_along_line(lane.start + right_offset, lane.end + right_offset, lane.direction))
-        right_vertices_per_lanelet = self._split_line_vertices(right_vertices, maximum_length)
+            self._create_vertices_along_line(lane.start + right_offset, end + right_offset, lane.direction))
 
-        num_lanelets = len(left_vertices_per_lanelet)
-        assert num_lanelets == len(center_vertices_per_lanelet) == len(right_vertices_per_lanelet), "Splitting lane into lanelets failed."
-
+        # Generate lanelet id
         lane_index = road_network.get_closest_lane_index(lane.start + center_offset, lane.heading)
-        self._lanelet_ids[lane_index] = {}
-        for i, (vs_left, vs_center, vs_right) in enumerate(zip(left_vertices_per_lanelet, center_vertices_per_lanelet, right_vertices_per_lanelet)):
-            dist_from_start = float(np.linalg.norm(vs_left[0] - lane.start))
-            lanelet_id = self._next_id()
-            self._lanelet_ids[lane_index][dist_from_start] = lanelet_id
+        lanelet_id = self._next_id()
+        assert lanelet_id == lane_index[2], "Commonroad LaneletID should match its HighEnv counterpart."
 
         # Add adjacent lanelet ids
         neighbors = road_network.side_lanes(lane_index)
@@ -212,14 +155,13 @@ class HighwayEnvScenario:
         center = top_left_corner + np.array([vehicle.LENGTH, vehicle.WIDTH])
         center = self._highenv_coordinate_to_commonroad(center)
         obstacle_shape = Rectangle(vehicle.LENGTH, vehicle.WIDTH, center=np.array([0.0, 0.0]),
-                                   orientation=(-vehicle.heading))
+                                   orientation=0.0)
         obstacle_state = InitialState(
             position=center,
             orientation=(-vehicle.heading),
             velocity=vehicle.speed,
             acceleration=vehicle.action["acceleration"],
             time_step=self.time_step,
-            # todo: check if this is correct
             slip_angle=math.atan2(vehicle.velocity[1], vehicle.velocity[0]),
             yaw_rate=0.0,
         )
