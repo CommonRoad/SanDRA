@@ -223,7 +223,7 @@ class HighwayEnvScenario:
         return next_id
 
     @property
-    def commonroad_representation(self) -> tuple[Scenario, DynamicObstacle, PlanningProblem]:
+    def commonroad_representation(self, add_ego=True) -> tuple[Scenario, DynamicObstacle, PlanningProblem]:
         """
         Get the commonroad representation of the scenario
         """
@@ -245,6 +245,8 @@ class HighwayEnvScenario:
         # Add all obstacles
         ego_vehicle_commonroad = self._make_commonroad_obstacle(ego_vehicle, self._next_id())
         ego_obstacle_id = ego_vehicle_commonroad.obstacle_id
+        if add_ego:
+            scenario.add_objects(ego_vehicle_commonroad)
 
         obstacles = cast(list, road.close_vehicles_to(
             ego_vehicle, self.scenario.PERCEPTION_DISTANCE, see_behind=True,

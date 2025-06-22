@@ -151,6 +151,8 @@ class CommonRoadDescriber(DescriberBase):
                 ObstacleType.BICYCLE,
                 ObstacleType.TRUCK,
             ]:
+                if obstacle.obstacle_id == self.ego_vehicle.obstacle_id:
+                    continue
                 try:
                     temp = self._describe_vehicle(obstacle)
                     if temp is None:
