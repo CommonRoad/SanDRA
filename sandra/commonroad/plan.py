@@ -3,6 +3,7 @@ from abc import abstractmethod, ABC
 from typing import Dict, List
 from pathlib import Path
 
+import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.trajectory import Trajectory
 from commonroad.scenario.scenario import Scenario
@@ -18,6 +19,7 @@ import commonroad_rp.utility.logger as util_logger_rp
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 from commonroad_rp.reactive_planner import ReactivePlanner as CRReactivePlanner
 from commonroad_rp.utility.visualization import visualize_planner_at_timestep
+from sandra.common.config import SanDRAConfiguration
 
 
 class PlannerBase(ABC):
@@ -34,11 +36,18 @@ class PlannerBase(ABC):
 
 class ReactivePlanner(PlannerBase):
     def __init__(
-        self, scenario: Scenario = None, planning_problem: PlanningProblem = None
+        self,
+        config: SanDRAConfiguration,
+        scenario: Scenario = None,
+        planning_problem: PlanningProblem = None,
     ):
         super().__init__()
 
         # configurations
+        self.sandra_config = config
+        self.scenario = scenario
+        self.planning_problem = planning_problem
+
         config_path = (
             Path(__file__).resolve().parents[2] / "config" / "reactive_planner.yaml"
         )
@@ -67,10 +76,33 @@ class ReactivePlanner(PlannerBase):
             self.trajectory.state_list
         )
 
+    def extract_desired_velocity(self, connected_component: ConnectedComponent):
+        # get min and max values for each reachable set in the connected set
+        min_max_array = np.asarray(
+            [
+                [reach_node.polygon_lon.v_min, reach_node.polygon_lon.v_max]
+                for reach_node in connected_component.list_nodes_reach
+            ]
+        )
+        min_connected_set = np.min(min_max_array[:, 0])
+        max_connected_set = np.max(min_max_array[:, 1])
+        return (max_connected_set + min_connected_set) / 2
+
     def plan(self, driving_corridor: Dict[int, ConnectedComponent]) -> Trajectory:
         # limit the sampling space
         self.planner.sampling_space.set_corridor(driving_corridor)
-        self.planner.set_desired_velocity(current_speed=self.planner.x_0.velocity)
+        desired_velocity = self.extract_desired_velocity(
+            driving_corridor[self.sandra_config.h]
+        )
+        if desired_velocity < 0.1:
+            # self.planner.config.sampling.t_min = self.sandra_config.h * self.scenario.dt
+            self.planner.set_desired_velocity(
+                desired_velocity=desired_velocity, stopping=True
+            )
+            # not working, no sample is found
+            # self.planner.config.sampling.longitudinal_mode = "stopping"
+        else:
+            self.planner.set_desired_velocity(desired_velocity=desired_velocity)
 
         # planning for the current time step
         optimal = self.planner.plan()
