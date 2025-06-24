@@ -44,7 +44,8 @@ class TestReachVerifier(unittest.TestCase):
 
     def test_reactive_planning(self):
         self.reach_ver.verify([LongitudinalAction.STOP])
-        planner = ReactivePlanner(self.scenario, self.planning_problem)
+
+        planner = ReactivePlanner(self.config, self.scenario, self.planning_problem)
         planner.reset(self.reach_ver.reach_config.planning.CLCS)
         driving_corridor = self.reach_ver.reach_interface.extract_driving_corridors(
             to_goal_region=False
