@@ -1,6 +1,6 @@
 import logging
 from abc import abstractmethod, ABC
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pathlib import Path
 
 import numpy as np
@@ -88,7 +88,9 @@ class ReactivePlanner(PlannerBase):
         max_connected_set = np.max(min_max_array[:, 1])
         return (max_connected_set + min_connected_set) / 2
 
-    def plan(self, driving_corridor: Dict[int, ConnectedComponent]) -> Trajectory:
+    def plan(
+        self, driving_corridor: Dict[int, ConnectedComponent]
+    ) -> Optional[Trajectory]:
         # limit the sampling space
         self.planner.sampling_space.set_corridor(driving_corridor)
         desired_velocity = self.extract_desired_velocity(
@@ -105,9 +107,14 @@ class ReactivePlanner(PlannerBase):
             self.planner.set_desired_velocity(desired_velocity=desired_velocity)
 
         # planning for the current time step
+        print("[Planner] Planning trajectory...")
         optimal = self.planner.plan()
-        self.trajectory = optimal[0]
-        return self.trajectory
+        if optimal:
+            self.trajectory = optimal[0]
+            return self.trajectory
+        else:
+            print("[Planner] Planning failed to find an optimal trajectory.")
+            return None
 
     def visualize(
         self,

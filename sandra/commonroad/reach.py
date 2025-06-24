@@ -155,29 +155,36 @@ class ReachVerifier(VerifierBase):
         return " | ".join(f"InLanelet_{lid}" for lid in lanelet_ids)
 
     def verify(
-        self, actions: List[Union[LongitudinalAction, LateralAction]]
+        self,
+        actions: List[Union[LongitudinalAction, LateralAction]],
+        visualization=False,
     ) -> VerificationStatus:
         """
         verifies the given actions (in a list)
         """
+        print("[Verifier] Resetting with given actions...")
         self.reset(
             actions=actions,
         )
 
+        print("[Verifier] Computing reachable sets...")
         # the formulas corresponding to all actions are conjunctively combined.
         self.reach_interface.compute_reachable_sets(
             step_end=self.sandra_config.h, verbose=self.verbose
         )
 
         # plot
-        util_visual.plot_scenario_with_reachable_sets(
-            self.reach_interface, save_gif=True
-        )
+        if visualization:
+            util_visual.plot_scenario_with_reachable_sets(
+                self.reach_interface, save_gif=True
+            )
 
         # checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
         if not self.reach_interface.reachable_set[self.sandra_config.h]:
+            print("[Verifier] Result: UNSAFE – Final reachable set is empty.")
             return VerificationStatus.UNSAFE
         else:
+            print("[Verifier] Result: SAFE")
             return VerificationStatus.SAFE
 
     def extract_corridor(self):
