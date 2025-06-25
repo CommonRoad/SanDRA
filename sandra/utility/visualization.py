@@ -185,13 +185,14 @@ def plot_road_network(
         # Reset color for incoming lanes
         params.facecolor = TUMcolor.TUMwhite
         params.opacity = 0.2
-        for lane in ego_lane_network.lane_incoming_left:
-            for lanelet in lane.lanelets:
-                rnd.draw_polygon(lanelet.polygon.vertices, params)
-
-        for lane in ego_lane_network.lane_incoming_right:
-            for lanelet in lane.lanelets:
-                rnd.draw_polygon(lanelet.polygon.vertices, params)
+        if ego_lane_network.lane_incoming_left:
+            for lane in ego_lane_network.lane_incoming_left:
+                for lanelet in lane.lanelets:
+                    rnd.draw_polygon(lanelet.polygon.vertices, params)
+        if ego_lane_network.lane_incoming_right:
+            for lane in ego_lane_network.lane_incoming_right:
+                for lanelet in lane.lanelets:
+                    rnd.draw_polygon(lanelet.polygon.vertices, params)
 
         # Reset color for adjacent lanes
         params.facecolor = TUMcolor.TUMorange

@@ -51,9 +51,6 @@ class TestReachVerifier(unittest.TestCase):
         plot_road_network(road_network, ego_lane_network)
 
         assert len(road_network.lanes) == 2
-        assert len(ego_lane_network.lane_incoming_left) == 3
-        assert len(ego_lane_network.lane_incoming_right) == 3
-        assert len(ego_lane_network.lane_left_reversed) == 2
 
     def test_ind_bendplatz(self):
         name_scenario = "DEU_AachenBendplatz-1_80_T-19"
@@ -89,6 +86,9 @@ class TestReachVerifier(unittest.TestCase):
 
         plot_road_network(road_network, ego_lane_network)
 
+        assert len(ego_lane_network.lane_incoming_left) == 3
+        assert len(ego_lane_network.lane_incoming_right) == 3
+        assert len(ego_lane_network.lane_left_reversed) == 3
         assert len(road_network.lanes) == 12
 
     def test_lane_construction(self):

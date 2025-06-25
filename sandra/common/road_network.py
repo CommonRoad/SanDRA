@@ -147,13 +147,17 @@ class RoadNetwork:
             )
         )
         # revered direction: get the predecessors
-        if not consider_incoming:  # otherwise would be duplicated
-            lane_lanelets.extend(
-                merge_lanelets(
-                    lanelet_ids_reversed,
-                    Lanelet.all_lanelets_by_merging_predecessors_from_lanelet,
+        for lid_reversed in lanelet_ids_reversed:
+            if not any(
+                lid_reversed in lanelets_ids for _, lanelets_ids in lane_lanelets
+            ):
+                lane_lanelets.extend(
+                    merge_lanelets(
+                        lanelet_ids_reversed,
+                        Lanelet.all_lanelets_by_merging_predecessors_from_lanelet,
+                    )
                 )
-            )
+                break  # no need to continue — we've just extended with all
 
         lanes = [
             Lane(lane_id=i, lanelets=[lane_element[0]], contained_ids=lane_element[1])
