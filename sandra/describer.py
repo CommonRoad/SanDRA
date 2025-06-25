@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Any, Literal, overload
+
+from commonroad_clcs.clcs import CurvilinearCoordinateSystem
 from openai import BaseModel
 import numpy as np
 
@@ -52,7 +54,7 @@ class DescriberBase(ABC):
             self.timestep = self.timestep + 1
 
     @staticmethod
-    def velocity_descr(v: float, to_km=True) -> str:
+    def velocity_descr(v: float, to_km=False) -> str:
         if to_km:
             v *= 3.6
             return f"{v:.1f} km/h"
@@ -80,6 +82,26 @@ class DescriberBase(ABC):
     def distance_description(ego_position: np.ndarray, obstacle_position: np.ndarray) -> str:
         dist = np.linalg.norm(obstacle_position - ego_position)
         return f"{dist:.1f} meters"
+
+    @staticmethod
+    def distance_description_clcs(
+        ego_position: np.ndarray,
+        obstacle_position: np.ndarray,
+        clcs: 'CurvilinearCoordinateSystem'
+    ) -> str:
+        points = [
+            np.array(ego_position).reshape(2, 1),
+            np.array(obstacle_position).reshape(2, 1)
+        ]
+        # Use the appropriate integer parameter here (e.g., 0)
+        curvilinear_points = clcs.convert_list_of_points_to_curvilinear_coords(points, 0)
+        ego_position_clcs, obstacle_position_clcs = curvilinear_points
+
+        dist = obstacle_position_clcs[0] - ego_position_clcs[0]
+        if dist > 0:
+            return f"{dist:.1f} meters in front of you"
+        else:
+            return f"{abs(dist):.1f} meters behind you"
 
     @abstractmethod
     def _describe_traffic_signs(self) -> str:
@@ -134,22 +156,34 @@ class DescriberBase(ABC):
         return schema_dict
 
     def user_prompt(self) -> str:
-        return f"""Here is an overview over your environment:
-{self._describe_ego_state()}
-{self._describe_traffic_signs()}
-{self._describe_traffic_lights()}
-{self._describe_obstacles()}
-"""
+        parts = [
+            self._describe_ego_state(),
+            self._describe_traffic_signs(),
+            self._describe_traffic_lights(),
+            self._describe_obstacles(),
+        ]
+
+        # Filter out None or empty strings (including whitespace-only)
+        filtered_parts = [part.strip() for part in parts if part and part.strip()]
+
+        return "Here is an overview of your environment:\n" + "\n".join(filtered_parts) + "\n"
 
     def system_prompt(self) -> str:
         reminders = self._describe_reminders()
         reminder_description = ""
         for reminder in reminders:
-            reminder_description += f"   - {reminder}\n"
-        return f"""You are driving a car and need to make a high-level driving decision.
-{self.role}
-{self.goal}
-{self._describe_schema()}
-Keep these things in mind:
-{reminder_description}
-"""
+            reminder_description += f"  - {reminder}\n"
+
+        role = f"{self.role}\n" if self.role else ""
+        goal = f"{self.goal}\n" if self.goal else ""
+
+        return (
+            "You are driving a car and need to make a high-level driving decision.\n"
+            f"{role}"
+            f"{goal}"
+            #f"{reminder_description}"
+            f"{self._describe_schema()}"
+        )
+        #Keep these things in mind:
+        #{reminder_description}
+        #"""

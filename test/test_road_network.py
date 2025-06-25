@@ -133,6 +133,7 @@ class TestReachVerifier(unittest.TestCase):
 
         assert ego_lane_network_1.lane_right_adjacent is None
         assert ego_lane_network_1.lane_left_adjacent is None
+        assert isinstance(ego_lane_network_1.lane.center_vertices, np.ndarray)
 
         self.planning_problem.initial_state.position = np.asarray([19.80, -10.09])
         self.planning_problem.goal.state_list[0].position.center = np.asarray(

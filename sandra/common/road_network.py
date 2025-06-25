@@ -5,7 +5,10 @@ from typing import Optional, List
 import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.lanelet import Lanelet, LaneletNetwork
+
 from commonroad_route_planner.route_planner import RoutePlanner
+
+from commonroad_dc.geometry.geometry import CurvilinearCoordinateSystem
 
 
 class Lane:
@@ -29,8 +32,15 @@ class Lane:
         self.left_adjacent: Optional[Lane] = None
         self.right_adjacent: Optional[Lane] = None
 
+        self.clcs: Optional[CurvilinearCoordinateSystem] = None
+
     def __repr__(self):
         return f"Lane(id={self.id}, lanelets={self.contained_ids})"
+
+    @property
+    def center_vertices(self):
+        """Center vertices along the lane."""
+        return np.concatenate([lanelet.center_vertices for lanelet in self.lanelets])
 
     def add_lanelet(self, lanelet: Lanelet):
         """Add a lanelet to the end of the lane"""
@@ -253,6 +263,10 @@ class EgoLaneNetwork:
             ego_lane = road_network.get_lanes_by_lanelet_ids(ego_lanelet)[0]
 
         instance = cls(road_network=road_network)
+        # building the curvilinear coordinate system
+        ego_lane.clcs = CurvilinearCoordinateSystem(
+            ego_lane.center_vertices, 20, 0.1, 5.0
+        )
         instance.lane = ego_lane
 
         start_lanelet = lanelet_network.find_lanelet_by_id(route_ids[0])
