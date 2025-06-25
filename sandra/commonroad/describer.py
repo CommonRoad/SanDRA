@@ -68,7 +68,16 @@ class CommonRoadDescriber(DescriberBase):
     def ttc_description(self, obstacle_id: int) -> Optional[str]:
         if not self.ttc_evaluator or not self.describe_ttc:
             return None
-        return f"{self.ttc_evaluator.compute(obstacle_id, self.timestep)} sec"
+
+        ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
+
+        try:
+            ttc_val = float(ttc)
+            if math.isnan(ttc_val):
+                return "inf sec"
+            return f"{ttc_val:.1f} sec"
+        except (TypeError, ValueError):
+            return None
 
     def _describe_traffic_signs(self) -> str:
         max_speed = None
