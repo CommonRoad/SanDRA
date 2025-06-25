@@ -1,3 +1,4 @@
+import math
 from typing import Optional, Any, Union, List, Tuple
 import numpy as np
 from openai import BaseModel
@@ -108,13 +109,27 @@ class CommonRoadDescriber(DescriberBase):
         return ""
 
     def _describe_lanelet(self, lanelet_id) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        # Check if lanelet is in ego lane
         if self.ego_lane_network.lane and self.ego_lane_network.lane.contains(lanelet_id):
             return "the same lane", None, None
+
+        # Check neighboring lanes (left/right and direction)
         for (direction, side), lanes in self.ego_lane_network.neighbor_dict.items():
-            lane_list = [] if lanes is None else lanes
-            for lane in lane_list:
+            for lane in lanes or []:
                 if lane.contains(lanelet_id):
                     return f"the {side}-adjacent lane in the {direction} direction", side, direction
+
+        # Check incoming lanes (left and right)
+        incoming_checks = [
+            ("the left incoming lane", self.ego_lane_network.lane_incoming_left),
+            ("the right incoming lane", self.ego_lane_network.lane_incoming_right),
+        ]
+        for description, lane_list in incoming_checks:
+            for lane in lane_list or []:
+                if lane.contains(lanelet_id):
+                    return description, None, "incoming"
+
+        # If not found, return None
         return None, None, None
 
     def _describe_vehicle(self, vehicle: DynamicObstacle) -> Optional[str]:
@@ -137,13 +152,14 @@ class CommonRoadDescriber(DescriberBase):
         #     self.ego_direction, relative_vehicle_direction
         # )
         #vehicle_description += f"It is located {self.angle_description(angle)} you, "
-        vehicle_description += f"and is {self.distance_description_clcs(ego_position, vehicle_state.position, self.ego_lane_network.lane.clcs)}. "
+        vehicle_description += f"and is {self.distance_description_clcs(ego_position, vehicle_state.position, self.ego_lane_network.lane.clcs, direction)}. "
         vehicle_description += (
             f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
         )
         vehicle_description += f"and its acceleration is {self.acceleration_descr(vehicle_state.acceleration)}."
         if (ttc := self.ttc_description(vehicle.obstacle_id)) is not None:
-            vehicle_description += f" The time-to-collision is {ttc}."
+            if ttc:
+                vehicle_description += f" The time-to-collision is {ttc}."
         return vehicle_description
 
     def _get_relevant_obstacles(self, perception_radius=100) -> list[DynamicObstacle]:
@@ -187,7 +203,21 @@ class CommonRoadDescriber(DescriberBase):
         return obstacle_description
 
     def _describe_ego_state(self) -> str:
-        ego_description = f"You are currently driving in a {self.scenario_type} scenario." if self.scenario_type else ""
+        if len(self.scenario.lanelet_network.intersections) > 0:
+            if len(self.scenario.lanelet_network.intersections) > 0:
+                if self.ego_lane_network.lane_incoming_left or self.ego_lane_network.lane_incoming_right:
+                    ego_description = "You are currently driving towards an intersection scenario."
+
+                    if self.ego_lane_network.lane_incoming_left and self.ego_lane_network.lane_incoming_right:
+                        ego_description += " There are incoming lanes on both the left and right. "
+                    elif self.ego_lane_network.lane_incoming_left:
+                        ego_description += " There are incoming lanes on the left. "
+                    else:
+                        ego_description += " There are incoming lanes on the right. "
+                else:
+                    ego_description = "You are currently driving within an intersection scenario. "
+        else:
+            ego_description = f"You are currently driving in a {self.scenario_type} scenario." if self.scenario_type else ""
 
         sides = {"left": [], "right": []}
 

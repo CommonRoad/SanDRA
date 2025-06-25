@@ -87,7 +87,8 @@ class DescriberBase(ABC):
     def distance_description_clcs(
         ego_position: np.ndarray,
         obstacle_position: np.ndarray,
-        clcs: 'CurvilinearCoordinateSystem'
+        clcs: 'CurvilinearCoordinateSystem',
+        direction="",
     ) -> str:
         points = [
             np.array(ego_position).reshape(2, 1),
@@ -97,11 +98,18 @@ class DescriberBase(ABC):
         curvilinear_points = clcs.convert_list_of_points_to_curvilinear_coords(points, 0)
         ego_position_clcs, obstacle_position_clcs = curvilinear_points
 
-        dist = obstacle_position_clcs[0] - ego_position_clcs[0]
-        if dist > 0:
-            return f"{dist:.1f} meters in front of you"
+        s_dist = obstacle_position_clcs[0] - ego_position_clcs[0]
+        d_dist = obstacle_position_clcs[1] - ego_position_clcs[1]
+        if direction == "incoming":
+            if d_dist > 0:
+                return f"{d_dist:.1f} meters right of you"
+            else:
+                return f"{d_dist:.1f} meters left of you"
         else:
-            return f"{abs(dist):.1f} meters behind you"
+            if s_dist > 0:
+                return f"{s_dist:.1f} meters in front of you"
+            else:
+                return f"{abs(s_dist):.1f} meters behind you"
 
     @abstractmethod
     def _describe_traffic_signs(self) -> str:
