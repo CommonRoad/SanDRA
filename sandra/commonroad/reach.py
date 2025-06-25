@@ -134,7 +134,7 @@ class ReachVerifier(VerifierBase):
             clause = self._format_lane_clause(self.ego_lane_network.lane_right_adjacent)
             return ActionLTL.from_action(action).replace("InRightAdjacentLane", clause)
 
-        elif action == LateralAction.KEEP:
+        elif action == LateralAction.FOLLOW_LANE:
             if not self.ego_lane_network.lane:
                 raise AssertionError(
                     f"No current lane assigned to ego for action {action}"

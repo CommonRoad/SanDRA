@@ -11,7 +11,7 @@ class LongitudinalAction(Enum):
 class LateralAction(Enum):
     CHANGE_LEFT = "left"
     CHANGE_RIGHT = "right"
-    KEEP = "straight"
+    FOLLOW_LANE = "follow_lane"
 
 
 Action = tuple[LongitudinalAction, LateralAction]

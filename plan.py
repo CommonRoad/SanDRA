@@ -31,7 +31,8 @@ ego_lane_network = EgoLaneNetwork.from_route_planner(
 
 # reachability analysis
 reach_ver = ReachVerifier(scenario, config, ego_lane_network)
-status = reach_ver.verify([LongitudinalAction.DECELERATE, LateralAction.CHANGE_RIGHT])
+status = reach_ver.verify([LongitudinalAction.KEEP, LateralAction.FOLLOW_LANE],
+                          visualization=True)
 
 # planning
 if status == VerificationStatus.SAFE:
