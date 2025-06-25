@@ -76,6 +76,7 @@ class RoadNetwork:
         lanelet_network: LaneletNetwork,
         position: np.asarray,
         consider_reversed=True,
+        consider_incoming=True,
     ) -> "RoadNetwork":
 
         initial_lanelet_ids = lanelet_network.find_lanelet_by_position([position])[0]
@@ -114,6 +115,8 @@ class RoadNetwork:
                         lanelet_ids_reversed.extend([adj_lanelet.lanelet_id])
 
         def merge_lanelets(ids, merge_func):
+            """Merges a list of lanelet IDs using the given merge_func.
+            If reversed=True, the IDs are processed in reverse order."""
             merged = []
             for lanelet_id in ids:
                 lanelet = lanelet_network.find_lanelet_by_id(lanelet_id)
@@ -126,6 +129,15 @@ class RoadNetwork:
                     merged.append((l, j))
             return merged
 
+        # incoming lanelets for intersections
+        if len(lanelet_network.intersections) > 0 and consider_incoming:
+            for incoming_element in lanelet_network.intersections[0].incomings:
+                # if not initially included
+                if not incoming_element.incoming_lanelets.intersection(
+                    initial_lanelet_ids
+                ):
+                    lanelet_ids_same_dir.extend(incoming_element.incoming_lanelets)
+
         lane_lanelets = []
         # same direction: get the successors
         lane_lanelets.extend(
@@ -135,12 +147,13 @@ class RoadNetwork:
             )
         )
         # revered direction: get the predecessors
-        lane_lanelets.extend(
-            merge_lanelets(
-                lanelet_ids_reversed,
-                Lanelet.all_lanelets_by_merging_predecessors_from_lanelet,
+        if not consider_incoming:  # otherwise would be duplicated
+            lane_lanelets.extend(
+                merge_lanelets(
+                    lanelet_ids_reversed,
+                    Lanelet.all_lanelets_by_merging_predecessors_from_lanelet,
+                )
             )
-        )
 
         lanes = [
             Lane(lane_id=i, lanelets=[lane_element[0]], contained_ids=lane_element[1])
@@ -228,6 +241,10 @@ class EgoLaneNetwork:
         self.lane_left_reversed: Optional[List[Lane]] = None
         self.lane_right_reversed: Optional[List[Lane]] = None
 
+        self.lane_incoming_left: Optional[List[Lane]] = None
+        # incoming left of
+        self.lane_incoming_right: Optional[List[Lane]] = None
+
     @property
     def neighbor_dict(self) -> dict[tuple[str, str], Optional[List[Lane]]]:
         return {
@@ -243,6 +260,7 @@ class EgoLaneNetwork:
         lanelet_network: LaneletNetwork,
         planning_problem: PlanningProblem,
         road_network: RoadNetwork,
+        consider_incoming=True,
     ) -> "EgoLaneNetwork":
 
         # get the high-level route
@@ -289,6 +307,36 @@ class EgoLaneNetwork:
                     [start_lanelet.adj_right]
                 )
 
+        if lanelet_network.intersections and consider_incoming:
+            intersection = lanelet_network.intersections[0]
+            incoming_dict = {elem.incoming_id: elem for elem in intersection.incomings}
+
+            ego_incoming = next(
+                (
+                    elem
+                    for elem in intersection.incomings
+                    if elem.incoming_lanelets.intersection(route_ids)
+                ),
+                None,
+            )
+
+            if ego_incoming:
+                left_of_id = ego_incoming.left_of
+                instance.lane_incoming_right = road_network.get_lanes_by_lanelet_ids(
+                    list(incoming_dict[left_of_id].incoming_lanelets)
+                )
+
+                # Instead of another loop, access left directly from the inverse mapping
+                instance.lane_incoming_left = next(
+                    (
+                        road_network.get_lanes_by_lanelet_ids(
+                            list(elem.incoming_lanelets)
+                        )
+                        for elem in intersection.incomings
+                        if elem.left_of == ego_incoming.incoming_id
+                    ),
+                    None,
+                )
         return instance
 
 

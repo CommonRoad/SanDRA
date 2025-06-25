@@ -17,6 +17,8 @@ from commonroad.visualization.draw_params import (
     ShapeParams,
 )
 from commonroad.visualization.mp_renderer import MPRenderer
+from matplotlib import pyplot as plt
+
 from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import (
     SemanticReachableSetInterface,
 )
@@ -180,6 +182,18 @@ def plot_road_network(
                 for lanelet in lane_right.lanelets:
                     rnd.draw_polygon(lanelet.polygon.vertices, params)
 
+        # Reset color for incoming lanes
+        params.facecolor = TUMcolor.TUMwhite
+        params.opacity = 0.2
+        for lane in ego_lane_network.lane_incoming_left:
+            for lanelet in lane.lanelets:
+                rnd.draw_polygon(lanelet.polygon.vertices, params)
+
+        for lane in ego_lane_network.lane_incoming_right:
+            for lanelet in lane.lanelets:
+                rnd.draw_polygon(lanelet.polygon.vertices, params)
+
+        # Reset color for adjacent lanes
         params.facecolor = TUMcolor.TUMorange
         params.opacity = 0.2
 
@@ -197,3 +211,4 @@ def plot_road_network(
 
     # Render and optionally save the figure
     rnd.render(show=True, filename=save_path)
+    plt.show()
