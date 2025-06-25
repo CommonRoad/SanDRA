@@ -143,13 +143,14 @@ class DescriberBase(ABC):
 
     def system_prompt(self) -> str:
         reminders = self._describe_reminders()
-        reminder_description = ""
+        reminder_description = "Keep these things in mind:\n"
         for reminder in reminders:
             reminder_description += f"   - {reminder}\n"
+        if not reminders:
+            reminder_description = ""
         return f"""You are driving a car and need to make a high-level driving decision.
 {self.role}
 {self.goal}
 {self._describe_schema()}
-Keep these things in mind:
 {reminder_description}
 """

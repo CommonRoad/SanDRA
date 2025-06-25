@@ -29,7 +29,7 @@ class HighLevelDrivingDecision(BaseModel):
 class CommonRoadDescriber(DescriberBase):
     def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int,
                  config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None,
-                 scenario_type: Optional[str] = None, describe_ttc=True, k=5, enforce_k=False):
+                 scenario_type: Optional[str] = None, describe_ttc=True, k=5):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
         self.ego_state = None
@@ -39,7 +39,6 @@ class CommonRoadDescriber(DescriberBase):
         self.describe_ttc = describe_ttc
         assert 1 <= k <= 10, f"Unsupported k {k}"
         self.k = k
-        self.enforce_k = enforce_k
         super().__init__(timestep, config, role, goal, scenario_type)
 
         if describe_ttc:
@@ -198,10 +197,7 @@ Lateral actions:
     def _describe_reminders(self) -> list[str]:
         reminders = [
             "You are currently driving in Germany and have to adhere to German traffic rules.",
-            "You need to enumerate all combinations in your action ranking."
         ]
-        if not self.enforce_k:
-            reminders.append("The best action is at index 0 in the array.")
         return reminders
 
     def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:
