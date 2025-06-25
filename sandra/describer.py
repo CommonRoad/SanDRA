@@ -170,7 +170,7 @@ class DescriberBase(ABC):
 
     def system_prompt(self) -> str:
         reminders = self._describe_reminders()
-        reminder_description = ""
+        reminder_description = "Keep these things in mind:\n"
         for reminder in reminders:
             reminder_description += f"  - {reminder}\n"
 

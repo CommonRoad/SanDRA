@@ -43,7 +43,6 @@ class CommonRoadDescriber(DescriberBase):
         self.describe_ttc = describe_ttc
         assert 1 <= k <= 10, f"Unsupported k {k}"
         self.k = k
-        self.enforce_k = enforce_k
         super().__init__(timestep, config, role, goal, scenario_type)
 
         if describe_ttc:
@@ -218,11 +217,9 @@ class CommonRoadDescriber(DescriberBase):
 
     def _describe_reminders(self) -> list[str]:
         reminders = [
-            f"You are currently driving in {self.country} and have to adhere to German traffic rules.",
+            "You are currently driving in Germany and have to adhere to German traffic rules.",
             "You need to enumerate all combinations in your action ranking."
         ]
-        if not self.enforce_k:
-            reminders.append("The best action is at index 0 in the array.")
         return reminders
 
     def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:

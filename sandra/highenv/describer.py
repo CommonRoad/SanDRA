@@ -153,10 +153,11 @@ Lateral actions:
 {laterals_str}"""
 
     def _describe_reminders(self) -> list[str]:
-        return [
-            "The best action is at index 0 in the array.",
-            "You need to enumerate all combinations in your action ranking."
-        ]
+        # return [
+        #     "The best action is at index 0 in the array.",
+        #     "You need to enumerate all combinations in your action ranking."
+        # ]
+        return []
 
     def _get_available_actions(self) -> tuple[list[LateralAction], list[LongitudinalAction]]:
         availableActions = self.env.get_available_actions()
