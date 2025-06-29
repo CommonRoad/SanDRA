@@ -56,6 +56,7 @@ class ReachVerifier(VerifierBase):
         self.reach_config.general.path_scenario = (
             PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
         )
+        self.reach_config.vehicle.ego.v_lon_min = 0
         self.reach_config.general.path_scenarios = PROJECT_ROOT + "/scenarios/"
         self.reach_config.planning.dt = scenario.dt
         self.reach_config.planning.steps_computation = self.sandra_config.h
@@ -134,7 +135,7 @@ class ReachVerifier(VerifierBase):
             clause = self._format_lane_clause(self.ego_lane_network.lane_right_adjacent)
             return ActionLTL.from_action(action).replace("InRightAdjacentLane", clause)
 
-        elif action == LateralAction.KEEP:
+        elif action == LateralAction.FOLLOW_LANE:
             if not self.ego_lane_network.lane:
                 raise AssertionError(
                     f"No current lane assigned to ego for action {action}"
@@ -155,27 +156,38 @@ class ReachVerifier(VerifierBase):
         return " | ".join(f"InLanelet_{lid}" for lid in lanelet_ids)
 
     def verify(
-        self, actions: List[Union[LongitudinalAction, LateralAction]]
+        self,
+        actions: List[Union[LongitudinalAction, LateralAction]],
+        visualization=False,
     ) -> VerificationStatus:
         """
         verifies the given actions (in a list)
         """
+        print("[Verifier] Resetting with given actions...")
         self.reset(
             actions=actions,
         )
 
+        print("[Verifier] Computing reachable sets...")
         # the formulas corresponding to all actions are conjunctively combined.
         self.reach_interface.compute_reachable_sets(
             step_end=self.sandra_config.h, verbose=self.verbose
         )
 
         # plot
-        util_visual.plot_scenario_with_reachable_sets(
-            self.reach_interface, save_gif=True
-        )
+        if visualization:
+            util_visual.plot_scenario_with_reachable_sets(
+                self.reach_interface, save_gif=True
+            )
 
         # checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
         if not self.reach_interface.reachable_set[self.sandra_config.h]:
+            print("[Verifier] Result: UNSAFE – Final reachable set is empty.")
             return VerificationStatus.UNSAFE
         else:
+            print("[Verifier] Result: SAFE")
             return VerificationStatus.SAFE
+
+    def extract_corridor(self):
+        # todo: goal shape?
+        return self.reach_interface.extract_driving_corridors(to_goal_region=False)[0]

@@ -175,3 +175,5 @@ cython_debug/
 
 outputs/
 sandra/highenv/run/
+test/output
+output
