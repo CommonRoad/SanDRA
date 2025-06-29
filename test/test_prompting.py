@@ -20,7 +20,9 @@ class TestPrompting(unittest.TestCase):
         )[0]
 
         self.config = SanDRAConfiguration()
-        self.describer = CommonRoadDescriber(self.scenario, self.planning_problem, 0, self.config)
+        self.describer = CommonRoadDescriber(
+            self.scenario, self.planning_problem, 0, self.config
+        )
         self.user_prompt = self.describer.user_prompt()
 
     def test_user_prompt(self):

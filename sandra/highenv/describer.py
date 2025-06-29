@@ -216,7 +216,7 @@ Lateral actions:
             "tenth",
         ]
         added_variable_names = []
-        for prefix in variable_name_prefixes[:self.k-1]:
+        for prefix in variable_name_prefixes[: self.k - 1]:
             variable_name = f"{prefix}_best_combination"
             schema_dict["properties"][variable_name] = action_dict
             added_variable_names.append(variable_name)

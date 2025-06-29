@@ -28,11 +28,20 @@ class HighLevelDrivingDecision(BaseModel):
 
 
 class CommonRoadDescriber(DescriberBase):
-    def __init__(self, scenario: Scenario, planning_problem: PlanningProblem, timestep: int,
-                 config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None,
-                 scenario_type: Optional[str] = None, describe_ttc=True, k=3,
-                 past_action: List[Union[LongitudinalAction, LateralAction]] = None,
-                 country: Optional[str] = "Germany"):
+    def __init__(
+        self,
+        scenario: Scenario,
+        planning_problem: PlanningProblem,
+        timestep: int,
+        config: SanDRAConfiguration,
+        role: Optional[str] = None,
+        goal: Optional[str] = None,
+        scenario_type: Optional[str] = None,
+        describe_ttc=True,
+        k=3,
+        past_action: List[Union[LongitudinalAction, LateralAction]] = None,
+        country: Optional[str] = "Germany",
+    ):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
         self.ego_state = None
@@ -63,9 +72,16 @@ class CommonRoadDescriber(DescriberBase):
                 np.sin(self.ego_state.orientation),
             ]
         )
-        road_network = RoadNetwork.from_lanelet_network_and_position(self.scenario.lanelet_network, self.ego_state.position)
-        self.ego_lane_network = EgoLaneNetwork.from_route_planner(self.scenario.lanelet_network, self.planning_problem, road_network)
-        if not self.scenario_type and (self.ego_lane_network.lane_incoming_left or self.ego_lane_network.lane_incoming_right):
+        road_network = RoadNetwork.from_lanelet_network_and_position(
+            self.scenario.lanelet_network, self.ego_state.position
+        )
+        self.ego_lane_network = EgoLaneNetwork.from_route_planner(
+            self.scenario.lanelet_network, self.planning_problem, road_network
+        )
+        if not self.scenario_type and (
+            self.ego_lane_network.lane_incoming_left
+            or self.ego_lane_network.lane_incoming_right
+        ):
             self.scenario_type = "intersection"
 
     def ttc_description(self, obstacle_id: int) -> Optional[str]:
@@ -110,16 +126,24 @@ class CommonRoadDescriber(DescriberBase):
         # TODO: Implement this
         return ""
 
-    def _describe_lanelet(self, lanelet_id) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    def _describe_lanelet(
+        self, lanelet_id
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         # Check if lanelet is in ego lane
-        if self.ego_lane_network.lane and self.ego_lane_network.lane.contains(lanelet_id):
+        if self.ego_lane_network.lane and self.ego_lane_network.lane.contains(
+            lanelet_id
+        ):
             return "the same lane", None, None
 
         # Check neighboring lanes (left/right and direction)
         for (direction, side), lanes in self.ego_lane_network.neighbor_dict.items():
             for lane in lanes or []:
                 if lane.contains(lanelet_id):
-                    return f"the {side}-adjacent lane in the {direction} direction", side, direction
+                    return (
+                        f"the {side}-adjacent lane in the {direction} direction",
+                        side,
+                        direction,
+                    )
 
         # Check incoming lanes (left and right)
         incoming_checks = [
@@ -153,7 +177,7 @@ class CommonRoadDescriber(DescriberBase):
         # angle = calculate_relative_orientation(
         #     self.ego_direction, relative_vehicle_direction
         # )
-        #vehicle_description += f"It is located {self.angle_description(angle)} you, "
+        # vehicle_description += f"It is located {self.angle_description(angle)} you, "
         vehicle_description += f"and is {self.distance_description_clcs(ego_position, vehicle_state.position, self.ego_lane_network.lane.clcs, direction)}. "
         vehicle_description += (
             f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
@@ -166,7 +190,15 @@ class CommonRoadDescriber(DescriberBase):
 
     def _get_relevant_obstacles(self, perception_radius=100) -> list[DynamicObstacle]:
         circle_center = self.ego_state.position
-        return [x for x in self.scenario.dynamic_obstacles if np.linalg.norm(x.prediction.trajectory.state_list[self.timestep].position - circle_center) < perception_radius]
+        return [
+            x
+            for x in self.scenario.dynamic_obstacles
+            if np.linalg.norm(
+                x.prediction.trajectory.state_list[self.timestep].position
+                - circle_center
+            )
+            < perception_radius
+        ]
 
     def _describe_obstacles(self) -> str:
         # TODO: Add support for static obstacles
@@ -205,9 +237,16 @@ class CommonRoadDescriber(DescriberBase):
         return obstacle_description
 
     def _describe_ego_state(self) -> str:
-        ego_description = f"You are currently driving in a {self.scenario_type} scenario." if self.scenario_type else ""
+        ego_description = (
+            f"You are currently driving in a {self.scenario_type} scenario."
+            if self.scenario_type
+            else ""
+        )
 
-        if self.ego_lane_network.lane_incoming_left and self.ego_lane_network.lane_incoming_right:
+        if (
+            self.ego_lane_network.lane_incoming_left
+            and self.ego_lane_network.lane_incoming_right
+        ):
             ego_description += " There are incoming lanes on both the left and right. "
         elif self.ego_lane_network.lane_incoming_left:
             ego_description += " There are incoming lanes on the left. "
@@ -218,7 +257,9 @@ class CommonRoadDescriber(DescriberBase):
 
         for (direction, side), lanes in self.ego_lane_network.neighbor_dict.items():
             if side in sides and lanes:
-                sides[side].append(f"a {side}-adjacent lane with the {direction} direction")
+                sides[side].append(
+                    f"a {side}-adjacent lane with the {direction} direction"
+                )
 
         for side in ["left", "right"]:
             if sides[side]:
@@ -252,7 +293,6 @@ class CommonRoadDescriber(DescriberBase):
     def _describe_reminders(self) -> list[str]:
         reminders = [
             "You are currently driving in Germany and have to adhere to German traffic rules.",
-            "You need to enumerate all combinations in your action ranking."
         ]
         return reminders
 
@@ -304,7 +344,7 @@ class CommonRoadDescriber(DescriberBase):
             "tenth",
         ]
         added_variable_names = []
-        for prefix in variable_name_prefixes[:self.k-1]:
+        for prefix in variable_name_prefixes[: self.k - 1]:
             variable_name = f"{prefix}_best_combination"
             schema_dict["properties"][variable_name] = action_dict
             added_variable_names.append(variable_name)

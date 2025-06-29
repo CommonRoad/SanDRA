@@ -45,6 +45,7 @@ if SUPPRESS_PLOTS:
 
 def plot_reachable_set(reach_interface):
     from commonroad_reach_semantic.utility import visualization as util_visual
+
     config = reach_interface.config
     config.general.path_output = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "output"

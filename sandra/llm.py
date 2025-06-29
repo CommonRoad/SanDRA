@@ -67,7 +67,6 @@ def get_structured_response_online(
     return content_json
 
 
-
 def get_structured_response_offline(
     user_prompt: str,
     system_prompt: str,
@@ -83,8 +82,8 @@ def get_structured_response_offline(
             #     'content': system_prompt,
             # },
             {
-                'role': 'user',
-                'content': user_prompt,
+                "role": "user",
+                "content": user_prompt,
             }
         ],
         # options={
@@ -149,14 +148,15 @@ def get_structured_response(
 
 
 if __name__ == "__main__":
+
     class Country(BaseModel):
         name: str
         capital: str
         languages: list[str]
 
     client = ollama_client()
-    user_prompt = 'Tell me about Canada.'
-    system_prompt = 'Tell me about Canada.'
+    user_prompt = "Tell me about Canada."
+    system_prompt = "Tell me about Canada."
     config = SanDRAConfiguration()
     config.model_name = "qwen3:14b"
     # completion = client.beta.chat.completions.parse(
@@ -167,8 +167,10 @@ if __name__ == "__main__":
     #     ],
     #     response_format=Country,
     # )
-#
+    #
     # event = completion.choices[0].message.parsed
     # print(event)
-    response = get_structured_response(user_prompt, system_prompt, Country.model_json_schema(), config)
+    response = get_structured_response(
+        user_prompt, system_prompt, Country.model_json_schema(), config
+    )
     print(response)

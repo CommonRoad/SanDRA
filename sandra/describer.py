@@ -89,15 +89,17 @@ class DescriberBase(ABC):
     def distance_description_clcs(
         ego_position: np.ndarray,
         obstacle_position: np.ndarray,
-        clcs: 'CurvilinearCoordinateSystem',
+        clcs: "CurvilinearCoordinateSystem",
         direction="",
     ) -> str:
         points = [
             np.array(ego_position).reshape(2, 1),
-            np.array(obstacle_position).reshape(2, 1)
+            np.array(obstacle_position).reshape(2, 1),
         ]
         # Use the appropriate integer parameter here (e.g., 0)
-        curvilinear_points = clcs.convert_list_of_points_to_curvilinear_coords(points, 0)
+        curvilinear_points = clcs.convert_list_of_points_to_curvilinear_coords(
+            points, 0
+        )
         ego_position_clcs, obstacle_position_clcs = curvilinear_points
 
         s_dist = obstacle_position_clcs[0] - ego_position_clcs[0]
@@ -178,7 +180,11 @@ class DescriberBase(ABC):
         # Filter out None or empty strings (including whitespace-only)
         filtered_parts = [part.strip() for part in parts if part and part.strip()]
 
-        return "Here is an overview of your environment:\n" + "\n".join(filtered_parts) + "\n"
+        return (
+            "Here is an overview of your environment:\n"
+            + "\n".join(filtered_parts)
+            + "\n"
+        )
 
     def system_prompt(self) -> str:
         reminders = self._describe_reminders()
@@ -193,9 +199,9 @@ class DescriberBase(ABC):
             "You are driving a car and need to make a high-level driving decision.\n"
             f"{role}"
             f"{goal}"
-            #f"{reminder_description}"
+            # f"{reminder_description}"
             f"{self._describe_schema()}"
         )
-        #Keep these things in mind:
-        #{reminder_description}
-        #"""
+        # Keep these things in mind:
+        # {reminder_description}
+        # """

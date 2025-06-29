@@ -66,7 +66,7 @@ class TestReachVerifier(unittest.TestCase):
             self.scenario.lanelet_network,
             self.planning_problem.initial_state.position,
             consider_reversed=True,
-            consider_incoming=False
+            consider_incoming=False,
         )
 
         assert len(road_network.lanes) == 6
@@ -75,7 +75,7 @@ class TestReachVerifier(unittest.TestCase):
             self.scenario.lanelet_network,
             self.planning_problem.initial_state.position,
             consider_reversed=True,
-            consider_incoming=True
+            consider_incoming=True,
         )
 
         ego_lane_network = EgoLaneNetwork.from_route_planner(
