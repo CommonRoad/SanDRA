@@ -27,7 +27,7 @@ class HighEnvDecider(Decider):
         self.describer = cast(HighEnvDescriber, describer)
         self.lateral_action_to_id: dict[LateralAction, int] = {
             LateralAction.CHANGE_LEFT: 0,
-            LateralAction.KEEP: 1,
+            LateralAction.FOLLOW_LANE: 1,
             LateralAction.CHANGE_RIGHT: 2,
         }
         self.longitudinal_action_to_id: dict[LongitudinalAction, int] = {

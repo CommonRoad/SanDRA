@@ -44,10 +44,10 @@ class HighEnvDescriber(DescriberBase):
         self.k = 5
         self.id_to_lateral_action: dict[int, LateralAction] = {
             0: LateralAction.CHANGE_LEFT,
-            1: LateralAction.KEEP,
+            1: LateralAction.FOLLOW_LANE,
             2: LateralAction.CHANGE_RIGHT,
-            3: LateralAction.KEEP,
-            4: LateralAction.KEEP,
+            3: LateralAction.FOLLOW_LANE,
+            4: LateralAction.FOLLOW_LANE,
         }
         self.id_to_longitudinal_action: dict[int, LongitudinalAction] = {
             0: LongitudinalAction.KEEP,
