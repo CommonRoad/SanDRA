@@ -1,5 +1,6 @@
 from typing import Optional, Any
 from sandra.actions import Action, LongitudinalAction, LateralAction
+from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.describer import DescriberBase
 from sandra.llm import get_structured_response
 from sandra.common.config import SanDRAConfiguration
@@ -22,10 +23,26 @@ class Decider:
             self.verifier = DummyVerifier()
         self.save_path = save_path
 
-    @staticmethod
-    def _parse_action_ranking(llm_response: dict[str, Any]) -> list[Action]:
+    def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []
-        for action in llm_response["action_ranking"]:
+        k = 1
+        if hasattr(self.describer, "k"):
+            k = self.describer.k
+        ranking_prefixes = [
+            "",
+            "second",
+            "third",
+            "fourth",
+            "fifth",
+            "sixth",
+            "seventh",
+            "eighth",
+            "ninth",
+            "tenth",
+        ]
+        for prefix in ranking_prefixes[:k]:
+            key = f"{prefix}_best_combination" if prefix else "best_combination"
+            action = llm_response[key]
             action_ranking.append(
                 (
                     LongitudinalAction(action["longitudinal_action"]),

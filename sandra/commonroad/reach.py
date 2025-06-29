@@ -56,6 +56,7 @@ class ReachVerifier(VerifierBase):
         self.reach_config.general.path_scenario = (
             PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
         )
+        self.reach_config.general.path_scenarios = PROJECT_ROOT + "/scenarios/"
         self.reach_config.planning.dt = scenario.dt
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()

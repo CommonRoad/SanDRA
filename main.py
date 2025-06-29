@@ -42,4 +42,4 @@ if __name__ == "__main__":
     ]
 
     scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")
-    main(os.path.join(scenario_folder, scenario_paths[-1]))
+    main(os.path.join(scenario_folder, scenario_paths[1]))

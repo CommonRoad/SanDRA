@@ -66,6 +66,16 @@ class TestReachVerifier(unittest.TestCase):
             self.scenario.lanelet_network,
             self.planning_problem.initial_state.position,
             consider_reversed=True,
+            consider_incoming=False
+        )
+
+        assert len(road_network.lanes) == 6
+
+        road_network = RoadNetwork.from_lanelet_network_and_position(
+            self.scenario.lanelet_network,
+            self.planning_problem.initial_state.position,
+            consider_reversed=True,
+            consider_incoming=True
         )
 
         ego_lane_network = EgoLaneNetwork.from_route_planner(
@@ -76,7 +86,10 @@ class TestReachVerifier(unittest.TestCase):
 
         plot_road_network(road_network, ego_lane_network)
 
-        assert len(road_network.lanes) == 6
+        assert len(ego_lane_network.lane_incoming_left) == 3
+        assert len(ego_lane_network.lane_incoming_right) == 3
+        assert len(ego_lane_network.lane_left_reversed) == 3
+        assert len(road_network.lanes) == 12
 
     def test_lane_construction(self):
 
@@ -133,6 +146,7 @@ class TestReachVerifier(unittest.TestCase):
 
         assert ego_lane_network_1.lane_right_adjacent is None
         assert ego_lane_network_1.lane_left_adjacent is None
+        assert isinstance(ego_lane_network_1.lane.center_vertices, np.ndarray)
 
         self.planning_problem.initial_state.position = np.asarray([19.80, -10.09])
         self.planning_problem.goal.state_list[0].position.center = np.asarray(

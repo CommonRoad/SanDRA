@@ -19,6 +19,7 @@ from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
 from highway_env.envs import AbstractEnv
 from highway_env.road.lane import StraightLane, LineType
+from highway_env.road.road import LaneIndex
 from highway_env.vehicle.behavior import IDMVehicle
 from highway_env.vehicle.controller import MDPVehicle
 from matplotlib import pyplot as plt
@@ -27,11 +28,9 @@ from commonroad.common.file_writer import CommonRoadFileWriter
 from commonroad.common.file_writer import OverwriteExistingFile
 from commonroad.scenario.scenario import Tag
 
-from sandra.actions import LongitudinalAction, LateralAction
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
-from sandra.commonroad.reach import ReachVerifier
-from sandra.utility.visualization import plot_scenario, plot_predicted_trajectory
+from sandra.utility.visualization import plot_scenario
 
 
 class HighwayEnvScenario:
@@ -51,8 +50,10 @@ class HighwayEnvScenario:
         self.time_step = start_time
         # todo: better wrap the parameters using SanDRAConfiguration
         self.prediction_length = SanDRAConfiguration().h + 1
-        self.minimum_interval = 1.0
-        self._ids: set[int] = {-1}
+        self.minimum_interval = 1.
+        self._commonroad_ids: set[int] = {-1}
+        self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
+        self.maximum_lanelet_length = 1000
 
     @staticmethod
     def _highenv_coordinate_to_commonroad(coordinates: np.ndarray) -> np.ndarray:
@@ -108,24 +109,16 @@ class HighwayEnvScenario:
 
     def _make_commonroad_lanelet(self, lane: StraightLane) -> Lanelet:
         road_network = self.scenario.vehicle.road.network
-        # todo: reduce the length of the lane
-        lane.end[0] /= 10
+        end = lane.start + lane.direction * self.maximum_lanelet_length
         # Generate lanelet vertices
         left_vertices = self._highenv_coordinate_to_commonroad(
-            self._create_vertices_along_line(lane.start, lane.end, lane.direction)
-        )
+            self._create_vertices_along_line(lane.start, end, lane.direction))
         center_offset = lane.direction_lateral * (lane.width / 2)
         center_vertices = self._highenv_coordinate_to_commonroad(
-            self._create_vertices_along_line(
-                lane.start + center_offset, lane.end + center_offset, lane.direction
-            )
-        )
+            self._create_vertices_along_line(lane.start + center_offset, end + center_offset, lane.direction))
         right_offset = lane.direction_lateral * lane.width
         right_vertices = self._highenv_coordinate_to_commonroad(
-            self._create_vertices_along_line(
-                lane.start + right_offset, lane.end + right_offset, lane.direction
-            )
-        )
+            self._create_vertices_along_line(lane.start + right_offset, end + right_offset, lane.direction))
 
         # Generate lanelet id
         lane_index = road_network.get_closest_lane_index(
@@ -195,19 +188,14 @@ class HighwayEnvScenario:
         # First, transform top-left into center coordinates, then
         center = top_left_corner + np.array([vehicle.LENGTH, vehicle.WIDTH])
         center = self._highenv_coordinate_to_commonroad(center)
-        obstacle_shape = Rectangle(
-            vehicle.LENGTH,
-            vehicle.WIDTH,
-            center=np.array([0.0, 0.0]),
-            orientation=vehicle.heading,
-        )
+        obstacle_shape = Rectangle(vehicle.LENGTH, vehicle.WIDTH, center=np.array([0.0, 0.0]),
+                                   orientation=0.0)
         obstacle_state = InitialState(
             position=center,
             orientation=(-vehicle.heading),
             velocity=vehicle.speed,
             acceleration=vehicle.action["acceleration"],
             time_step=self.time_step,
-            # todo: check if this is correct
             slip_angle=math.atan2(vehicle.velocity[1], vehicle.velocity[0]),
             yaw_rate=0.0,
         )
@@ -223,9 +211,8 @@ class HighwayEnvScenario:
             history=[],
         )
 
-    def _make_commonroad_planning_problem(
-        self, ego_vehicle: MDPVehicle, initial_state: InitialState
-    ) -> PlanningProblem:
+    def _make_commonroad_planning_problem(self, ego_vehicle: MDPVehicle,
+                                          initial_state: InitialState) -> PlanningProblem:
         road = ego_vehicle.road
         goal_lane: StraightLane = cast(
             StraightLane, road.network.get_lane(ego_vehicle.target_lane_index)
@@ -262,15 +249,13 @@ class HighwayEnvScenario:
         """
         Generate unique ids
         """
-        last_id = max(self._ids)
+        last_id = max(self._commonroad_ids)
         next_id = last_id + 1
-        self._ids.add(next_id)
+        self._commonroad_ids.add(next_id)
         return next_id
 
     @property
-    def commonroad_representation(
-        self,
-    ) -> tuple[Scenario, DynamicObstacle, PlanningProblem]:
+    def commonroad_representation(self, add_ego=True) -> tuple[Scenario, DynamicObstacle, PlanningProblem]:
         """
         Get the commonroad representation of the scenario
         """
@@ -290,16 +275,21 @@ class HighwayEnvScenario:
         scenario.add_objects(lanelet_network)
 
         # Add all obstacles
-        ego_vehicle_commonroad = self._make_commonroad_obstacle(
-            ego_vehicle, self._next_id()
-        )
-        # todo: the ego should not be added
-        # scenario.add_objects(ego_vehicle_commonroad)
+        ego_vehicle_commonroad = self._make_commonroad_obstacle(ego_vehicle, self._next_id())
         ego_obstacle_id = ego_vehicle_commonroad.obstacle_id
-        for vehicle in road.vehicles[1:]:
-            scenario.add_objects(
-                self._make_commonroad_obstacle(vehicle, self._next_id())
-            )
+        if add_ego:
+            scenario.add_objects(ego_vehicle_commonroad)
+
+        obstacles = cast(list, road.close_vehicles_to(
+            ego_vehicle, self.scenario.PERCEPTION_DISTANCE, see_behind=True,
+            sort=True
+        ))
+        for vehicle in road.vehicles:
+            vehicle_lane = road.network.get_lane(vehicle.lane_index)
+            s, _ = vehicle_lane.local_coordinates(vehicle.position)
+            if s > self.maximum_lanelet_length or vehicle not in obstacles:
+                continue
+            scenario.add_objects(self._make_commonroad_obstacle(vehicle, self._next_id()))
 
         # Add all obstacle predictions
         config = PredictorParams(
@@ -338,7 +328,7 @@ class HighwayEnvScenario:
         if plot_commonroad:
             scenario, ego_vehicle, planning_problem = self.commonroad_representation
             plot_scenario(scenario, planning_problem, plot_limits=[350, 500, -30, 0])
-            plot_predicted_trajectory(scenario, ego_vehicle)
+            # plot_predicted_trajectory(scenario, ego_vehicle)
 
     def step(self, action_id: int) -> bool:
         self.observation, reward, self.done, self.truncated, info = self._env.step(
@@ -346,7 +336,7 @@ class HighwayEnvScenario:
         )
         self.time_step += 0
         self._env.render()
-        self._ids = {-1}
+        self._commonroad_ids = {-1}
         if self.done or self.truncated:
             self._env.close()
             return False
@@ -377,21 +367,21 @@ class HighwayEnvScenario:
 
 if __name__ == "__main__":
     scenario_ = HighwayEnvScenario.make()
-    commonrad_scenario, _, planning_problem = scenario_.commonroad_representation
+    commonrad_scenario, _, planning_problem_ = scenario_.commonroad_representation
 
     road_network = RoadNetwork.from_lanelet_network_and_position(
         commonrad_scenario.lanelet_network,
-        planning_problem.initial_state.position,
+        planning_problem_.initial_state.position,
     )
 
     ego_lane_network = EgoLaneNetwork.from_route_planner(
-        commonrad_scenario.lanelet_network, planning_problem, road_network
+        commonrad_scenario.lanelet_network,
+        planning_problem_,
+        road_network
     )
-    verifier = ReachVerifier(
-        commonrad_scenario, SanDRAConfiguration(), ego_lane_network
-    )
-    verifier.verify([LongitudinalAction.KEEP, LateralAction.CHANGE_LEFT])
+    # verifier = ReachVerifier(commonrad_scenario, SanDRAConfiguration(), ego_lane_network)
+    # verifier.verify([LongitudinalAction.KEEP, LateralAction.CHANGE_LEFT])
     # scenario_.plot(plot_commonroad=True)
-    # while scenario_.step(1):
-    #     scenario_.plot(plot_commonroad=True)
-    # scenario_.highway_env_representation.close()
+    scenario_.step(1)
+    scenario_.plot(plot_commonroad=True)
+    scenario_.highway_env_representation.close()

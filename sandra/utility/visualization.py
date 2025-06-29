@@ -17,10 +17,7 @@ from commonroad.visualization.draw_params import (
     ShapeParams,
 )
 from commonroad.visualization.mp_renderer import MPRenderer
-from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import (
-    SemanticReachableSetInterface,
-)
-from commonroad_reach_semantic.utility import visualization as util_visual
+from matplotlib import pyplot as plt
 
 from sandra.common.config import SUPPRESS_PLOTS
 from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
@@ -46,7 +43,8 @@ if SUPPRESS_PLOTS:
     matplotlib.use("Agg")
 
 
-def plot_reachable_set(reach_interface: SemanticReachableSetInterface):
+def plot_reachable_set(reach_interface):
+    from commonroad_reach_semantic.utility import visualization as util_visual
     config = reach_interface.config
     config.general.path_output = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "output"
@@ -180,6 +178,19 @@ def plot_road_network(
                 for lanelet in lane_right.lanelets:
                     rnd.draw_polygon(lanelet.polygon.vertices, params)
 
+        # Reset color for incoming lanes
+        params.facecolor = TUMcolor.TUMwhite
+        params.opacity = 0.2
+        if ego_lane_network.lane_incoming_left:
+            for lane in ego_lane_network.lane_incoming_left:
+                for lanelet in lane.lanelets:
+                    rnd.draw_polygon(lanelet.polygon.vertices, params)
+        if ego_lane_network.lane_incoming_right:
+            for lane in ego_lane_network.lane_incoming_right:
+                for lanelet in lane.lanelets:
+                    rnd.draw_polygon(lanelet.polygon.vertices, params)
+
+        # Reset color for adjacent lanes
         params.facecolor = TUMcolor.TUMorange
         params.opacity = 0.2
 
@@ -197,3 +208,4 @@ def plot_road_network(
 
     # Render and optionally save the figure
     rnd.render(show=True, filename=save_path)
+    plt.show()

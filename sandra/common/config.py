@@ -5,14 +5,14 @@ from dataclasses import dataclass
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
-    model_name = "gpt-4.1-mini"
-
+    model_name = "qwen3:14b"
+    use_ollama = True
     a_lim = 0.1
 
     h = 20  # time horizon of decision-making
 
 
-COMMONROAD_REACH_SEMANTIC_ROOT = "/home/liny/repairverse/commonroad-reach-semantic"
+COMMONROAD_REACH_SEMANTIC_ROOT = "/home/sebastian/Documents/Uni/GuidedResearch/Repos/commonroad-reach-semantic"
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
