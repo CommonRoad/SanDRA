@@ -38,7 +38,6 @@ class DescriberBase(ABC):
     ):
         self.timestep = timestep
         self.config = config
-        self.update(timestep=timestep)
         self.role = "" if role is None else role
         self.goal = "" if goal is None else goal
         self.scenario_type = (
@@ -46,6 +45,7 @@ class DescriberBase(ABC):
             if scenario_type is None
             else f"You are currently in an {scenario_type} scenario."
         )
+        self.update(timestep=timestep)
 
     def update(self, timestep=None):
         if timestep is not None:

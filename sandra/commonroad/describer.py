@@ -32,7 +32,7 @@ class CommonRoadDescriber(DescriberBase):
                  config: SanDRAConfiguration, role: Optional[str] = None, goal: Optional[str] = None,
                  scenario_type: Optional[str] = None, describe_ttc=True, k=3,
                  past_action: List[Union[LongitudinalAction, LateralAction]] = None,
-                 country: Optional[str] = "Germany", enforce_k=False):
+                 country: Optional[str] = "Germany"):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
         self.ego_state = None
@@ -65,6 +65,8 @@ class CommonRoadDescriber(DescriberBase):
         )
         road_network = RoadNetwork.from_lanelet_network_and_position(self.scenario.lanelet_network, self.ego_state.position)
         self.ego_lane_network = EgoLaneNetwork.from_route_planner(self.scenario.lanelet_network, self.planning_problem, road_network)
+        if not self.scenario_type and (self.ego_lane_network.lane_incoming_left or self.ego_lane_network.lane_incoming_right):
+            self.scenario_type = "intersection"
 
     def ttc_description(self, obstacle_id: int) -> Optional[str]:
         if not self.ttc_evaluator or not self.describe_ttc:
@@ -203,21 +205,14 @@ class CommonRoadDescriber(DescriberBase):
         return obstacle_description
 
     def _describe_ego_state(self) -> str:
-        if len(self.scenario.lanelet_network.intersections) > 0:
-            if len(self.scenario.lanelet_network.intersections) > 0:
-                if self.ego_lane_network.lane_incoming_left or self.ego_lane_network.lane_incoming_right:
-                    ego_description = "You are currently driving towards an intersection scenario."
+        ego_description = f"You are currently driving in a {self.scenario_type} scenario." if self.scenario_type else ""
 
-                    if self.ego_lane_network.lane_incoming_left and self.ego_lane_network.lane_incoming_right:
-                        ego_description += " There are incoming lanes on both the left and right. "
-                    elif self.ego_lane_network.lane_incoming_left:
-                        ego_description += " There are incoming lanes on the left. "
-                    else:
-                        ego_description += " There are incoming lanes on the right. "
-                else:
-                    ego_description = "You are currently driving within an intersection scenario. "
-        else:
-            ego_description = f"You are currently driving in a {self.scenario_type} scenario." if self.scenario_type else ""
+        if self.ego_lane_network.lane_incoming_left and self.ego_lane_network.lane_incoming_right:
+            ego_description += " There are incoming lanes on both the left and right. "
+        elif self.ego_lane_network.lane_incoming_left:
+            ego_description += " There are incoming lanes on the left. "
+        elif self.ego_lane_network.lane_incoming_right:
+            ego_description += " There are incoming lanes on the right. "
 
         sides = {"left": [], "right": []}
 

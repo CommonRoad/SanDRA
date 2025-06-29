@@ -19,11 +19,6 @@ from commonroad.visualization.draw_params import (
 from commonroad.visualization.mp_renderer import MPRenderer
 from matplotlib import pyplot as plt
 
-from commonroad_reach_semantic.data_structure.reach.semantic_reach_interface import (
-    SemanticReachableSetInterface,
-)
-from commonroad_reach_semantic.utility import visualization as util_visual
-
 from sandra.common.config import SUPPRESS_PLOTS
 from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
 
@@ -48,7 +43,8 @@ if SUPPRESS_PLOTS:
     matplotlib.use("Agg")
 
 
-def plot_reachable_set(reach_interface: SemanticReachableSetInterface):
+def plot_reachable_set(reach_interface):
+    from commonroad_reach_semantic.utility import visualization as util_visual
     config = reach_interface.config
     config.general.path_output = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "output"
