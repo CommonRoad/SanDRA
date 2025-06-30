@@ -11,6 +11,8 @@ class SanDRAConfiguration:
 
     h = 20  # time horizon of decision-making
 
+    length = 4.5
+    width = 2.0
 
 COMMONROAD_REACH_SEMANTIC_ROOT = (
     "/home/sebastian/Documents/Uni/GuidedResearch/Repos/commonroad-reach-semantic"
