@@ -325,7 +325,7 @@ class CommonRoadDescriber(DescriberBase):
     def _get_available_actions(
         self,
     ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
-        lateral_actions = [LateralAction.KEEP]
+        lateral_actions = [LateralAction.FOLLOW_LANE]
         if (
             self.ego_lane_network.lane_left_adjacent
             or self.ego_lane_network.lane_left_reversed
