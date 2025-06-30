@@ -1,14 +1,17 @@
+import copy
 import math
 from typing import Optional, Any, Union, List, Tuple
 import numpy as np
+from commonroad.geometry.shape import Rectangle
 from openai import BaseModel
 
 from commonroad.planning.planning_problem import PlanningProblem
-from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
+from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType, StaticObstacle
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.traffic_sign import TrafficSignIDGermany
 from commonroad_crime.data_structure.configuration import CriMeConfiguration
 from commonroad_crime.measure import TTC
+from commonroad_crime.utility.general import check_elements_state
 
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
@@ -53,12 +56,27 @@ class CommonRoadDescriber(DescriberBase):
         self.describe_ttc = describe_ttc
         assert 1 <= k <= 10, f"Unsupported k {k}"
         self.k = k
-        super().__init__(timestep, config, role, goal, scenario_type)
 
         if describe_ttc:
-            config = CriMeConfiguration()
-            config.update(ego_id=self.ego_vehicle.obstacle_id, sce=scenario)
-            self.ttc_evaluator = TTC(config)
+            crime_config = CriMeConfiguration()
+            if self.ego_vehicle:
+                crime_config.update(ego_id=self.ego_vehicle.obstacle_id, sce=scenario)
+            else:
+                check_elements_state(planning_problem.initial_state)
+                self.ego_vehicle = StaticObstacle(
+                    obstacle_id=planning_problem.planning_problem_id,
+                    obstacle_type=ObstacleType.CAR,
+                    obstacle_shape=Rectangle(length=config.length, width=config.width),
+                    initial_state=planning_problem.initial_state,
+                )
+                crime_sce = copy.deepcopy(scenario)
+                crime_sce.add_objects(self.ego_vehicle)
+                crime_config.update(ego_id=self.ego_vehicle.obstacle_id, sce=crime_sce)
+
+            self.ttc_evaluator = TTC(crime_config)
+
+        super().__init__(timestep, config, role, goal, scenario_type)
+
 
     def update(self, timestep=None):
         if timestep is not None:
@@ -78,6 +96,10 @@ class CommonRoadDescriber(DescriberBase):
         self.ego_lane_network = EgoLaneNetwork.from_route_planner(
             self.scenario.lanelet_network, self.planning_problem, road_network
         )
+
+        # clcs for crime
+        self.ttc_evaluator.configuration.update(CLCS=self.ego_lane_network.lane.clcs)
+
         if not self.scenario_type and (
             self.ego_lane_network.lane_incoming_left
             or self.ego_lane_network.lane_incoming_right
