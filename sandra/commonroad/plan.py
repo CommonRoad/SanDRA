@@ -57,6 +57,10 @@ class ReactivePlanner(PlannerBase):
         # adaptive corridor sampling
         self.config_planner.sampling.sampling_method = 2
 
+        # fix the dimension
+        self.config_planner.vehicle.length = config.length
+        self.config_planner.vehicle.width = config.width
+
         self.planner = CRReactivePlanner(self.config_planner)
         self.trajectory = None
 
