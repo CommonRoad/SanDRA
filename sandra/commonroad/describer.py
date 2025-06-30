@@ -65,7 +65,7 @@ class CommonRoadDescriber(DescriberBase):
             self.timestep = timestep
         else:
             self.timestep = self.timestep + 1
-        self.ego_state = self.ego_vehicle.prediction.trajectory.state_list[timestep]
+        self.ego_state = self.planning_problem.initial_state
         self.ego_direction: np.ndarray = np.array(
             [
                 np.cos(self.ego_state.orientation),
@@ -85,7 +85,7 @@ class CommonRoadDescriber(DescriberBase):
             self.scenario_type = "intersection"
 
     def ttc_description(self, obstacle_id: int) -> Optional[str]:
-        if not self.ttc_evaluator or not self.describe_ttc:
+        if not self.describe_ttc or not self.ttc_evaluator:
             return None
 
         ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
@@ -214,7 +214,7 @@ class CommonRoadDescriber(DescriberBase):
                 ObstacleType.BICYCLE,
                 ObstacleType.TRUCK,
             ]:
-                if obstacle.obstacle_id == self.ego_vehicle.obstacle_id:
+                if self.ego_vehicle and obstacle.obstacle_id == self.ego_vehicle.obstacle_id:
                     continue
                 try:
                     temp = self._describe_vehicle(obstacle)
@@ -237,11 +237,15 @@ class CommonRoadDescriber(DescriberBase):
         return obstacle_description
 
     def _describe_ego_state(self) -> str:
-        ego_description = (
-            f"You are currently driving in a {self.scenario_type} scenario."
-            if self.scenario_type
-            else ""
-        )
+        if self.scenario_type == "intersection":
+            ego_description = "You are currently approaching an intersection."
+        elif self.scenario_type == "roundabout":
+            ego_description = "You are currently entering a roundabout."
+        elif self.scenario_type:
+            article = "an" if self.scenario_type[0].lower() in "aeiou" else "a"
+            ego_description = f"You are currently driving in {article} {self.scenario_type} scenario."
+        else:
+            ego_description = ""
 
         if (
             self.ego_lane_network.lane_incoming_left
