@@ -74,7 +74,8 @@ class CommonRoadDescriber(DescriberBase):
                 crime_config.update(ego_id=self.ego_vehicle.obstacle_id, sce=crime_sce)
 
             self.ttc_evaluator = TTC(crime_config)
-
+        else:
+            self.ttc_evaluator = None
         super().__init__(timestep, config, role, goal, scenario_type)
 
 
@@ -98,7 +99,8 @@ class CommonRoadDescriber(DescriberBase):
         )
 
         # clcs for crime
-        self.ttc_evaluator.configuration.update(CLCS=self.ego_lane_network.lane.clcs)
+        if self.ttc_evaluator:
+            self.ttc_evaluator.configuration.update(CLCS=self.ego_lane_network.lane.clcs)
 
         if not self.scenario_type and (
             self.ego_lane_network.lane_incoming_left

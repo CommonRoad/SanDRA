@@ -39,7 +39,8 @@ if __name__ == "__main__":
         "DEU_AachenFrankenburg-1_2120_T-39.xml",
         "DEU_AachenHeckstrasse-1_30520_T-539.xml",
         "DEU_LocationALower-11_10_T-1.xml",
+        "DEU_Gar-1_1_T-1.xml"
     ]
 
     scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")
-    main(os.path.join(scenario_folder, scenario_paths[1]))
+    main(os.path.join(scenario_folder, scenario_paths[-1]))
