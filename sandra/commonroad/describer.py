@@ -329,12 +329,10 @@ class CommonRoadDescriber(DescriberBase):
         lateral_actions = [LateralAction.FOLLOW_LANE]
         if (
             self.ego_lane_network.lane_left_adjacent
-            or self.ego_lane_network.lane_left_reversed
         ):
             lateral_actions.append(LateralAction.CHANGE_LEFT)
         if (
             self.ego_lane_network.lane_right_adjacent
-            or self.ego_lane_network.lane_right_reversed
         ):
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
         longitudinal_actions = [x for x in LongitudinalAction]
