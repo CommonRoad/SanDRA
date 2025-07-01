@@ -4,9 +4,9 @@ from commonroad.common.file_reader import CommonRoadFileReader
 
 from sandra.common.config import PROJECT_ROOT, SanDRAConfiguration
 from sandra.commonroad.describer import CommonRoadDescriber
-from sandra.utility.visualization import plot_scenario
+from sandra.utility.visualization import draw_scenario_paper
 
-name_scenario = "DEU_Gar-1_1_T-1"
+name_scenario = "DEU_Goeppingen-37_1_T-4"
 path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
 scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
             lanelet_assignment=True
@@ -17,8 +17,18 @@ planning_problem = list(
 
 config = SanDRAConfiguration()
 
+
+draw_scenario_paper(scenario,
+                    planning_problem,
+                    0,
+                    config,
+                    draw_planning_problem=False,
+                    plot_limits=[-6.36, 79.56, 4.07, 25.65], # [-10., 102.46, 0.48, 27.42],
+                    )
+
+
 describer = CommonRoadDescriber(
-            scenario, planning_problem, 0, config, describe_ttc=True
+            scenario, planning_problem, 0, config
         )
 
 user_prompt = describer.user_prompt()

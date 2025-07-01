@@ -7,12 +7,13 @@ from sandra.commonroad.reach import ReachVerifier, VerificationStatus
 from sandra.actions import LongitudinalAction, LateralAction
 
 # scenario basic information
-name_scenario = "DEU_Gar-1_1_T-1"
+name_scenario = "DEU_Goeppingen-37_1_T-4"
 path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
 scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
     lanelet_assignment=True
 )
 planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
+
 
 # configuration
 config = SanDRAConfiguration()
@@ -32,7 +33,7 @@ ego_lane_network = EgoLaneNetwork.from_route_planner(
 # reachability analysis
 reach_ver = ReachVerifier(scenario, config, ego_lane_network)
 status = reach_ver.verify(
-    [LongitudinalAction.KEEP, LateralAction.FOLLOW_LANE], visualization=True
+    [LongitudinalAction.ACCELERATE, LateralAction.CHANGE_RIGHT], visualization=True
 )
 
 # planning
