@@ -112,9 +112,8 @@ class CommonRoadDescriber(DescriberBase):
         if not self.describe_ttc or not self.ttc_evaluator:
             return None
 
-        ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
-
         try:
+            ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
             ttc_val = float(ttc)
             if math.isnan(ttc_val):
                 return "inf sec"
