@@ -211,7 +211,7 @@ class CommonRoadDescriber(DescriberBase):
                 vehicle_description += f" The time-to-collision is {ttc}."
         return vehicle_description
 
-    def _get_relevant_obstacles(self, perception_radius=100) -> list[DynamicObstacle]:
+    def _get_relevant_obstacles(self, perception_radius: float) -> list[DynamicObstacle]:
         circle_center = self.ego_state.position
         return [
             x
@@ -230,7 +230,7 @@ class CommonRoadDescriber(DescriberBase):
         )
         initial_len = len(obstacle_description)
         indent = "    "
-        for obstacle in self._get_relevant_obstacles():
+        for obstacle in self._get_relevant_obstacles(self.config.perception_radius):
             if obstacle.obstacle_type in [
                 ObstacleType.CAR,
                 ObstacleType.BUS,
