@@ -1,7 +1,10 @@
 
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Tuple
 import os
+
+import numpy as np
+from commonroad_reach.data_structure.reach.reach_interface import ReachableSetInterface
 from matplotlib import pyplot as plt
 from matplotlib.transforms import Affine2D
 from pathlib import Path
@@ -9,7 +12,7 @@ from pathlib import Path
 from commonroad.scenario.trajectory import Trajectory
 from commonroad.visualization.draw_params import DynamicObstacleParams, OccupancyParams, \
     PlanningProblemParams
-from commonroad.geometry.shape import Rectangle
+from commonroad.geometry.shape import Rectangle, Polygon
 
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.prediction.prediction import TrajectoryPrediction
@@ -24,6 +27,7 @@ from commonroad.visualization.draw_params import (
 )
 from commonroad.visualization.mp_renderer import MPRenderer
 
+from commonroad_reach.utility import coordinate_system as util_coordinate_system
 
 from sandra.common.config import SUPPRESS_PLOTS, SanDRAConfiguration
 from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
@@ -41,7 +45,7 @@ class TUMcolor(tuple, Enum):
     TUMwhite = (1, 1, 1)
     TUMblack = (0, 0, 0)
     TUMlightgray = (217 / 255, 218 / 255, 219 / 255)
-
+    TUMyellow = (254 / 255, 215 / 255, 2 / 255)
 
 if SUPPRESS_PLOTS:
     import matplotlib
@@ -310,8 +314,70 @@ def draw_scenario_paper(
     if not output_path:
         output_path = Path(__file__).resolve().parents[2] / "output"
     os.makedirs(output_path, exist_ok=True)
-    plt.savefig(f"{output_path}/{str(scenario.scenario_id)}.svg",
+    plt.savefig(f"{output_path}/{str(scenario.scenario_id)}/scenario.svg",
                 format="svg", dpi=100,
                 bbox_inches='tight')
+
+    plt.show()
+
+def plot_reachable_sets(reach_interface: ReachableSetInterface,
+                        step_start: int = 0, step_end: int = 0,
+                        plot_limits: List = None, path_output: str = None):
+    """
+    Plots scenario with computed reachable sets.
+    """
+    config = reach_interface.config
+    scenario = config.scenario
+
+    path_output = path_output or Path(__file__).resolve().parents[2] / "output"
+    os.makedirs(path_output, exist_ok=True)
+
+    step_start = step_start or reach_interface.step_start
+    step_end = step_end or reach_interface.step_end
+
+    steps = [step_start] + list(range(step_start, step_end + 1))
+
+    rnd = MPRenderer(figsize=(20, 10))
+    rnd.plot_limits = plot_limits
+
+    # scenario params
+    scenario_params = MPDrawParams()
+    scenario_params.time_begin = step_start
+    scenario_params.time_end = step_end
+
+    scenario_params.traffic_light.draw_traffic_lights = True
+    scenario_params.dynamic_obstacle.draw_icon = True
+    scenario_params.dynamic_obstacle.trajectory.draw_trajectory = False
+    scenario_params.dynamic_obstacle.occupancy.draw_occupancies = True
+    scenario_params.dynamic_obstacle.occupancy.shape.facecolor = TUMcolor.TUMgray
+    scenario_params.dynamic_obstacle.occupancy.shape.edgecolor = TUMcolor.TUMblack
+    scenario_params.dynamic_obstacle.occupancy.shape.opacity = 0.25
+    scenario_params.dynamic_obstacle.vehicle_shape.facecolor = TUMcolor.TUMgray
+    scenario_params.dynamic_obstacle.vehicle_shape.edgecolor = TUMcolor.TUMblack
+
+    reach_params = MPDrawParams()
+    reach_params.shape.facecolor = TUMcolor.TUMyellow
+    reach_params.shape.edgecolor = TUMcolor.TUMblack
+
+    # draw scenario
+    scenario.draw(rnd, draw_params=scenario_params)
+
+    for step in steps:
+
+        list_nodes = reach_interface.reachable_set_at_step(step)
+        # Draw reachable sets
+        for node in list_nodes:
+            position_rectangle = node.position_rectangle
+            list_polygons_cart = util_coordinate_system.convert_to_cartesian_polygons(position_rectangle,
+                                                                                      config.planning.CLCS, True)
+            for polygon in list_polygons_cart:
+                Polygon(vertices=np.array(polygon.vertices)).draw(rnd, reach_params)
+
+    rnd.render()
+    plt.axis('off')
+
+    plt.savefig(f"{path_output}/{str(scenario.scenario_id)}/reach.svg",
+                    format="svg", dpi=100,
+                    bbox_inches='tight')
 
     plt.show()
