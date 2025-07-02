@@ -12,7 +12,7 @@ def main(scenario_path: str):
     config = SanDRAConfiguration()
     save_path = scenario_path
     scenario, planning_problem = extract_scenario_and_planning_problem(scenario_path)
-    describer = CommonRoadDescriber(scenario, planning_problem, 0, config)
+    describer = CommonRoadDescriber(scenario, planning_problem, 0, config, goal="Drive faster.", describe_ttc=False)
     verifier = ReachVerifier(scenario, config)
     decider = Decider(config, describer, verifier, save_path=save_path)
     print(f"-----------------SYSTEM PROMPT-------------------")
