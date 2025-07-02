@@ -96,7 +96,7 @@ class ReactivePlanner(PlannerBase):
         self, driving_corridor: Dict[int, ConnectedComponent]
     ) -> Optional[Trajectory]:
         # limit the sampling space
-        self.planner.sampling_space.set_corridor(driving_corridor)
+        self.planner.sampling_space.driving_corridor = driving_corridor
         desired_velocity = self.extract_desired_velocity(
             driving_corridor[self.sandra_config.h]
         )
