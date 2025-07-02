@@ -2,7 +2,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import Optional, Any, Literal, overload
 
-from commonroad_clcs.clcs import CurvilinearCoordinateSystem
+from commonroad_dc.pycrccosy import CurvilinearCoordinateSystem
 from openai import BaseModel
 import numpy as np
 
