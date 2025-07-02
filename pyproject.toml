@@ -35,7 +35,7 @@ commonroad-io = "~2024.3"
 commonroad-reach = "~=2024.1.3"
 commonroad-drivability-checker = "~2024.2"
 commonroad-route-planner = "~2024.2.0"
-#commonroad-reactive-planner = "~2025.1.0"
+commonroad-reactive-planner = "~2024.1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
