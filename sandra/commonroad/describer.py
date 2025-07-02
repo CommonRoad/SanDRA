@@ -1,14 +1,17 @@
+import copy
 import math
 from typing import Optional, Any, Union, List, Tuple
 import numpy as np
+from commonroad.geometry.shape import Rectangle
 from openai import BaseModel
 
 from commonroad.planning.planning_problem import PlanningProblem
-from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
+from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType, StaticObstacle
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.traffic_sign import TrafficSignIDGermany
 from commonroad_crime.data_structure.configuration import CriMeConfiguration
 from commonroad_crime.measure import TTC
+from commonroad_crime.utility.general import check_elements_state
 
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
@@ -53,19 +56,35 @@ class CommonRoadDescriber(DescriberBase):
         self.describe_ttc = describe_ttc
         assert 1 <= k <= 10, f"Unsupported k {k}"
         self.k = k
-        super().__init__(timestep, config, role, goal, scenario_type)
 
         if describe_ttc:
-            config = CriMeConfiguration()
-            config.update(ego_id=self.ego_vehicle.obstacle_id, sce=scenario)
-            self.ttc_evaluator = TTC(config)
+            crime_config = CriMeConfiguration()
+            if self.ego_vehicle:
+                crime_config.update(ego_id=self.ego_vehicle.obstacle_id, sce=scenario)
+            else:
+                check_elements_state(planning_problem.initial_state)
+                self.ego_vehicle = StaticObstacle(
+                    obstacle_id=planning_problem.planning_problem_id,
+                    obstacle_type=ObstacleType.CAR,
+                    obstacle_shape=Rectangle(length=config.length, width=config.width),
+                    initial_state=planning_problem.initial_state,
+                )
+                crime_sce = copy.deepcopy(scenario)
+                crime_sce.add_objects(self.ego_vehicle)
+                crime_config.update(ego_id=self.ego_vehicle.obstacle_id, sce=crime_sce)
+
+            self.ttc_evaluator = TTC(crime_config)
+        else:
+            self.ttc_evaluator = None
+        super().__init__(timestep, config, role, goal, scenario_type)
+
 
     def update(self, timestep=None):
         if timestep is not None:
             self.timestep = timestep
         else:
             self.timestep = self.timestep + 1
-        self.ego_state = self.ego_vehicle.prediction.trajectory.state_list[timestep]
+        self.ego_state = self.planning_problem.initial_state
         self.ego_direction: np.ndarray = np.array(
             [
                 np.cos(self.ego_state.orientation),
@@ -78,6 +97,11 @@ class CommonRoadDescriber(DescriberBase):
         self.ego_lane_network = EgoLaneNetwork.from_route_planner(
             self.scenario.lanelet_network, self.planning_problem, road_network
         )
+
+        # clcs for crime
+        if self.ttc_evaluator:
+            self.ttc_evaluator.configuration.update(CLCS=self.ego_lane_network.lane.clcs)
+
         if not self.scenario_type and (
             self.ego_lane_network.lane_incoming_left
             or self.ego_lane_network.lane_incoming_right
@@ -85,12 +109,11 @@ class CommonRoadDescriber(DescriberBase):
             self.scenario_type = "intersection"
 
     def ttc_description(self, obstacle_id: int) -> Optional[str]:
-        if not self.ttc_evaluator or not self.describe_ttc:
+        if not self.describe_ttc or not self.ttc_evaluator:
             return None
 
-        ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
-
         try:
+            ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
             ttc_val = float(ttc)
             if math.isnan(ttc_val):
                 return "inf sec"
@@ -188,7 +211,7 @@ class CommonRoadDescriber(DescriberBase):
                 vehicle_description += f" The time-to-collision is {ttc}."
         return vehicle_description
 
-    def _get_relevant_obstacles(self, perception_radius=100) -> list[DynamicObstacle]:
+    def _get_relevant_obstacles(self, perception_radius: float) -> list[DynamicObstacle]:
         circle_center = self.ego_state.position
         return [
             x
@@ -207,14 +230,14 @@ class CommonRoadDescriber(DescriberBase):
         )
         initial_len = len(obstacle_description)
         indent = "    "
-        for obstacle in self._get_relevant_obstacles():
+        for obstacle in self._get_relevant_obstacles(self.config.perception_radius):
             if obstacle.obstacle_type in [
                 ObstacleType.CAR,
                 ObstacleType.BUS,
                 ObstacleType.BICYCLE,
                 ObstacleType.TRUCK,
             ]:
-                if obstacle.obstacle_id == self.ego_vehicle.obstacle_id:
+                if self.ego_vehicle and obstacle.obstacle_id == self.ego_vehicle.obstacle_id:
                     continue
                 try:
                     temp = self._describe_vehicle(obstacle)
@@ -237,11 +260,15 @@ class CommonRoadDescriber(DescriberBase):
         return obstacle_description
 
     def _describe_ego_state(self) -> str:
-        ego_description = (
-            f"You are currently driving in a {self.scenario_type} scenario."
-            if self.scenario_type
-            else ""
-        )
+        if self.scenario_type == "intersection":
+            ego_description = "You are currently approaching an intersection."
+        elif self.scenario_type == "roundabout":
+            ego_description = "You are currently entering a roundabout."
+        elif self.scenario_type:
+            article = "an" if self.scenario_type[0].lower() in "aeiou" else "a"
+            ego_description = f"You are currently driving in {article} {self.scenario_type} scenario."
+        else:
+            ego_description = ""
 
         if (
             self.ego_lane_network.lane_incoming_left
@@ -299,15 +326,13 @@ class CommonRoadDescriber(DescriberBase):
     def _get_available_actions(
         self,
     ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
-        lateral_actions = [LateralAction.KEEP]
+        lateral_actions = [LateralAction.FOLLOW_LANE]
         if (
             self.ego_lane_network.lane_left_adjacent
-            or self.ego_lane_network.lane_left_reversed
         ):
             lateral_actions.append(LateralAction.CHANGE_LEFT)
         if (
             self.ego_lane_network.lane_right_adjacent
-            or self.ego_lane_network.lane_right_reversed
         ):
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
         longitudinal_actions = [x for x in LongitudinalAction]

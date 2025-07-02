@@ -1,7 +1,8 @@
+import warnings
 from abc import ABC, abstractmethod
 from typing import Optional, Any, Literal, overload
 
-from commonroad_clcs.clcs import CurvilinearCoordinateSystem
+from commonroad_dc.pycrccosy import CurvilinearCoordinateSystem
 from openai import BaseModel
 import numpy as np
 
@@ -100,20 +101,28 @@ class DescriberBase(ABC):
         curvilinear_points = clcs.convert_list_of_points_to_curvilinear_coords(
             points, 0
         )
-        ego_position_clcs, obstacle_position_clcs = curvilinear_points
+        try:
+            ego_position_clcs, obstacle_position_clcs = curvilinear_points
 
-        s_dist = obstacle_position_clcs[0] - ego_position_clcs[0]
-        d_dist = obstacle_position_clcs[1] - ego_position_clcs[1]
-        if direction == "incoming":
-            if d_dist > 0:
-                return f"{d_dist:.1f} meters right of you"
+            if len(curvilinear_points) != 2:
+                warnings.warn(f"Unexpected number of curvilinear points: {len(curvilinear_points)}")
+                return "far away from you"
+
+            s_dist = obstacle_position_clcs[0] - ego_position_clcs[0]
+            d_dist = obstacle_position_clcs[1] - ego_position_clcs[1]
+            if direction == "incoming":
+                if d_dist > 0:
+                    return f"{d_dist:.1f} meters right of you"
+                else:
+                    return f"{d_dist:.1f} meters left of you"
             else:
-                return f"{d_dist:.1f} meters left of you"
-        else:
-            if s_dist > 0:
-                return f"{s_dist:.1f} meters in front of you"
-            else:
-                return f"{abs(s_dist):.1f} meters behind you"
+                if s_dist > 0:
+                    return f"{s_dist:.1f} meters in front of you"
+                else:
+                    return f"{abs(s_dist):.1f} meters behind you"
+        except Exception as e:
+            print(f"[Error] Failed to compute curvilinear distance: {e}")
+            return "far away from you"
 
     @abstractmethod
     def _describe_traffic_signs(self) -> str:

@@ -56,6 +56,11 @@ class ReactivePlanner(PlannerBase):
 
         # adaptive corridor sampling
         self.config_planner.sampling.sampling_method = 2
+        self.config_planner.planning.time_steps_computation = self.sandra_config.h
+
+        # fix the dimension
+        self.config_planner.vehicle.length = config.length
+        self.config_planner.vehicle.width = config.width
 
         self.planner = CRReactivePlanner(self.config_planner)
         self.trajectory = None
@@ -92,7 +97,7 @@ class ReactivePlanner(PlannerBase):
         self, driving_corridor: Dict[int, ConnectedComponent]
     ) -> Optional[Trajectory]:
         # limit the sampling space
-        self.planner.sampling_space.set_corridor(driving_corridor)
+        self.planner.sampling_space.driving_corridor = driving_corridor
         desired_velocity = self.extract_desired_velocity(
             driving_corridor[self.sandra_config.h]
         )
@@ -136,4 +141,5 @@ class ReactivePlanner(PlannerBase):
             timestep=0,
             config=self.config_planner,
             rnd=renderer,
+            plot_limits=self.sandra_config.plot_limits
         )

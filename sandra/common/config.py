@@ -9,9 +9,14 @@ class SanDRAConfiguration:
     use_ollama = True
     a_lim = 0.1
 
-    h = 20  # time horizon of decision-making
+    h = 25  # time horizon of decision-making
 
+    length = 4.5
+    width = 2.0
 
+    perception_radius = 100
+
+    plot_limits = [-6.36, 79.56, 4.07, 25.65]
 COMMONROAD_REACH_SEMANTIC_ROOT = (
     "/home/sebastian/Documents/Uni/GuidedResearch/Repos/commonroad-reach-semantic"
 )
