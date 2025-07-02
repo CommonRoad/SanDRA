@@ -56,6 +56,7 @@ class ReactivePlanner(PlannerBase):
 
         # adaptive corridor sampling
         self.config_planner.sampling.sampling_method = 2
+        self.config_planner.planning.time_steps_computation = self.sandra_config.h
 
         # fix the dimension
         self.config_planner.vehicle.length = config.length
@@ -140,4 +141,5 @@ class ReactivePlanner(PlannerBase):
             timestep=0,
             config=self.config_planner,
             rnd=renderer,
+            plot_limits=self.sandra_config.plot_limits
         )
