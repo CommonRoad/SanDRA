@@ -20,7 +20,7 @@ class LabelerBase(ABC):
         self,
         obstacle: DynamicObstacle,
         obs_lane_network: EgoLaneNetwork,
-    ) -> List[Union[LateralAction, LongitudinalAction]]:
+    ) -> List[set[Union[LateralAction, LongitudinalAction]]]:
         """Assign a label to the trajectory of a dynamic obstacle.
 
         Subclasses must implement this method.
@@ -34,11 +34,11 @@ class TrajectoryLabeler(LabelerBase):
 
     def label(
         self, obstacle: DynamicObstacle, obs_lane_network: EgoLaneNetwork
-    ) -> List[Union[LateralAction, LongitudinalAction]]:
+    ) -> List[set[Union[LateralAction, LongitudinalAction]]]:
 
         long_label = self.longitudinal_label(obstacle)
         lat_label = self.lateral_label(obstacle, obs_lane_network)
-        return [long_label, lat_label]
+        return [{long_label, lat_label}]
 
     @staticmethod
     def augment_state_acceleration(obstacle: DynamicObstacle, dt: float) -> List[float]:
@@ -117,3 +117,8 @@ class TrajectoryLabeler(LabelerBase):
                 return LateralAction.CHANGE_RIGHT
 
         return LateralAction.UNKNOWN
+
+
+class ReachSetLabeler(LabelerBase):
+    def __init__(self, config: SanDRAConfiguration, scenario: Scenario):
+        super().__init__(config, scenario)
