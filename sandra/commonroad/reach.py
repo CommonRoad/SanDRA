@@ -74,12 +74,18 @@ class ReachVerifier(VerifierBase):
             self.reach_config, self.semantic_model, self.rule_interface
         )
 
+        # default params to be stored
+        self._default_a_lon_max = self.reach_config.vehicle.ego.a_lon_max
+        self._default_a_lon_min = self.reach_config.vehicle.ego.a_lon_min
+
     def reset(
         self,
         reach_config: SemanticConfiguration = None,
         actions: List[Union[LongitudinalAction, LateralAction]] = None,
+        ego_lane_network: EgoLaneNetwork = None,
+        scenario: Scenario = None,
     ):
-        """resets configurations and actions"""
+        """resets configs"""
         if reach_config:
             self.reach_config = reach_config
 
@@ -88,8 +94,19 @@ class ReachVerifier(VerifierBase):
                 config=self.reach_config,
             )
 
+        if ego_lane_network:
+            self.ego_lane_network = ego_lane_network
+            if scenario:
+                self.reach_config.update(
+                    planning_problem=self.reach_config.planning_problem,
+                    scenario=scenario,
+                    CLCS = self.ego_lane_network.lane.clcs
+                )
+
         if actions:
             ltl_list = []
+            # reset the specification list within the rule interface
+            self.rule_interface.list_specifications_ltl = []
             for action in actions:
                 if type(action) is LateralAction and EgoLaneNetwork is None:
                     AssertionError("For lateral actions, the lane network is needed!")
@@ -115,10 +132,12 @@ class ReachVerifier(VerifierBase):
         """
         if action == LongitudinalAction.ACCELERATE:
             self.reach_config.vehicle.ego.a_lon_min = self.sandra_config.a_lim
+            self.reach_config.vehicle.ego.a_lon_max = self._default_a_lon_max
             return ""
 
         elif action == LongitudinalAction.DECELERATE:
             self.reach_config.vehicle.ego.a_lon_max = -self.sandra_config.a_lim
+            self.reach_config.vehicle.ego.a_lon_min = self._default_a_lon_min
             return ""
 
         elif action == LongitudinalAction.KEEP:
