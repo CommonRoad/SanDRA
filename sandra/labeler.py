@@ -128,10 +128,10 @@ class TrajectoryLabeler(LabelerBase):
 
 
 class ReachSetLabeler(LabelerBase):
-    def __init__(self, config: SanDRAConfiguration, scenario: Scenario):
+    def __init__(self, config: SanDRAConfiguration, scenario: Scenario, scenario_folder: str = None):
         super().__init__(config, scenario)
 
-        self.reach_ver = ReachVerifier(self.scenario, self.config)
+        self.reach_ver = ReachVerifier(self.scenario, self.config, scenario_folder=scenario_folder)
 
     def label(
         self,

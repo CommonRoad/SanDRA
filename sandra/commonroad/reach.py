@@ -36,7 +36,8 @@ class ReachVerifier(VerifierBase):
         scenario: Scenario,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
-        verbose=False,
+        verbose: bool = False,
+        scenario_folder: str = None
     ):
 
         # basic elements
@@ -53,14 +54,16 @@ class ReachVerifier(VerifierBase):
             ).build_configuration(str(scenario.scenario_id))
         )
         self.reach_config.traffic_rule.activated_rules = []
+        if scenario_folder is None:
+            scenario_folder = PROJECT_ROOT + "/scenarios/"
+        self.reach_config.general.path_scenarios = scenario_folder
         self.reach_config.general.path_scenario = (
-            PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
-        )
+                 scenario_folder + str(scenario.scenario_id) + ".xml"
+            )
         self.reach_config.vehicle.ego.v_lon_min = 0
         # fix the dimension
         self.reach_config.vehicle.ego.length = sandra_config.length
         self.reach_config.vehicle.ego.width = sandra_config.width
-        self.reach_config.general.path_scenarios = PROJECT_ROOT + "/scenarios/"
         self.reach_config.planning.dt = scenario.dt
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
