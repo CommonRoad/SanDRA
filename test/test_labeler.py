@@ -10,7 +10,7 @@ from commonroad.common.file_reader import CommonRoadFileReader
 from sandra.actions import LongitudinalAction, LateralAction
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
-from sandra.labeler import HighDLabeler
+from sandra.labeler import TrajectoryLabeler
 from sandra.utility.vehicle import extract_ego_vehicle
 
 
@@ -44,7 +44,7 @@ class TestLabeler(unittest.TestCase):
             road_network,
         )
 
-    def test_highd_label_follow_lane_accelerate(self):
+    def test_traj_label_follow_lane_accelerate(self):
         scenario_name = "DEU_LocationALower-11_10_T-1"
         scenario, planning_problem, ego_vehicle = self._load_scenario_and_ego_vehicle(
             scenario_name
@@ -52,7 +52,7 @@ class TestLabeler(unittest.TestCase):
 
         ego_lane_network = self._build_ego_lane_network(scenario, planning_problem)
 
-        labeler = HighDLabeler(self.config, scenario)
+        labeler = TrajectoryLabeler(self.config, scenario)
         actions = labeler.label(ego_vehicle, ego_lane_network)
 
         self.assertSetEqual(
@@ -60,7 +60,7 @@ class TestLabeler(unittest.TestCase):
             {LateralAction.FOLLOW_LANE, LongitudinalAction.ACCELERATE},
         )
 
-    def test_highd_label_change_left_accelerate(self):
+    def test_traj_label_change_left_accelerate(self):
         scenario_name = "DEU_LocationALower-36_263_T-15"
         scenario, planning_problem, ego_vehicle = self._load_scenario_and_ego_vehicle(
             scenario_name
@@ -68,7 +68,7 @@ class TestLabeler(unittest.TestCase):
 
         ego_lane_network = self._build_ego_lane_network(scenario, planning_problem)
 
-        labeler = HighDLabeler(self.config, scenario)
+        labeler = TrajectoryLabeler(self.config, scenario)
         actions = labeler.label(ego_vehicle, ego_lane_network)
 
         self.assertSetEqual(

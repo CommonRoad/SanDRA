@@ -28,7 +28,7 @@ class LabelerBase(ABC):
         pass
 
 
-class HighDLabeler(LabelerBase):
+class TrajectoryLabeler(LabelerBase):
     def __init__(self, config: SanDRAConfiguration, scenario: Scenario):
         super().__init__(config, scenario)
 
