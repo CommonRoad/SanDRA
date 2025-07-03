@@ -70,14 +70,14 @@ class HighDLabeler(LabelerBase):
         # FG -> we only check the last state
         if abs(last_state.velocity) <= self.config.v_err:
             return LongitudinalAction.STOP
-        # accelerating
-        elif all(a > self.config.a_lim for a in accelerations):
+        # accelerating -> pick the average that is more robust than considering individual time steps
+        elif np.average(accelerations) > self.config.a_lim:
             return LongitudinalAction.ACCELERATE
         # decelerating
-        elif all(a < -self.config.a_lim for a in accelerations):
+        elif np.average(accelerations) < -self.config.a_lim:
             return LongitudinalAction.DECELERATE
         # default: idle
-        elif all(self.config.a_lim > a > -self.config.a_lim for a in accelerations):
+        elif self.config.a_lim > np.average(accelerations) > -self.config.a_lim:
             return LongitudinalAction.KEEP
         else:
             return LongitudinalAction.UNKNOWN

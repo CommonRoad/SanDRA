@@ -3,51 +3,79 @@ Unit tests of labelling functions
 """
 
 import unittest
+from pathlib import Path
 
 from commonroad.common.file_reader import CommonRoadFileReader
 
 from sandra.actions import LongitudinalAction, LateralAction
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, Lane, EgoLaneNetwork
+from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.labeler import HighDLabeler
 from sandra.utility.vehicle import extract_ego_vehicle
 
 
 class TestLabeler(unittest.TestCase):
     def setUp(self) -> None:
-        super().setUp()
-        name_scenario = "DEU_LocationALower-11_10_T-1"
-        path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
-        self.scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
-            lanelet_assignment=True
-        )
-        self.planning_problem = list(
-            planning_problem_set.planning_problem_dict.values()
-        )[0]
-
         self.config = SanDRAConfiguration()
 
-        self.ego_vehicle = extract_ego_vehicle(self.scenario, self.planning_problem)
-        print(f"Extracted ego vehicle: {self.ego_vehicle.obstacle_id}")
+    def _load_scenario_and_ego_vehicle(self, scenario_name: str):
+        """Helper to load scenario and ego vehicle"""
+        path_scenario = Path(PROJECT_ROOT) / "scenarios" / f"{scenario_name}.xml"
+        scenario, planning_problem_set = CommonRoadFileReader(str(path_scenario)).open(
+            lanelet_assignment=True
+        )
+        planning_problem = next(
+            iter(planning_problem_set.planning_problem_dict.values())
+        )
+        ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
+        print(f"Obtained ego vehicle: {ego_vehicle.obstacle_id}")
+        return scenario, planning_problem, ego_vehicle
 
-    def test_highd_label(self):
+    def _build_ego_lane_network(self, scenario, planning_problem):
+        """Helper to build EgoLaneNetwork"""
         road_network = RoadNetwork.from_lanelet_network_and_position(
-            self.scenario.lanelet_network,
-            self.planning_problem.initial_state.position,
+            scenario.lanelet_network,
+            planning_problem.initial_state.position,
             consider_reversed=True,
         )
-
-        ego_lane_network = EgoLaneNetwork.from_route_planner(
-            self.scenario.lanelet_network,
-            self.planning_problem,
+        return EgoLaneNetwork.from_route_planner(
+            scenario.lanelet_network,
+            planning_problem,
             road_network,
         )
 
-        self.labeler = HighDLabeler(self.config, self.scenario)
+    def test_highd_label_follow_lane_accelerate(self):
+        scenario_name = "DEU_LocationALower-11_10_T-1"
+        scenario, planning_problem, ego_vehicle = self._load_scenario_and_ego_vehicle(
+            scenario_name
+        )
 
-        actions = self.labeler.label(self.ego_vehicle, ego_lane_network)
+        ego_lane_network = self._build_ego_lane_network(scenario, planning_problem)
 
-        assert set(actions) == {
-            LateralAction.FOLLOW_LANE,
-            LongitudinalAction.ACCELERATE,
-        }
+        labeler = HighDLabeler(self.config, scenario)
+        actions = labeler.label(ego_vehicle, ego_lane_network)
+
+        self.assertSetEqual(
+            set(actions),
+            {LateralAction.FOLLOW_LANE, LongitudinalAction.ACCELERATE},
+        )
+
+    def test_highd_label_change_left_accelerate(self):
+        scenario_name = "DEU_LocationALower-36_263_T-15"
+        scenario, planning_problem, ego_vehicle = self._load_scenario_and_ego_vehicle(
+            scenario_name
+        )
+
+        ego_lane_network = self._build_ego_lane_network(scenario, planning_problem)
+
+        labeler = HighDLabeler(self.config, scenario)
+        actions = labeler.label(ego_vehicle, ego_lane_network)
+
+        self.assertSetEqual(
+            set(actions),
+            {LateralAction.CHANGE_LEFT, LongitudinalAction.ACCELERATE},
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
