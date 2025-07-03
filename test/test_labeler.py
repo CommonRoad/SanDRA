@@ -17,6 +17,7 @@ from sandra.utility.vehicle import extract_ego_vehicle
 class TestLabeler(unittest.TestCase):
     def setUp(self) -> None:
         self.config = SanDRAConfiguration()
+        self.config.h = 20 # for highd scenarios
 
     def _load_scenario_and_ego_vehicle(self, scenario_name: str):
         """Helper to load scenario and ego vehicle"""
@@ -85,8 +86,7 @@ class TestLabeler(unittest.TestCase):
 
         ego_lane_network = self._build_ego_lane_network(scenario, planning_problem)
 
-        scenario.remove_obstacle(ego_vehicle)
-        labeler = ReachSetLabeler(self.config, scenario, planning_problem)
+        labeler = ReachSetLabeler(self.config, scenario)
         actions = labeler.label(ego_vehicle, ego_lane_network)
 
         expected = [
