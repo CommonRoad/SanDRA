@@ -56,7 +56,7 @@ class TestLabeler(unittest.TestCase):
         actions = labeler.label(ego_vehicle, ego_lane_network)
 
         self.assertSetEqual(
-            set(actions),
+            actions[0],
             {LateralAction.FOLLOW_LANE, LongitudinalAction.ACCELERATE},
         )
 
@@ -72,7 +72,7 @@ class TestLabeler(unittest.TestCase):
         actions = labeler.label(ego_vehicle, ego_lane_network)
 
         self.assertSetEqual(
-            set(actions),
+            actions[0],
             {LateralAction.CHANGE_LEFT, LongitudinalAction.ACCELERATE},
         )
 
