@@ -1,13 +1,21 @@
+import itertools
+import warnings
 from abc import ABC, abstractmethod
-from typing import Union, List
+from typing import Union, List, Optional
 
 import numpy as np
+from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
 from sandra.common.road_network import EgoLaneNetwork
+from sandra.commonroad.reach import ReachVerifier
+
+from commonroad_reach.utility import reach_operation as util_reach_operation
+
+from sandra.verifier import VerificationStatus
 
 
 class LabelerBase(ABC):
@@ -120,5 +128,120 @@ class TrajectoryLabeler(LabelerBase):
 
 
 class ReachSetLabeler(LabelerBase):
-    def __init__(self, config: SanDRAConfiguration, scenario: Scenario):
+    def __init__(self, config: SanDRAConfiguration, scenario: Scenario, planning_problem: PlanningProblem):
         super().__init__(config, scenario)
+
+        self.reach_ver = ReachVerifier(self.scenario, planning_problem, self.config)
+
+    def label(
+        self,
+        obstacle: DynamicObstacle,
+        obs_lane_network: EgoLaneNetwork,
+    ) -> List[set[Union[LateralAction, LongitudinalAction]]]:
+        """
+        label the top-m action pairs using the area of the corresponding reachable sets
+        for a dynamic obstacle. Each action is a combination of one lateral and one
+        longitudinal action.
+        """
+        # Reset the reach verifier
+        self._reset_reach_verifier(obstacle, obs_lane_network)
+
+        # Compute area per action
+        action_area_dict = self._compute_action_areas(obs_lane_network)
+
+        # Filter and select top-m actions
+        top_action_sets = self._filter_and_select_actions(action_area_dict)
+
+        return top_action_sets
+
+    def _reset_reach_verifier(self, obstacle, obs_lane_network):
+        """
+        Resets the reach verifier, optionally removing the obstacle from the scenario.
+        """
+        existing_obstacle = self.reach_ver.reach_config.scenario.obstacle_by_id(
+            obstacle.obstacle_id
+        )
+
+        if existing_obstacle is not None:
+            self.reach_ver.reach_config.scenario.remove_obstacle(existing_obstacle)
+            self.reach_ver.reset(
+                ego_lane_network=obs_lane_network,
+                scenario=self.reach_ver.reach_config.scenario,
+            )
+        else:
+            self.reach_ver.reset(
+                ego_lane_network=obs_lane_network,
+            )
+
+    def _compute_action_areas(self, obs_lane_network):
+        """
+        Computes the reachable area for each action pair and logs the results.
+        Returns a dict: { (lat, lon) -> area }
+        """
+        import itertools
+
+        # Candidate actions
+        long_candidates = [
+            LongitudinalAction.ACCELERATE,
+            LongitudinalAction.DECELERATE,
+            LongitudinalAction.KEEP,
+        ]
+        lat_candidates = [LateralAction.FOLLOW_LANE]
+        if obs_lane_network.lane_left_adjacent:
+            lat_candidates.append(LateralAction.CHANGE_LEFT)
+        if obs_lane_network.lane_right_adjacent:
+            lat_candidates.append(LateralAction.CHANGE_RIGHT)
+
+        action_area_dict = {}
+
+        for lat, lon in itertools.product(lat_candidates, long_candidates):
+            status = self.reach_ver.verify([lat, lon])
+            area = 0.0
+            if status == VerificationStatus.SAFE:
+                for _, reach_set_nodes in self.reach_ver.reach_interface.reachable_set.items():
+                    area += util_reach_operation.compute_area_of_reach_nodes(reach_set_nodes)
+
+            action_area_dict[(lat, lon)] = area
+
+            print(
+                f"Action pair ({lat.value}, {lon.value}): verification {status.name}, reachable area = {area:.3f}"
+            )
+
+        print("\n=== All action areas (sorted descending) ===")
+        sorted_items = sorted(action_area_dict.items(), key=lambda item: item[1], reverse=True)
+        for (lat, lon), area in sorted_items:
+            print(f"\t- ({lat.value}, {lon.value}): area = {area:.3f}")
+
+        return action_area_dict
+
+    def _filter_and_select_actions(self, action_area_dict):
+        """
+        Filters non-zero area actions, issues a warning if fewer than m,
+        and returns the top-m action sets.
+        """
+
+        # Sort descending
+        sorted_actions = sorted(
+            action_area_dict.items(), key=lambda item: item[1], reverse=True
+        )
+
+        # Keep only non-zero area actions
+        non_zero_actions = [
+            (lat, lon) for (lat, lon), area in sorted_actions if area > 0.0
+        ]
+
+        if len(non_zero_actions) < self.config.m:
+            warnings.warn(
+                f"Only {len(non_zero_actions)} valid action pairs with "
+                f"non-zero reachable area (expected {self.config.m})."
+            )
+
+        # Take top m
+        top_action_sets = [
+            {lat, lon} for (lat, lon) in non_zero_actions[:self.config.m]
+        ]
+
+        return top_action_sets
+
+
+

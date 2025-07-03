@@ -10,7 +10,7 @@ from commonroad.common.file_reader import CommonRoadFileReader
 from sandra.actions import LongitudinalAction, LateralAction
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
-from sandra.labeler import TrajectoryLabeler
+from sandra.labeler import TrajectoryLabeler, ReachSetLabeler
 from sandra.utility.vehicle import extract_ego_vehicle
 
 
@@ -75,6 +75,28 @@ class TestLabeler(unittest.TestCase):
             actions[0],
             {LateralAction.CHANGE_LEFT, LongitudinalAction.ACCELERATE},
         )
+
+    def test_reach_label(self):
+        scenario_name = "DEU_LocationALower-11_10_T-1"
+
+        scenario, planning_problem, ego_vehicle = self._load_scenario_and_ego_vehicle(
+            scenario_name
+        )
+
+        ego_lane_network = self._build_ego_lane_network(scenario, planning_problem)
+
+        scenario.remove_obstacle(ego_vehicle)
+        labeler = ReachSetLabeler(self.config, scenario, planning_problem)
+        actions = labeler.label(ego_vehicle, ego_lane_network)
+
+        expected = [
+            {LateralAction.CHANGE_RIGHT, LongitudinalAction.DECELERATE},
+            {LateralAction.CHANGE_RIGHT, LongitudinalAction.ACCELERATE},
+            {LateralAction.FOLLOW_LANE, LongitudinalAction.DECELERATE},
+        ]
+
+        assert set(frozenset(a) for a in actions) == set(
+            frozenset(a) for a in expected), "Actions do not match expected"
 
 
 if __name__ == "__main__":
