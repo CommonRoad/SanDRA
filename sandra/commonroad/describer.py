@@ -41,7 +41,6 @@ class CommonRoadDescriber(DescriberBase):
         goal: Optional[str] = None,
         scenario_type: Optional[str] = None,
         describe_ttc=True,
-        k=3,
         past_action: List[Union[LongitudinalAction, LateralAction]] = None,
         country: Optional[str] = "Germany",
     ):
@@ -54,8 +53,8 @@ class CommonRoadDescriber(DescriberBase):
         self.country = country
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
-        assert 1 <= k <= 10, f"Unsupported k {k}"
-        self.k = k
+        assert 1 <= config.m <= 10, f"Unsupported m {m}"
+        self.m = config.m
 
         if describe_ttc:
             crime_config = CriMeConfiguration()
@@ -310,7 +309,7 @@ class CommonRoadDescriber(DescriberBase):
         longitudinals_str = "\n".join([f"  - {x.value}" for x in longitudinals])
         return (
             "First observe the environment and formulate your decision in natural language.\n"
-            f"Then, return the top {self.k} advisable longitudinal–lateral action pairs, ranked from best to worst.\n"
+            f"Then, return the top {self.m} advisable longitudinal–lateral action pairs, ranked from best to worst.\n"
             "Feasible longitudinal actions:\n"
             f"{longitudinals_str}\n"
             "Feasible lateral actions:\n"
@@ -369,7 +368,7 @@ class CommonRoadDescriber(DescriberBase):
             "tenth",
         ]
         added_variable_names = []
-        for prefix in variable_name_prefixes[: self.k - 1]:
+        for prefix in variable_name_prefixes[: self.m - 1]:
             variable_name = f"{prefix}_best_combination"
             schema_dict["properties"][variable_name] = action_dict
             added_variable_names.append(variable_name)

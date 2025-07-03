@@ -7,7 +7,10 @@ class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
     model_name = "qwen3:14b"
     use_ollama = True
-    a_lim = 0.1
+    a_lim = 0.2
+    v_err = 0.1
+
+    m = 3   # number of returned actions
 
     h = 25  # time horizon of decision-making
 

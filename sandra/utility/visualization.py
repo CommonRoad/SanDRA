@@ -322,7 +322,8 @@ def draw_scenario_paper(
 
 def plot_reachable_sets(reach_interface: ReachableSetInterface,
                         step_start: int = 0, step_end: int = 0,
-                        plot_limits: List = None, path_output: str = None):
+                        plot_limits: List = None, path_output: str = None,
+                        ):
     """
     Plots scenario with computed reachable sets.
     """
