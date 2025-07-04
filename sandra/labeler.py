@@ -115,7 +115,7 @@ class TrajectoryLabeler(LabelerBase):
             if obs_lanelet_list[-1] in left_lanelet_ids:
                 return LateralAction.CHANGE_LEFT
 
-        if obs_lane_network.lane_left_adjacent:
+        if obs_lane_network.lane_right_adjacent:
             right_lanelet_ids = {
                 lanelet_id
                 for right_lane in obs_lane_network.lane_right_adjacent

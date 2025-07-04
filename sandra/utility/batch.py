@@ -50,7 +50,7 @@ def batch_labelling(scenario_folder: str, config: SanDRAConfiguration):
     with open(csv_path, mode="w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         # Write header
-        writer.writerow(["ScenarioID", "TrajectoryLabels", "ReachSetLabels"])
+        writer.writerow(["ScenarioID", "EgoID", "TrajectoryLabels", "ReachSetLabels"])
 
         for scenario_id, file_dir in tqdm(
             scenario_entries, desc="Scenarios processed", colour="red"
@@ -93,6 +93,7 @@ def batch_labelling(scenario_folder: str, config: SanDRAConfiguration):
                 _write_labels_row(
                     writer,
                     scenario_id,
+                    ego_vehicle.obstacle_id,
                     traj_actions,
                     reach_actions
                 )
@@ -105,6 +106,7 @@ def batch_labelling(scenario_folder: str, config: SanDRAConfiguration):
 def _write_labels_row(
     writer: csv.writer,
     scenario_id: str,
+    ego_id: int,
     traj_actions: List[Set],
     reach_actions: List[Set]
 ):
@@ -121,7 +123,7 @@ def _write_labels_row(
     traj_str = serialize_actions(traj_actions)
     reach_str = serialize_actions(reach_actions)
 
-    writer.writerow([scenario_id, traj_str, reach_str])
+    writer.writerow([scenario_id, ego_id, traj_str, reach_str])
 
 if __name__ == '__main__':
     scenarios_path = "/home/liny/Documents/commonroad/highd_scenarios/"
