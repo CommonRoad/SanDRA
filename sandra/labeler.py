@@ -42,11 +42,11 @@ class TrajectoryLabeler(LabelerBase):
 
     def label(
         self, obstacle: DynamicObstacle, obs_lane_network: EgoLaneNetwork
-    ) -> List[set[Union[LateralAction, LongitudinalAction]]]:
+    ) -> List[List[Union[LateralAction, LongitudinalAction]]]:
 
         long_label = self.longitudinal_label(obstacle)
         lat_label = self.lateral_label(obstacle, obs_lane_network)
-        return [{long_label, lat_label}]
+        return [[long_label, lat_label]]
 
     @staticmethod
     def augment_state_acceleration(obstacle: DynamicObstacle, dt: float) -> List[float]:
@@ -237,11 +237,11 @@ class ReachSetLabeler(LabelerBase):
             )
 
         # Take top m
-        top_action_sets = [
-            {lat, lon} for (lat, lon) in non_zero_actions[:self.config.m]
+        top_action_list = [
+            [lon, lat] for (lat, lon) in non_zero_actions[:self.config.m]
         ]
 
-        return top_action_sets
+        return top_action_list
 
 
 
