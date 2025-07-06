@@ -137,7 +137,7 @@ class ReachSetLabeler(LabelerBase):
         self,
         obstacle: DynamicObstacle,
         obs_lane_network: EgoLaneNetwork,
-    ) -> List[set[Union[LateralAction, LongitudinalAction]]]:
+    ) -> List[List[Union[LateralAction, LongitudinalAction]]]:
         """
         label the top-m action pairs using the area of the corresponding reachable sets
         for a dynamic obstacle. Each action is a combination of one lateral and one

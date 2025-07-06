@@ -7,7 +7,10 @@ from tqdm import tqdm
 
 from sandra.common.config import SanDRAConfiguration
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.commonroad.describer import CommonRoadDescriber
+from sandra.decider import Decider
 from sandra.labeler import TrajectoryLabeler, ReachSetLabeler
+from sandra.llm import get_structured_response
 from sandra.utility.vehicle import extract_ego_vehicle
 
 
@@ -37,6 +40,8 @@ def load_scenarios_recursively(scenario_folder: str) -> List[Tuple[str, str]]:
 def batch_labelling(
     scenario_folder: str,
     config: SanDRAConfiguration,
+    evaluate_prompt: bool = True,
+    evaluate_llm: bool = False,
     evaluate_trajectory_labels: bool = True,
     evaluate_reachset_labels: bool = True,
 ):
@@ -48,21 +53,33 @@ def batch_labelling(
 
     csv_path = os.path.join(scenario_folder, "batch_labelling_results.csv")
 
+    total_scenarios = 0
+    top1_hits = 0
+    topk_hits = 0
+
     with open(csv_path, mode="w", newline="") as csvfile:
         writer = csv.writer(csvfile)
 
-        # Prepare header dynamically
         headers = ["ScenarioID", "EgoID"]
+
+        if evaluate_prompt:
+            headers.append("Prompt")
+
+        if evaluate_llm:
+            for i in range(1, config.m + 1):
+                headers.append(f"{config.model_name}_Longitudinal_{i}")
+                headers.append(f"{config.model_name}_Lateral_{i}")
 
         if evaluate_trajectory_labels:
             headers.extend(["Trajectory_Longitudinal", "Trajectory_Lateral"])
 
         if evaluate_reachset_labels:
-            # We don't know max horizon upfront, so we use a placeholder and adjust later
-            max_reach_steps = config.m
-            for i in range(1, max_reach_steps + 1):
+            for i in range(1, config.m + 1):
                 headers.append(f"ReachSet_Longitudinal_{i}")
                 headers.append(f"ReachSet_Lateral_{i}")
+
+        if evaluate_llm and evaluate_trajectory_labels:
+            headers.extend(["Match_Top1", "Match_TopK"])
 
         writer.writerow(headers)
 
@@ -78,6 +95,33 @@ def batch_labelling(
                 planning_problem = next(
                     iter(planning_problem_set.planning_problem_dict.values())
                 )
+
+                if evaluate_prompt:
+                    describer = CommonRoadDescriber(
+                        scenario,
+                        planning_problem,
+                        0,
+                        config
+                    )
+                    decider = Decider(config, describer)
+                    system_prompt = decider.describer.system_prompt()
+                    user_prompt = decider.describer.user_prompt()
+                    prompt = system_prompt + user_prompt
+
+                    if evaluate_llm:
+                        schema = decider.describer.schema()
+                        structured_response = get_structured_response(
+                            user_prompt, system_prompt, schema, decider.config
+                        )
+                        ranking = decider._parse_action_ranking(structured_response)
+                        ranking = [list(action_pair) for action_pair in ranking]
+                        ranking_long, ranking_lat = _split_long_lat(ranking)
+                else:
+                    prompt = None
+                    ranking_long = []
+                    ranking_lat = []
+                    ranking = []
+
                 ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
 
                 road_network = RoadNetwork.from_lanelet_network_and_position(
@@ -100,6 +144,8 @@ def batch_labelling(
                     traj_labeler = TrajectoryLabeler(config, scenario)
                     traj_actions = traj_labeler.label(ego_vehicle, ego_lane_network)
                     traj_long, traj_lat = _split_long_lat(traj_actions)
+                else:
+                    traj_actions = []
 
                 if evaluate_reachset_labels:
                     if scenario.obstacle_by_id(ego_vehicle.obstacle_id):
@@ -112,23 +158,55 @@ def batch_labelling(
                     reach_actions = reach_labeler.label(ego_vehicle, ego_lane_network)
                     reach_long, reach_lat = _split_long_lat(reach_actions)
 
+                match_top1 = None
+                match_topk = None
+                if evaluate_llm and evaluate_trajectory_labels and ranking and traj_actions:
+                    gt_action = [traj_long[0], traj_lat[0]]
+                    # Compare tuple equality
+                    match_top1 = tuple(traj_actions[0]) == tuple(ranking[0])
+
+                    # Check if ground truth action appears in any rank
+                    match_topk = tuple(traj_actions[0]) in [tuple(r) for r in ranking]
+
+                    total_scenarios += 1
+                    top1_hits += match_top1
+                    topk_hits += match_topk
+
                 _write_labels_row(
                     writer,
                     scenario_id,
                     ego_vehicle.obstacle_id,
+                    prompt,
+                    ranking_long,
+                    ranking_lat,
                     traj_long,
                     traj_lat,
                     reach_long,
                     reach_lat,
+                    match_top1,
+                    match_topk,
+                    evaluate_prompt,
+                    evaluate_llm,
                     evaluate_trajectory_labels,
                     evaluate_reachset_labels,
-                    max_reach_steps=config.h,
+                    config.m,
                 )
 
             except Exception as e:
                 print(f"Failed to label '{scenario_id}': {e}")
 
+    if total_scenarios > 0:
+        ratio_top1 = top1_hits / total_scenarios
+        ratio_topk = topk_hits / total_scenarios
+
+        print("\n📊 Matching Statistics:")
+        print(f"  Match Top-1 Accuracy: {ratio_top1:.2%} ({top1_hits}/{total_scenarios})")
+        print(f"  Match Top-K Accuracy: {ratio_topk:.2%} ({topk_hits}/{total_scenarios})")
+    else:
+        print("\nNo scenarios were evaluated for matching.")
+
     print(f"\n✅ All labels saved to: {csv_path}")
+
 
 
 def _split_long_lat(actions: List[List]) -> Tuple[List[str], List[str]]:
@@ -149,39 +227,51 @@ def _serialize_list(labels: List[str]) -> str:
     """
     return "; ".join(labels)
 
-
 def _write_labels_row(
     writer: csv.writer,
     scenario_id: str,
     ego_id: int,
+    prompt: str,
+    ranking_long: List[str],
+    ranking_lat: List[str],
     traj_long: List[str],
     traj_lat: List[str],
     reach_long: List[str],
     reach_lat: List[str],
+    match_top1: int,
+    match_topk: int,
+    eval_prompt: bool,
+    eval_llm: bool,
     eval_traj: bool,
     eval_reach: bool,
-    max_reach_steps: int,
+    max_steps: int,
 ):
-    """
-    Write a row with separate columns for each reachset time step.
-    """
     row = [scenario_id, ego_id]
 
+    if eval_prompt:
+        row.append(prompt)
+
+    if eval_llm:
+        for i in range(max_steps):
+            long_label = ranking_long[i] if i < len(ranking_long) else ""
+            lat_label = ranking_lat[i] if i < len(ranking_lat) else ""
+            row.extend([long_label, lat_label])
+
     if eval_traj:
-        row.extend(
-            [
-                _serialize_list(traj_long),
-                _serialize_list(traj_lat),
-            ]
-        )
+        row.extend([
+            "; ".join(traj_long),
+            "; ".join(traj_lat),
+        ])
 
     if eval_reach:
-        # Fill reach labels step by step
-        for i in range(max_reach_steps):
-            # If there are fewer labels than max_reach_steps, fill empty
+        for i in range(max_steps):
             long_label = reach_long[i] if i < len(reach_long) else ""
             lat_label = reach_lat[i] if i < len(reach_lat) else ""
             row.extend([long_label, lat_label])
+
+    if eval_llm and eval_traj:
+        row.append(match_top1)
+        row.append(match_topk)
 
     writer.writerow(row)
 
@@ -193,6 +283,8 @@ if __name__ == "__main__":
     batch_labelling(
         scenarios_path,
         config,
+        evaluate_prompt=True,
+        evaluate_llm=True,
         evaluate_trajectory_labels=True,
-        evaluate_reachset_labels=True,
+        evaluate_reachset_labels=False,
     )
