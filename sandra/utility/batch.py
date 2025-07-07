@@ -87,6 +87,8 @@ def batch_labelling(
 
         if evaluate_llm and evaluate_safety:
             headers.extend(["Safe_Top1", "Safe_TopK"])
+            if evaluate_trajectory_labels:
+                headers.extend(["highD_safe"])
 
         if evaluate_llm and evaluate_trajectory_labels:
             headers.extend(["Match_Top1", "Match_TopK"])
@@ -147,28 +149,6 @@ def batch_labelling(
                     road_network,
                 )
 
-                llm1_verified = None
-                llmk_verified = None
-                if evaluate_prompt and evaluate_llm and evaluate_safety:
-                    reach_ver = ReachVerifier(scenario, config, ego_lane_network, scenario_folder=scenario_folder)
-                    status = reach_ver.verify(
-                        ranking[0], visualization=False
-                    )
-                    llm1_verified = status == VerificationStatus.SAFE
-                    if llm1_verified == True:
-                        llmk_verified = True
-                    else:
-                        for action_pair in ranking[1:]:
-                            status = reach_ver.verify(
-                                action_pair, visualization=False
-                            )
-                            llmk_verified = status == VerificationStatus.SAFE
-                            if llmk_verified == True:
-                                break
-
-                    llm1_safe += llm1_verified
-                    llmk_safe += llmk_verified
-
                 traj_long = []
                 traj_lat = []
                 reach_long = []
@@ -187,10 +167,43 @@ def batch_labelling(
                             scenario.obstacle_by_id(ego_vehicle.obstacle_id)
                         )
                     reach_labeler = ReachSetLabeler(
-                        config, scenario, scenario_folder=scenario_folder
+                        config, scenario, planning_problem, scenario_folder=scenario_folder
                     )
                     reach_actions = reach_labeler.label(ego_vehicle, ego_lane_network)
                     reach_long, reach_lat = _split_long_lat(reach_actions)
+
+                llm1_verified = None
+                llmk_verified = None
+                highd_verified = None
+
+                if evaluate_prompt and evaluate_llm and evaluate_safety:
+                    reach_ver = ReachVerifier(scenario, planning_problem, config, ego_lane_network,
+                                              scenario_folder=scenario_folder)
+                    status = reach_ver.verify(
+                        ranking[0], visualization=False
+                    )
+                    llm1_verified = status == VerificationStatus.SAFE
+                    if llm1_verified == True:
+                        llmk_verified = True
+                    else:
+                        for action_pair in ranking[1:]:
+                            status = reach_ver.verify(
+                                action_pair, visualization=False
+                            )
+                            llmk_verified = status == VerificationStatus.SAFE
+                            if llmk_verified == True:
+                                break
+
+                    llm1_safe += llm1_verified
+                    llmk_safe += llmk_verified
+
+                    if evaluate_trajectory_labels:
+                        status = reach_ver.verify(
+                            traj_actions[0], visualization=False
+                        )
+                        highd_verified = status == VerificationStatus.SAFE
+
+                    highd_safe += highd_verified
 
                 match_top1 = None
                 match_topk = None
@@ -201,9 +214,10 @@ def batch_labelling(
                     # Check if ground truth action appears in any rank
                     match_topk = tuple(traj_actions[0]) in [tuple(r) for r in ranking]
 
-                    total_scenarios += 1
                     top1_hits += match_top1
                     topk_hits += match_topk
+
+                total_scenarios += 1
 
                 _write_labels_row(
                     writer,
@@ -218,6 +232,7 @@ def batch_labelling(
                     reach_lat,
                     llm1_verified,
                     llmk_verified,
+                    highd_verified,
                     match_top1,
                     match_topk,
                     evaluate_prompt,
@@ -237,6 +252,7 @@ def batch_labelling(
 
         ratio_safe1 = llm1_safe / total_scenarios
         ratio_safek = llmk_safe / total_scenarios
+        ratio_highd = highd_safe / total_scenarios
 
         print("\n📊 Matching Statistics:")
         print(f"  Match Top-1 Accuracy: {ratio_top1:.2%} ({top1_hits}/{total_scenarios})")
@@ -245,6 +261,7 @@ def batch_labelling(
         print("\n📊 Safe Statistics:")
         print(f"  Safe with 1 action: {ratio_safe1:.2%} ({llm1_safe}/{total_scenarios})")
         print(f"  Safe with k actions: {ratio_safek:.2%} ({llmk_safe}/{total_scenarios})")
+        print(f"  highD safely labeled: {ratio_highd:.2%} ({highd_safe}/{total_scenarios})")
     else:
         print("\nNo scenarios were evaluated for matching.")
 
@@ -283,6 +300,7 @@ def _write_labels_row(
     reach_lat: List[str],
     llm1_safe: int,
     llmk_safe: int,
+    highd_safe: int,
     match_top1: int,
     match_topk: int,
     eval_prompt: bool,
@@ -318,10 +336,12 @@ def _write_labels_row(
     if eval_llm and eval_safety:
         row.append(llm1_safe)
         row.append(llmk_safe)
+        if eval_traj:
+            row.append(highd_safe)
 
     if eval_llm and eval_traj:
         row.append(match_top1)
-        row.append( match_topk)
+        row.append(match_topk)
 
     writer.writerow(row)
 
