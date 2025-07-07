@@ -313,7 +313,7 @@ class CommonRoadDescriber(DescriberBase):
             "Feasible longitudinal actions:\n"
             f"{longitudinals_str}\n"
             "Feasible lateral actions:\n"
-            f"{laterals_str}"
+            f"{laterals_str}\n"
         )
 
     def _describe_reminders(self) -> list[str]:
@@ -334,7 +334,7 @@ class CommonRoadDescriber(DescriberBase):
             self.ego_lane_network.lane_right_adjacent
         ):
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
-        longitudinal_actions = [x for x in LongitudinalAction]
+        longitudinal_actions = [x for x in LongitudinalAction if x != LongitudinalAction.UNKNOWN]
         return lateral_actions, longitudinal_actions
 
     def schema(self) -> dict[str, Any]:

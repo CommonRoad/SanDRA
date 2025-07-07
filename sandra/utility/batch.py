@@ -1,5 +1,6 @@
 import csv
 import os
+from datetime import datetime
 from typing import List, Tuple
 
 from commonroad.common.file_reader import CommonRoadFileReader
@@ -54,7 +55,11 @@ def batch_labelling(
         print("No scenarios found to process.")
         return
 
-    csv_path = os.path.join(scenario_folder, "batch_labelling_results.csv")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    csv_path = os.path.join(
+        scenario_folder,
+        f"batch_labelling_results_{timestamp}.csv"
+    )
 
     total_scenarios = 0
     top1_hits = 0
