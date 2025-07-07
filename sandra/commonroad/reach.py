@@ -1,4 +1,6 @@
 from typing import Optional, Union, List
+
+from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
@@ -24,6 +26,7 @@ from sandra.common.config import (
     COMMONROAD_REACH_SEMANTIC_ROOT,
     PROJECT_ROOT,
 )
+from sandra.utility.vehicle import extract_ego_vehicle
 from sandra.common.road_network import EgoLaneNetwork, Lane
 from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
 
@@ -34,6 +37,7 @@ class ReachVerifier(VerifierBase):
     def __init__(
         self,
         scenario: Scenario,
+        planning_problem: PlanningProblem,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
         verbose: bool = False,
@@ -67,6 +71,16 @@ class ReachVerifier(VerifierBase):
         self.reach_config.planning.dt = scenario.dt
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
+
+        # remove ego vehicle if existed
+        ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
+        if ego_vehicle:
+            if ego_in_sce := self.reach_config.scenario.obstacle_by_id(ego_vehicle.obstacle_id):
+                self.reach_config.scenario.remove_obstacle(ego_in_sce)
+                self.reset(
+                    ego_lane_network=ego_lane_network,
+                    scenario=self.reach_config.scenario,
+                )
 
         # initialize semantic model and traffic rule interface
         self.semantic_model = SemanticModel(self.reach_config)

@@ -86,7 +86,7 @@ class TestLabeler(unittest.TestCase):
 
         ego_lane_network = self._build_ego_lane_network(scenario, planning_problem)
 
-        labeler = ReachSetLabeler(self.config, scenario)
+        labeler = ReachSetLabeler(self.config, scenario, planning_problem)
         actions = labeler.label(ego_vehicle, ego_lane_network)
 
         expected = [

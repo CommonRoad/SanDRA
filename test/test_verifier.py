@@ -32,7 +32,7 @@ class TestReachVerifier(unittest.TestCase):
 
         self.config = SanDRAConfiguration()
 
-        self.reach_ver = ReachVerifier(self.scenario, self.config)
+        self.reach_ver = ReachVerifier(self.scenario, self.planning_problem, self.config)
 
     def _build_ego_lane_network(self, scenario, planning_problem):
         """Helper to build EgoLaneNetwork"""
