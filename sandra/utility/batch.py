@@ -1,5 +1,6 @@
 import csv
 import os
+import re
 from datetime import datetime
 from typing import List, Tuple
 
@@ -43,11 +44,13 @@ def load_scenarios_recursively(scenario_folder: str) -> List[Tuple[str, str]]:
 def batch_labelling(
     scenario_folder: str,
     config: SanDRAConfiguration,
+    role: str = None,
     evaluate_prompt: bool = True,
     evaluate_llm: bool = False,
     evaluate_safety: bool = False,
     evaluate_trajectory_labels: bool = True,
     evaluate_reachset_labels: bool = True,
+    nr_scenarios: int = None
 ):
     scenario_entries = load_scenarios_recursively(scenario_folder)
 
@@ -55,11 +58,12 @@ def batch_labelling(
         print("No scenarios found to process.")
         return
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_path = os.path.join(
-        scenario_folder,
-        f"batch_labelling_results_{timestamp}.csv"
-    )
+    if role:
+        safe_role = re.sub(r"[^a-zA-Z0-9_]+", "", role.replace(" ", "_").lower())
+        filename = f"batch_labelling_results_{safe_role}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    else:
+        filename = f"batch_labelling_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    csv_path = os.path.join(scenario_folder, filename)
 
     total_scenarios = 0
     top1_hits = 0
@@ -100,15 +104,18 @@ def batch_labelling(
 
         writer.writerow(headers)
 
-        for scenario_id, file_dir in tqdm(
-            scenario_entries, desc="Scenarios processed", colour="red"
+        for i, (scenario_id, file_dir) in enumerate(
+                tqdm(scenario_entries, desc="Scenarios processed", colour="red")
         ):
+            if nr_scenarios is not None and i >= nr_scenarios:
+                break
             scenario_path = os.path.join(file_dir, scenario_id + ".xml")
             print(f"\nProcessing scenario '{scenario_id}' in {file_dir}")
             try:
                 scenario, planning_problem_set = CommonRoadFileReader(
                     str(scenario_path)
                 ).open(lanelet_assignment=True)
+
                 planning_problem = next(
                     iter(planning_problem_set.planning_problem_dict.values())
                 )
@@ -118,7 +125,8 @@ def batch_labelling(
                         scenario,
                         planning_problem,
                         0,
-                        config
+                        config,
+                        role=role
                     )
                     decider = Decider(config, describer)
                     system_prompt = decider.describer.system_prompt()
@@ -352,15 +360,18 @@ def _write_labels_row(
 
 
 if __name__ == "__main__":
-    scenarios_path = "/home/liny/Documents/commonroad/highd_scenarios/"
+    scenarios_path = "/home/liny/Documents/commonroad/highD-sandra-0.04/"
     config = SanDRAConfiguration()
-    config.h = 20
+    config.h = 25
+    config.m = 3
     batch_labelling(
         scenarios_path,
         config,
+        # role="Drive cautiously", # aggressively
         evaluate_prompt=True,
         evaluate_llm=True,
         evaluate_safety=True,
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
+        nr_scenarios=100
     )
