@@ -312,8 +312,9 @@ class CommonRoadDescriber(DescriberBase):
         laterals_str = "\n".join([f"  - {x.value}" for x in laterals])
         longitudinals_str = "\n".join([f"  - {x.value}" for x in longitudinals])
         return (
-            "First observe the environment and formulate your decision in natural language.\n"
-            f"Then, return the top {self.k} advisable longitudinal–lateral action pairs, ranked from best to worst.\n"
+            "First, carefully observe the environment.\n"
+            "Then, reason through your decision step by step and present it in natural language.\n"
+            f"Finally, return the top {self.k} advisable longitudinal–lateral action pairs, ranked from best to worst.\n"
             "Feasible longitudinal actions:\n"
             f"{longitudinals_str}\n"
             "Feasible lateral actions:\n"
