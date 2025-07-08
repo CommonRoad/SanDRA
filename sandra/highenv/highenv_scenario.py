@@ -35,15 +35,19 @@ from sandra.utility.visualization import plot_scenario
 
 class HighwayEnvScenario:
     def __init__(
-        self, config: dict, seed: int = 4213, dt: float = 0.2, start_time: int = 0
+        self, config: dict | RecordVideo, seed: int = 4213, dt: float = 0.2, start_time: int = 0
     ):
-        env = gymnasium.make(
-            "highway-v0", render_mode="rgb_array", config=config["highway-v0"]
-        )
         self.seed = seed
-        self._env = RecordVideo(env, video_folder="run", episode_trigger=lambda e: True)
-        # self._env.unwrapped.set_record_video_wrapper(env)
-        self.observation, _ = self._env.reset(seed=seed)
+        if isinstance(config, dict):
+            env = gymnasium.make(
+                "highway-v0", render_mode="rgb_array", config=config["highway-v0"]
+            )
+            self._env = RecordVideo(env, video_folder="run", episode_trigger=lambda e: True)
+            # self._env.unwrapped.set_record_video_wrapper(env)
+            self.observation, _ = self._env.reset(seed=seed)
+        else:
+            self._env = config
+            self.observation = None
         self.done = self.truncated = False
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
         self.dt = dt
@@ -223,14 +227,19 @@ class HighwayEnvScenario:
         self, ego_vehicle: MDPVehicle, initial_state: InitialState
     ) -> PlanningProblem:
         road = ego_vehicle.road
-        goal_lane: StraightLane = cast(
-            StraightLane, road.network.get_lane(ego_vehicle.target_lane_index)
-        )
+        if hasattr(ego_vehicle, "target_lane_index"):
+            goal_lane: StraightLane = cast(
+                StraightLane, road.network.get_lane(ego_vehicle.target_lane_index)
+            )
+        else:
+            goal_lane: StraightLane = cast(
+                StraightLane, road.network.get_lane(ego_vehicle.lane_index)
+            )
         goal_x: float = (
             ego_vehicle.position[0]
             + ego_vehicle.speed * self.dt * self.prediction_length
         )
-        goal_y: float = goal_lane.start[1] + goal_lane.width / 2
+        goal_y: float = goal_lane.start[1] + goal_lane.width / 2 - 4.0
         goal_center = self._highenv_coordinate_to_commonroad(np.array([goal_x, goal_y]))
         goal_state = CustomState(
             position=Rectangle(
@@ -265,7 +274,7 @@ class HighwayEnvScenario:
 
     @property
     def commonroad_representation(
-        self, add_ego=True
+        self, add_ego=False
     ) -> tuple[Scenario, DynamicObstacle, PlanningProblem]:
         """
         Get the commonroad representation of the scenario
@@ -350,7 +359,7 @@ class HighwayEnvScenario:
             plot_scenario(scenario, planning_problem, plot_limits=[350, 500, -30, 0])
             # plot_predicted_trajectory(scenario, ego_vehicle)
 
-    def step(self, action_id: int) -> bool:
+    def step(self, action_id) -> bool:
         self.observation, reward, self.done, self.truncated, info = self._env.step(
             action_id
         )

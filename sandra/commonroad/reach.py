@@ -1,5 +1,8 @@
 from typing import Optional, Union, List
+
+import numpy as np
 from commonroad.scenario.scenario import Scenario
+from commonroad.scenario.state import InitialState
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
     SemanticConfigurationBuilder,
@@ -36,6 +39,7 @@ class ReachVerifier(VerifierBase):
         scenario: Scenario,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
+        initial_state: InitialState = None,
         verbose=False,
     ):
 
@@ -43,6 +47,7 @@ class ReachVerifier(VerifierBase):
         super().__init__()
         self.verbose = verbose
         self.scenario = scenario
+        self.initial_state = initial_state
         self.sandra_config = sandra_config
         self.ego_lane_network = ego_lane_network
 
@@ -78,6 +83,7 @@ class ReachVerifier(VerifierBase):
         self,
         reach_config: SemanticConfiguration = None,
         actions: List[Union[LongitudinalAction, LateralAction]] = None,
+        save_distance: bool = True,
     ):
         """resets configurations and actions"""
         if reach_config:
@@ -88,8 +94,19 @@ class ReachVerifier(VerifierBase):
                 config=self.reach_config,
             )
 
+        ltl_list = []
+
+        if save_distance:
+            assert self.initial_state is not None, "Initial state must be provided"
+            min_save_distance = 2 * self.initial_state.velocity
+            for obstacle in self.scenario.obstacles:
+                distance = np.linalg.norm(self.initial_state.position - obstacle.initial_state.position)
+                if distance < min_save_distance:
+                    rule = f"LTL G SafeDistance_V{obstacle.obstacle_id}"
+                    ltl_list.append(rule)
+
+
         if actions:
-            ltl_list = []
             for action in actions:
                 if type(action) is LateralAction and EgoLaneNetwork is None:
                     AssertionError("For lateral actions, the lane network is needed!")

@@ -9,7 +9,7 @@ class SanDRAConfiguration:
     use_ollama = True
     a_lim = 0.1
 
-    h = 25  # time horizon of decision-making
+    h = 15  # time horizon of decision-making
 
     length = 4.5
     width = 2.0

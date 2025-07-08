@@ -1,3 +1,4 @@
+import math
 import random
 from typing import cast
 
@@ -82,8 +83,10 @@ class HighEnvDecider(Decider):
             "highway-v0": {
                 "observation": {"type": "TimeToCollision", "horizon": 10},
                 "action": {
-                    "type": "DiscreteMetaAction",
-                    "target_speeds": np.linspace(5, 32, 9),
+                    "type": "ContinuousAction",
+                    "acceleration_range": (-8.0, 8.0),
+                    "steering_range": (-math.pi/2, math.pi/2),
+                    "speed_range": (0.0, 30.0),
                 },
                 "lanes_count": 4,
                 "other_vehicles_type": "highway_env.vehicle.behavior.IDMVehicle",
