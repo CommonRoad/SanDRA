@@ -67,7 +67,7 @@ class DescriberBase(ABC):
     def acceleration_descr(state: Union[InitialState, CustomState, KSState], to_km=False) -> str:
         a = state.acceleration
         if to_km:
-            a *= 12960000
+            a *= 12960
             return f"{a:.1f} km/h²"
         return f"{a:.1f} m/s²"
 
