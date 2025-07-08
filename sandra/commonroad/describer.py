@@ -201,11 +201,12 @@ class CommonRoadDescriber(DescriberBase):
         #     self.ego_direction, relative_vehicle_direction
         # )
         # vehicle_description += f"It is located {self.angle_description(angle)} you, "
-        vehicle_description += f"and is {self.distance_description_clcs(ego_position, vehicle_state.position, self.ego_lane_network.lane.clcs, direction)}. "
         vehicle_description += (
-            f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
+            f"Its velocity is {self.velocity_descr(vehicle_state)}, "
+            f"orientation is {self.orientation_descr(vehicle_state)}, "
+            f"steering angle is {self.steering_descr(vehicle_state)}, "
+            f"and acceleration is {self.acceleration_descr(vehicle_state)}."
         )
-        vehicle_description += f"and its acceleration is {self.acceleration_descr(vehicle_state.acceleration)}."
         if (ttc := self.ttc_description(vehicle.obstacle_id)) is not None:
             if ttc:
                 vehicle_description += f" The time-to-collision is {ttc}."
@@ -296,9 +297,11 @@ class CommonRoadDescriber(DescriberBase):
                 ego_description += f"There is no {side}-adjacent lane. "
 
         ego_description += (
-            f"\nYour velocity is {self.velocity_descr(self.ego_state.velocity)}"
+            f"\nYour velocity is {self.velocity_descr(self.ego_state)}, "
+            f"orientation is {self.orientation_descr(self.ego_state)}, "
+            f"steering angle is {self.steering_descr(self.ego_state)}, "
+            f"and acceleration is {self.acceleration_descr(self.ego_state)}. "
         )
-        ego_description += f" and your acceleration is {self.acceleration_descr(self.ego_state.acceleration)}."
         if self.ego_past_action:
             actions_str = ", ".join(action.value for action in self.ego_past_action)
             ego_description += f"Your last actions are: {actions_str}. "
