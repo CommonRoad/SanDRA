@@ -1,4 +1,6 @@
 from typing import Optional, Union, List
+
+from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
@@ -24,6 +26,7 @@ from sandra.common.config import (
     COMMONROAD_REACH_SEMANTIC_ROOT,
     PROJECT_ROOT,
 )
+from sandra.utility.vehicle import extract_ego_vehicle
 from sandra.common.road_network import EgoLaneNetwork, Lane
 from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
 
@@ -34,9 +37,11 @@ class ReachVerifier(VerifierBase):
     def __init__(
         self,
         scenario: Scenario,
+        planning_problem: PlanningProblem,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
-        verbose=False,
+        verbose: bool = False,
+        scenario_folder: str = None
     ):
 
         # basic elements
@@ -53,17 +58,29 @@ class ReachVerifier(VerifierBase):
             ).build_configuration(str(scenario.scenario_id))
         )
         self.reach_config.traffic_rule.activated_rules = []
+        if scenario_folder is None:
+            scenario_folder = PROJECT_ROOT + "/scenarios/"
+        self.reach_config.general.path_scenarios = scenario_folder
         self.reach_config.general.path_scenario = (
-            PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
-        )
+                 scenario_folder + str(scenario.scenario_id) + ".xml"
+            )
         self.reach_config.vehicle.ego.v_lon_min = 0
         # fix the dimension
         self.reach_config.vehicle.ego.length = sandra_config.length
         self.reach_config.vehicle.ego.width = sandra_config.width
-        self.reach_config.general.path_scenarios = PROJECT_ROOT + "/scenarios/"
         self.reach_config.planning.dt = scenario.dt
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
+
+        # remove ego vehicle if existed
+        ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
+        if ego_vehicle:
+            if ego_in_sce := self.reach_config.scenario.obstacle_by_id(ego_vehicle.obstacle_id):
+                self.reach_config.scenario.remove_obstacle(ego_in_sce)
+                self.reset(
+                    ego_lane_network=ego_lane_network,
+                    scenario=self.reach_config.scenario,
+                )
 
         # initialize semantic model and traffic rule interface
         self.semantic_model = SemanticModel(self.reach_config)
@@ -74,12 +91,18 @@ class ReachVerifier(VerifierBase):
             self.reach_config, self.semantic_model, self.rule_interface
         )
 
+        # default params to be stored
+        self._default_a_lon_max = self.reach_config.vehicle.ego.a_lon_max
+        self._default_a_lon_min = self.reach_config.vehicle.ego.a_lon_min
+
     def reset(
         self,
         reach_config: SemanticConfiguration = None,
         actions: List[Union[LongitudinalAction, LateralAction]] = None,
+        ego_lane_network: EgoLaneNetwork = None,
+        scenario: Scenario = None,
     ):
-        """resets configurations and actions"""
+        """resets configs"""
         if reach_config:
             self.reach_config = reach_config
 
@@ -88,8 +111,19 @@ class ReachVerifier(VerifierBase):
                 config=self.reach_config,
             )
 
+        if ego_lane_network:
+            self.ego_lane_network = ego_lane_network
+            if scenario:
+                self.reach_config.update(
+                    planning_problem=self.reach_config.planning_problem,
+                    scenario=scenario,
+                    CLCS = self.ego_lane_network.lane.clcs
+                )
+
         if actions:
             ltl_list = []
+            # reset the specification list within the rule interface
+            self.rule_interface.list_specifications_ltl = []
             for action in actions:
                 if type(action) is LateralAction and EgoLaneNetwork is None:
                     AssertionError("For lateral actions, the lane network is needed!")
@@ -115,10 +149,12 @@ class ReachVerifier(VerifierBase):
         """
         if action == LongitudinalAction.ACCELERATE:
             self.reach_config.vehicle.ego.a_lon_min = self.sandra_config.a_lim
+            self.reach_config.vehicle.ego.a_lon_max = self._default_a_lon_max
             return ""
 
         elif action == LongitudinalAction.DECELERATE:
             self.reach_config.vehicle.ego.a_lon_max = -self.sandra_config.a_lim
+            self.reach_config.vehicle.ego.a_lon_min = self._default_a_lon_min
             return ""
 
         elif action == LongitudinalAction.KEEP:

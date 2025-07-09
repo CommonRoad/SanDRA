@@ -41,7 +41,6 @@ class CommonRoadDescriber(DescriberBase):
         goal: Optional[str] = None,
         scenario_type: Optional[str] = None,
         describe_ttc=True,
-        k=3,
         past_action: List[Union[LongitudinalAction, LateralAction]] = None,
         country: Optional[str] = "Germany",
     ):
@@ -54,8 +53,8 @@ class CommonRoadDescriber(DescriberBase):
         self.country = country
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
-        assert 1 <= k <= 10, f"Unsupported k {k}"
-        self.k = k
+        assert 1 <= config.m <= 10, f"Unsupported m {m}"
+        self.m = config.m
 
         if describe_ttc:
             crime_config = CriMeConfiguration()
@@ -318,7 +317,7 @@ class CommonRoadDescriber(DescriberBase):
             "Feasible longitudinal actions:\n"
             f"{longitudinals_str}\n"
             "Feasible lateral actions:\n"
-            f"{laterals_str}"
+            f"{laterals_str}\n"
         )
 
     def _describe_reminders(self) -> list[str]:
@@ -339,7 +338,7 @@ class CommonRoadDescriber(DescriberBase):
             self.ego_lane_network.lane_right_adjacent
         ):
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
-        longitudinal_actions = [x for x in LongitudinalAction]
+        longitudinal_actions = [x for x in LongitudinalAction if x != LongitudinalAction.UNKNOWN]
         return lateral_actions, longitudinal_actions
 
     def schema(self) -> dict[str, Any]:
@@ -373,7 +372,7 @@ class CommonRoadDescriber(DescriberBase):
             "tenth",
         ]
         added_variable_names = []
-        for prefix in variable_name_prefixes[: self.k - 1]:
+        for prefix in variable_name_prefixes[: self.m - 1]:
             variable_name = f"{prefix}_best_combination"
             schema_dict["properties"][variable_name] = action_dict
             added_variable_names.append(variable_name)

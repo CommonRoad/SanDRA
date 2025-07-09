@@ -12,7 +12,7 @@ class Decider:
         self,
         config: SanDRAConfiguration,
         describer: DescriberBase,
-        verifier: Optional[VerifierBase],
+        verifier: Optional[VerifierBase] = None,
         save_path: Optional[str] = None,
     ):
         self.config: SanDRAConfiguration = config
@@ -25,9 +25,7 @@ class Decider:
 
     def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []
-        k = 1
-        if hasattr(self.describer, "k"):
-            k = self.describer.k
+        k = self.config.m
         ranking_prefixes = [
             "",
             "second",
