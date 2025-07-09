@@ -1,9 +1,12 @@
 import numpy as np
+from commonroad.common.solution import VehicleType
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.lanelet import LaneletNetwork
 from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import TraceState
+from commonroad_dc.feasibility.vehicle_dynamics import VehicleParameterMapping
+from vehiclemodels.vehicle_parameters import VehicleParameters
 
 
 def find_lanelet_id_from_state(
@@ -46,3 +49,14 @@ def calculate_relative_orientation(
     if cross_product < 0:
         angle = 2 * np.pi - angle
     return angle
+
+def get_input_bounds(vehicle_type: int = 2, a_max: float = 8.0, v_max: float = 30.0) -> dict[str, float]:
+    vehicle_parameters: VehicleParameters = VehicleParameterMapping.from_vehicle_type(VehicleType(vehicle_type))
+    return {
+        "delta_min": vehicle_parameters.steering.min,
+        "delta_max": vehicle_parameters.steering.max,
+        "a_max": a_max,
+        "a_min": -a_max,
+        "v_max": v_max,
+        "v_min": 0.0,
+    }

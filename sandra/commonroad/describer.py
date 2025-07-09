@@ -182,7 +182,10 @@ class CommonRoadDescriber(DescriberBase):
         return None, None, None
 
     def _describe_vehicle(self, vehicle: DynamicObstacle) -> Optional[str]:
-        vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
+        if self.timestep == 0:
+            vehicle_state = vehicle.initial_state
+        else:
+            vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
         vehicle_lanelet_id = find_lanelet_id_from_state(
             vehicle_state, self.scenario.lanelet_network
         )
@@ -213,6 +216,16 @@ class CommonRoadDescriber(DescriberBase):
 
     def _get_relevant_obstacles(self, perception_radius: float) -> list[DynamicObstacle]:
         circle_center = self.ego_state.position
+        if self.timestep == 0:
+            return [
+                x
+                for x in self.scenario.dynamic_obstacles
+                if np.linalg.norm(
+                    x.initial_state.position
+                    - circle_center
+                )
+                   < perception_radius
+            ]
         return [
             x
             for x in self.scenario.dynamic_obstacles

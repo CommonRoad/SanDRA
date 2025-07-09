@@ -1,30 +1,17 @@
 """
-Unit tests of the verifier module using reachability analysis
+Unit tests to verify that control inputs into highway-env still work
 """
-import math
 import unittest
 
-import gymnasium
-import numpy as np
-from commonroad.common.file_reader import CommonRoadFileReader
-from commonroad.common.solution import VehicleType
-from commonroad.common.util import AngleInterval, Interval
-from commonroad.geometry.shape import Rectangle
-from commonroad.planning.goal import GoalRegion
-from commonroad.scenario.state import CustomState
-from commonroad.scenario_definition.protobuf_format.generated_scripts.planning_problem_pb2 import PlanningProblem
-from gymnasium.wrappers import RecordVideo
-from matplotlib import pyplot as plt
 from vehiclemodels.vehicle_parameters import VehicleParameters
-
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
-from sandra.commonroad.reach import ReachVerifier, VerificationStatus
-from sandra.commonroad.plan import ReactivePlanner
-from sandra.actions import LongitudinalAction, LateralAction
-
+from commonroad.common.solution import VehicleType
 from commonroad_dc.feasibility.vehicle_dynamics import VehicleParameterMapping
 
+from sandra.actions import LateralAction
+from sandra.commonroad.plan import ReactivePlanner
+from sandra.commonroad.reach import ReachVerifier
+from sandra.common.config import SanDRAConfiguration
+from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.highenv.highenv_scenario import HighwayEnvScenario
 
 
@@ -37,8 +24,12 @@ class TestReachVerifier(unittest.TestCase):
         # get vehicle parameters from CommonRoad vehicle models given cr_vehicle_id
         id_type_vehicle: int = 2
         vehicle_parameters: VehicleParameters = VehicleParameterMapping.from_vehicle_type(VehicleType(id_type_vehicle))
-        delta_min: float = vehicle_parameters.steering.min
-        delta_max: float = vehicle_parameters.steering.max
+        self.delta_min = vehicle_parameters.steering.min
+        self.delta_max = vehicle_parameters.steering.max
+        self.a_max = 8.0
+        self.a_min = -self.a_max
+        self.v_min = 0.0
+        self.v_max = 30.0
         # a_max: float = self.reach_ver.reach_config.vehicle.ego.a_max
         # v_max: float = self.reach_ver.reach_config.vehicle.ego.v_max
         env_config = {
@@ -59,9 +50,9 @@ class TestReachVerifier(unittest.TestCase):
                 },
                 "action": {
                     "type": "ContinuousAction",
-                    "acceleration_range": (-8.0, 8.0),
-                    "steering_range": (delta_min, delta_max),
-                    "speed_range": (0.0, 30.0),
+                    "acceleration_range": (self.a_min, self.a_max),
+                    "steering_range": (self.delta_min, self.delta_max),
+                    "speed_range": (self.v_min, self.v_max),
                 },
                 "lanes_count": 4,
                 "other_vehicles_type": "highway_env.vehicle.behavior.IDMVehicle",
@@ -72,12 +63,12 @@ class TestReachVerifier(unittest.TestCase):
                 "scaling": 5,
                 "initial_lane_id": None,
                 "ego_spacing": 4,
+                "simulation_frequency": 15,
+                "policy_frequency": 15,
             }
         }
 
-        self.scenario = HighwayEnvScenario(env_config)
-        dt = 0.2
-        num_steps = 25
+        self.scenario = HighwayEnvScenario(env_config, seed=4213)
         self.cr_scenario, _, self.cr_planning_problem = self.scenario.commonroad_representation
 
         road_network = RoadNetwork.from_lanelet_network_and_position(
@@ -92,24 +83,53 @@ class TestReachVerifier(unittest.TestCase):
             self.cr_planning_problem,
             road_network,
         )
-        self.reach_ver = ReachVerifier(self.cr_scenario, self.config, ego_lane_network=ego_lane_network)
+        self.reach_ver = ReachVerifier(self.cr_scenario, self.config, ego_lane_network=ego_lane_network,
+                                  initial_state=self.cr_planning_problem.initial_state)
 
     def test_reactive_planning(self):
-        self.reach_ver.verify([LongitudinalAction.DECELERATE, LateralAction.CHANGE_LEFT])
+        simulation_length = 60
+        replanning_frequency = 5
+        current_ego_prediction = None
 
-        planner = ReactivePlanner(self.config, self.cr_scenario, self.cr_planning_problem)
-        planner.reset(self.reach_ver.reach_config.planning.CLCS)
-        driving_corridor = self.reach_ver.reach_interface.extract_driving_corridors(
-            to_goal_region=False
-        )[0]
-        planner.plan(driving_corridor)
-        ego_prediction = planner.ego_vehicle.prediction.trajectory.state_list[1:]
-        for i in range(self.config.h):
-            ego_state = ego_prediction[i]
-            action = ego_state.steering_angle, ego_state.acceleration
+        def normalize(v, a, b):
+            normalized_v = (v - a) / (b - a)
+            return 2 * normalized_v - 1
+
+        def update():
+            self.scenario = HighwayEnvScenario(self.scenario._env, seed=4213)
+            self.cr_scenario, _, self.cr_planning_problem = self.scenario.commonroad_representation
+
+            road_network = RoadNetwork.from_lanelet_network_and_position(
+                self.cr_scenario.lanelet_network,
+                self.cr_planning_problem.initial_state.position,
+                consider_reversed=True,
+                consider_incoming=True,
+            )
+
+            ego_lane_network = EgoLaneNetwork.from_route_planner(
+                self.cr_scenario.lanelet_network,
+                self.cr_planning_problem,
+                road_network,
+            )
+            self.reach_ver = ReachVerifier(self.cr_scenario, self.config, ego_lane_network=ego_lane_network,
+                                      initial_state=self.cr_planning_problem.initial_state)
+
+        for i in range(simulation_length):
+            if i % replanning_frequency == 0:
+                if i > 0:
+                    update()
+                self.reach_ver.verify([LateralAction.CHANGE_LEFT])
+                planner = ReactivePlanner(self.config, self.cr_scenario, self.cr_planning_problem)
+                planner.reset(self.reach_ver.reach_config.planning.CLCS)
+                driving_corridor = self.reach_ver.reach_interface.extract_driving_corridors(
+                    to_goal_region=False
+                )[0]
+                planner.plan(driving_corridor)
+                current_ego_prediction = planner.ego_vehicle.prediction.trajectory.state_list[1:]
+
+            ego_state = current_ego_prediction[i % replanning_frequency]
+            action_first = -normalize(ego_state.steering_angle, self.delta_min, self.delta_max)
+            action_second = normalize(ego_state.acceleration, self.a_min, self.a_max)
+            action = action_second, action_first
             _ = self.scenario.step(action)
         self.scenario._env.close()
-        planner.visualize(
-            driving_corridor=driving_corridor,
-            reach_interface=self.reach_ver.reach_interface,
-        )
