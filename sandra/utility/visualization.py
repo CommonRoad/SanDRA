@@ -321,6 +321,7 @@ def draw_scenario_paper(
     plt.show()
 
 def plot_reachable_sets(reach_interface: ReachableSetInterface,
+                        driving_corridor = None,
                         step_start: int = 0, step_end: int = 0,
                         plot_limits: List = None, path_output: str = None):
     """
@@ -363,8 +364,10 @@ def plot_reachable_sets(reach_interface: ReachableSetInterface,
     scenario.draw(rnd, draw_params=scenario_params)
 
     for step in steps:
-
-        list_nodes = reach_interface.reachable_set_at_step(step)
+        if driving_corridor:
+            list_nodes = driving_corridor.dict_step_to_cc[step].list_nodes_reach
+        else:
+            list_nodes = reach_interface.reachable_set_at_step(step)
         # Draw reachable sets
         for node in list_nodes:
             position_rectangle = node.position_rectangle

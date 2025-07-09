@@ -16,6 +16,7 @@ import commonroad_reach.utility.visualization as util_visual
 from commonroad_reach.data_structure.reach.reach_interface import ReachableSetInterface
 
 import commonroad_rp.utility.logger as util_logger_rp
+from commonroad_reach_semantic.data_structure.driving_corridor_extractor import DrivingCorridor
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 from commonroad_rp.reactive_planner import ReactivePlanner as CRReactivePlanner
 from commonroad_rp.utility.visualization import visualize_planner_at_timestep
@@ -123,7 +124,7 @@ class ReactivePlanner(PlannerBase):
 
     def visualize(
         self,
-        driving_corridor: Dict[int, ConnectedComponent] = None,
+        driving_corridor: DrivingCorridor = None,
         reach_interface: ReachableSetInterface = None,
     ):
         self.planner.config.debug.save_plots = True
