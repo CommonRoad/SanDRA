@@ -1,7 +1,8 @@
 import warnings
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Literal, overload
+from typing import Optional, Any, Literal, overload, Union
 
+from commonroad.scenario.state import InitialState, CustomState, KSState
 from commonroad_dc.pycrccosy import CurvilinearCoordinateSystem
 from openai import BaseModel
 import numpy as np
@@ -55,18 +56,41 @@ class DescriberBase(ABC):
             self.timestep = self.timestep + 1
 
     @staticmethod
-    def velocity_descr(v: float, to_km=False) -> str:
+    def velocity_descr(state: Union[InitialState, CustomState, KSState], to_km=False) -> str:
+        v = state.velocity
         if to_km:
             v *= 3.6
             return f"{v:.1f} km/h"
         return f"{v:.1f} m/s"
 
     @staticmethod
-    def acceleration_descr(a: float, to_km=False) -> str:
+    def acceleration_descr(state: Union[InitialState, CustomState, KSState], to_km=False) -> str:
+        a = state.acceleration
         if to_km:
             a *= 12960
             return f"{a:.1f} km/h²"
         return f"{a:.1f} m/s²"
+
+    @staticmethod
+    def orientation_descr(state: Union[InitialState, CustomState, KSState], degrees=False) -> str:
+        theta = state.orientation
+        if degrees:
+            theta = theta * 180 / 3.141592653589793
+            return f"{theta:.1f}°"
+        return f"{theta:.3f} rad"
+
+    @staticmethod
+    def steering_descr(state: Union[InitialState, CustomState, KSState], degrees=False, wheelbase=2.578) -> str:
+        if hasattr(state, "steering_angle"):
+            delta = state.steering_angle
+        elif hasattr(state, "yaw_rate"):
+            delta = np.arctan2(wheelbase * state.yaw_rate, state.velocity)
+        else:
+            delta = 0.0
+        if degrees:
+            delta = delta * 180 / 3.141592653589793
+            return f"{delta:.1f}°"
+        return f"{delta:.3f} rad"
 
     @staticmethod
     def angle_description(theta: float) -> str:
