@@ -53,8 +53,8 @@ class CommonRoadDescriber(DescriberBase):
         self.country = country
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
-        assert 1 <= config.m <= 10, f"Unsupported m {m}"
-        self.m = config.m
+        assert 1 <= config.k <= 10, f"Unsupported k {config.k}"
+        self.k = config.k
 
         if describe_ttc:
             crime_config = CriMeConfiguration()
@@ -137,7 +137,7 @@ class CommonRoadDescriber(DescriberBase):
         initial_len = len(traffic_signs_description)
         if max_speed is not None:
             traffic_signs_description += (
-                f"\nThe maximum speed is {self.velocity_descr(max_speed)}."
+                f"\nThe maximum speed is {self.velocity_descr(velocity=max_speed)}."
             )
 
         if len(traffic_signs_description) > initial_len:
@@ -372,7 +372,7 @@ class CommonRoadDescriber(DescriberBase):
             "tenth",
         ]
         added_variable_names = []
-        for prefix in variable_name_prefixes[: self.m - 1]:
+        for prefix in variable_name_prefixes[: self.k - 1]:
             variable_name = f"{prefix}_best_combination"
             schema_dict["properties"][variable_name] = action_dict
             added_variable_names.append(variable_name)

@@ -230,15 +230,15 @@ class ReachSetLabeler(LabelerBase):
             (lat, lon) for (lat, lon), area in sorted_actions if area > 0.0
         ]
 
-        if len(non_zero_actions) < self.config.m:
+        if len(non_zero_actions) < self.config.k:
             warnings.warn(
                 f"Only {len(non_zero_actions)} valid action pairs with "
-                f"non-zero reachable area (expected {self.config.m})."
+                f"non-zero reachable area (expected {self.config.k})."
             )
 
         # Take top m
         top_action_list = [
-            [lon, lat] for (lat, lon) in non_zero_actions[:self.config.m]
+            [lon, lat] for (lat, lon) in non_zero_actions[:self.config.k]
         ]
 
         return top_action_list

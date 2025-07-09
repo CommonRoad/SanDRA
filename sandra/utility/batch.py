@@ -82,7 +82,7 @@ def batch_labelling(
             headers.append("Prompt")
 
         if evaluate_llm:
-            for i in range(1, config.m + 1):
+            for i in range(1, config.k + 1):
                 headers.append(f"{config.model_name}_Longitudinal_{i}")
                 headers.append(f"{config.model_name}_Lateral_{i}")
 
@@ -90,7 +90,7 @@ def batch_labelling(
             headers.extend(["Trajectory_Longitudinal", "Trajectory_Lateral"])
 
         if evaluate_reachset_labels:
-            for i in range(1, config.m + 1):
+            for i in range(1, config.k + 1):
                 headers.append(f"ReachSet_Longitudinal_{i}")
                 headers.append(f"ReachSet_Lateral_{i}")
 
@@ -120,6 +120,11 @@ def batch_labelling(
                     iter(planning_problem_set.planning_problem_dict.values())
                 )
 
+                prompt = None
+                ranking_long = []
+                ranking_lat = []
+                ranking = []
+
                 if evaluate_prompt:
                     describer = CommonRoadDescriber(
                         scenario,
@@ -141,13 +146,6 @@ def batch_labelling(
                         ranking = decider._parse_action_ranking(structured_response)
                         ranking = [list(action_pair) for action_pair in ranking]
                         ranking_long, ranking_lat = _split_long_lat(ranking)
-
-                else:
-                    prompt = None
-                    ranking_long = []
-                    ranking_lat = []
-                    ranking = []
-
 
                 ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
 
@@ -253,7 +251,7 @@ def batch_labelling(
                     evaluate_safety,
                     evaluate_trajectory_labels,
                     evaluate_reachset_labels,
-                    config.m,
+                    config.k,
                 )
 
             except Exception as e:
@@ -363,15 +361,15 @@ if __name__ == "__main__":
     scenarios_path = "/home/liny/Documents/commonroad/highD-sandra-0.04/"
     config = SanDRAConfiguration()
     config.h = 25
-    config.m = 3
+    config.k = 3
     batch_labelling(
         scenarios_path,
         config,
         # role="Drive cautiously", # aggressively
         evaluate_prompt=True,
-        evaluate_llm=True,
-        evaluate_safety=True,
+        evaluate_llm=False,
+        evaluate_safety=False,
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
-        nr_scenarios=100
+        nr_scenarios=10000
     )

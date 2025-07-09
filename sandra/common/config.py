@@ -10,7 +10,7 @@ class SanDRAConfiguration:
     a_lim = 0.2
     v_err = 0.1
 
-    m = 3   # number of returned actions
+    k = 3   # number of returned actions
 
     h = 25  # time horizon of decision-making
 

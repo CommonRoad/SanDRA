@@ -25,7 +25,7 @@ class Decider:
 
     def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []
-        k = self.config.m
+        k = self.config.k
         ranking_prefixes = [
             "",
             "second",
