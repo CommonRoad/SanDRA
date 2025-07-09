@@ -1,3 +1,4 @@
+import math
 import warnings
 from abc import ABC, abstractmethod
 from typing import Optional, Any, Literal, overload, Union
@@ -56,40 +57,80 @@ class DescriberBase(ABC):
             self.timestep = self.timestep + 1
 
     @staticmethod
-    def velocity_descr(state: Union[InitialState, CustomState, KSState], to_km=False) -> str:
-        v = state.velocity
+    def velocity_descr(state: Union[InitialState, CustomState, KSState] = None, velocity: float = None,  to_km=False) -> str:
+        if velocity is not None:
+            v = velocity
+        elif state is not None:
+            v = state.velocity
+        else:
+            raise ValueError("Either 'state' or 'velocity' must be provided.")
         if to_km:
             v *= 3.6
             return f"{v:.1f} km/h"
         return f"{v:.1f} m/s"
 
     @staticmethod
-    def acceleration_descr(state: Union[InitialState, CustomState, KSState], to_km=False) -> str:
-        a = state.acceleration
+    def acceleration_descr(
+            state:  Union[InitialState, CustomState, KSState] = None,
+            acceleration: float = None,
+            to_km: bool = False
+    ) -> str:
+        if acceleration is not None:
+            a = acceleration
+        elif state is not None:
+            a = state.acceleration
+        else:
+            raise ValueError("Either 'state' or 'acceleration' must be provided.")
         if to_km:
             a *= 12960
             return f"{a:.1f} km/h²"
         return f"{a:.1f} m/s²"
 
     @staticmethod
-    def orientation_descr(state: Union[InitialState, CustomState, KSState], degrees=False) -> str:
-        theta = state.orientation
+    def orientation_descr(
+            state: Union[InitialState, CustomState, KSState] = None,
+            orientation: float = None,
+            degrees: bool = False
+    ) -> str:
+        if orientation is not None:
+            theta = orientation
+        elif state is not None:
+            theta = state.orientation
+        else:
+            raise ValueError("Either 'state' or 'orientation' must be provided.")
+        # Normalize to [-pi, pi]
+        theta = (theta + math.pi) % (2 * math.pi) - math.pi
+
         if degrees:
-            theta = theta * 180 / 3.141592653589793
-            return f"{theta:.1f}°"
+            theta_deg = theta * 180 / math.pi
+            return f"{theta_deg:.1f}°"
         return f"{theta:.3f} rad"
 
     @staticmethod
-    def steering_descr(state: Union[InitialState, CustomState, KSState], degrees=False, wheelbase=2.578) -> str:
-        if hasattr(state, "steering_angle"):
-            delta = state.steering_angle
-        elif hasattr(state, "yaw_rate"):
-            delta = np.arctan2(wheelbase * state.yaw_rate, state.velocity)
+    def steering_descr(
+            state: Union[InitialState, CustomState, KSState] = None,
+            steering_angle: float = None,
+            degrees: bool = False,
+            wheelbase: float = 2.578
+    ) -> str:
+        if steering_angle is not None:
+            delta = steering_angle
+        elif state is not None:
+            if hasattr(state, "steering_angle"):
+                delta = state.steering_angle
+            elif hasattr(state, "yaw_rate"):
+                delta = np.arctan2(wheelbase * state.yaw_rate, state.velocity)
+            else:
+                delta = 0.0
         else:
-            delta = 0.0
+            raise ValueError("Either 'state' or 'steering_angle' must be provided.")
+
+        # Normalize to [-pi, pi]
+        delta = (delta + math.pi) % (2 * math.pi) - math.pi
+
         if degrees:
-            delta = delta * 180 / 3.141592653589793
-            return f"{delta:.1f}°"
+            delta_deg = delta * 180 / math.pi
+            return f"{delta_deg:.1f}°"
         return f"{delta:.3f} rad"
 
     @staticmethod
