@@ -110,7 +110,7 @@ class HighEnvDecider(Decider):
                             print(f"Planning failed: {e}")
 
                 if not found_viable_action:
-                    if self.verifier.verify([None], safe_distance=True) == VerificationStatus.SAFE:
+                    if self.verifier.verify([None], safe_distance=False) == VerificationStatus.SAFE:
                         try:
                             planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
                             planner.reset(self.verifier.reach_config.planning.CLCS)
