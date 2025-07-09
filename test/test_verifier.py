@@ -26,6 +26,7 @@ class TestReachVerifier(unittest.TestCase):
         )[0]
 
         self.config = SanDRAConfiguration()
+        self.config.h = 20
 
         self.reach_ver = ReachVerifier(self.scenario, self.config)
 
@@ -56,3 +57,8 @@ class TestReachVerifier(unittest.TestCase):
             driving_corridor=driving_corridor,
             reach_interface=self.reach_ver.reach_interface,
         )
+
+    def test_verification_sonia(self):
+        status = self.reach_ver.verify_sonia([LongitudinalAction.STOP], visualization=True)
+        assert status == VerificationStatus.SAFE
+
