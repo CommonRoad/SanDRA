@@ -9,6 +9,10 @@ from gymnasium.wrappers import RecordVideo
 from highway_env.envs.common.observation import TimeToCollisionObservation
 from matplotlib import pyplot as plt
 
+# todo
+from highway_env.vehicle.behavior import IDMVehicle
+IDMVehicle.LANE_CHANGE_DELAY = 2.0
+
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
@@ -73,67 +77,91 @@ class HighEnvDecider(Decider):
         return cr_scenario, cr_planning_problem
 
     def run(self):
-        def normalize(v, a, b):
-            normalized_v = (v - a) / (b - a)
-            return 2 * normalized_v - 1
+        if self.config.highway_env.action_input:
+            done = truncated = False
+            # plt.imshow(self.scenario._env.render())
+            # plt.show()
+            time_step = 0
+            while not (done or truncated):
+                time_step += 1
+                if time_step >= 60:
+                    break
+                self.update(None)
+                longitudinal_action, lateral_action = self.decide()
+                if lateral_action in [
+                    LateralAction.CHANGE_RIGHT,
+                    LateralAction.CHANGE_LEFT,
+                ]:
+                    action = self.lateral_action_to_id[lateral_action]
+                else:
+                    action = self.longitudinal_action_to_id[longitudinal_action]
+                obs, reward, done, truncated, info = self.scenario._env.step(action)
+                # self.describer.update_with_observation(obs)
+                self.scenario._env.render()
+                # plt.imshow(self.scenario._env.render())
+                # plt.show()
+            self.scenario._env.close()
+        else:
+            def normalize(v, a, b):
+                normalized_v = (v - a) / (b - a)
+                return 2 * normalized_v - 1
 
-        input_bounds = get_input_bounds()
-        simulation_length = 60
-        replanning_frequency = 5
-        current_ego_prediction = None
-        cr_scenario, cr_planning_problem = None, None
-        for i in range(simulation_length):
-            if i % replanning_frequency == 0:
-                cr_scenario, cr_planning_problem = self.update(None)
-                user_prompt = self.describer.user_prompt()
-                system_prompt = self.describer.system_prompt()
-                schema = self.describer.schema()
-                structured_response = get_structured_response(
-                    user_prompt, system_prompt, schema, self.config, save_dir=self.save_path
-                )
-                ranking = self._parse_action_ranking(structured_response)
-                ranking = []
-                found_viable_action = False
-                for action in ranking:
-                    if self.verifier.verify(list(action), safe_distance=True) == VerificationStatus.SAFE:
-                        try:
-                            planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
-                            planner.reset(self.verifier.reach_config.planning.CLCS)
-                            driving_corridor = self.verifier.reach_interface.extract_driving_corridors(
-                                to_goal_region=False
-                            )[0]
-                            planner.plan(driving_corridor)
-                            current_ego_prediction = planner.ego_vehicle.prediction.trajectory.state_list[1:]
-                            found_viable_action = True
-                            break
-                        except Exception as e:
-                            print(f"Planning failed: {e}")
+            input_bounds = get_input_bounds()
+            simulation_length = 60
+            replanning_frequency = 5
+            current_ego_prediction = None
+            for i in range(simulation_length):
+                if i % replanning_frequency == 0:
+                    cr_scenario, cr_planning_problem = self.update(None)
+                    user_prompt = self.describer.user_prompt()
+                    system_prompt = self.describer.system_prompt()
+                    schema = self.describer.schema()
+                    structured_response = get_structured_response(
+                        user_prompt, system_prompt, schema, self.config, save_dir=self.save_path
+                    )
+                    ranking = self._parse_action_ranking(structured_response)
+                    found_viable_action = False
+                    for action in ranking:
+                        if self.verifier.verify(list(action), safe_distance=True) == VerificationStatus.SAFE:
+                            try:
+                                planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
+                                planner.reset(self.verifier.reach_config.planning.CLCS)
+                                driving_corridor = self.verifier.reach_interface.extract_driving_corridors(
+                                    to_goal_region=False
+                                )[0]
+                                planner.plan(driving_corridor)
+                                current_ego_prediction = planner.ego_vehicle.prediction.trajectory.state_list[1:]
+                                found_viable_action = True
+                                break
+                            except Exception as e:
+                                print(f"Planning failed: {e}")
 
-                if not found_viable_action:
-                    if self.verifier.verify([None], safe_distance=False) == VerificationStatus.SAFE:
-                        try:
-                            planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
-                            planner.reset(self.verifier.reach_config.planning.CLCS)
-                            driving_corridor = self.verifier.reach_interface.extract_driving_corridors(
-                                to_goal_region=False
-                            )[0]
-                            planner.plan(driving_corridor)
-                            current_ego_prediction = planner.ego_vehicle.prediction.trajectory.state_list[1:]
-                        except Exception as e:
-                            raise RuntimeError(f"Planning failed: {e}")
-                    else:
-                        raise RuntimeError("Verification failed")
+                    if not found_viable_action:
+                        if self.verifier.verify([None], safe_distance=False) == VerificationStatus.SAFE:
+                            try:
+                                planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
+                                planner.reset(self.verifier.reach_config.planning.CLCS)
+                                driving_corridor = self.verifier.reach_interface.extract_driving_corridors(
+                                    to_goal_region=False
+                                )[0]
+                                planner.plan(driving_corridor)
+                                current_ego_prediction = planner.ego_vehicle.prediction.trajectory.state_list[1:]
+                            except Exception as e:
+                                raise RuntimeError(f"Planning failed: {e}")
+                        else:
+                            raise RuntimeError("Verification failed")
 
-            ego_state = current_ego_prediction[i % replanning_frequency]
-            action_first = -normalize(ego_state.steering_angle, input_bounds["delta_min"], input_bounds["delta_max"])
-            action_second = normalize(ego_state.acceleration, input_bounds["a_min"], input_bounds["a_max"])
-            action = action_second, action_first
-            _ = self.scenario.step(action)
-        self.scenario._env.close()
+                ego_state = current_ego_prediction[i % replanning_frequency]
+                action_first = -normalize(ego_state.steering_angle, input_bounds["delta_min"], input_bounds["delta_max"])
+                action_second = normalize(ego_state.acceleration, input_bounds["a_min"], input_bounds["a_max"])
+                print(f" Actions {action_first}, {action_second}")
+                action = action_second, action_first
+                _ = self.scenario.step(action)
+            self.scenario._env.close()
 
     @staticmethod
-    def configure(seeds: list[int] = None) -> "HighEnvDecider":
-        if seeds is None:
+    def configure(config: SanDRAConfiguration = None) -> "HighEnvDecider":
+        if config is None:
             seeds = [
                 5838,
                 2421,
@@ -153,7 +181,24 @@ class HighEnvDecider(Decider):
                 5214,
                 31,
             ]
+            config = SanDRAConfiguration()
+        else:
+            seeds = config.highway_env.seeds
         input_bounds = get_input_bounds()
+
+        if config.highway_env.action_input:
+            action_dict = {
+                    "type": "DiscreteMetaAction",
+                    "target_speeds": np.linspace(5, 32, 9),
+                }
+        else:
+
+            action_dict = {
+                    "type": "ContinuousAction",
+                    "acceleration_range": (input_bounds["a_min"], input_bounds["a_max"]),
+                    "steering_range": (input_bounds["delta_min"], input_bounds["delta_max"]),
+                    "speed_range": (input_bounds["v_min"], input_bounds["v_max"]),
+                }
         env_config = {
             "highway-v0": {
                 "observation": {
@@ -164,18 +209,13 @@ class HighEnvDecider(Decider):
                         "x": [-100, 100],
                         "y": [-100, 100],
                         "vx": [-20, 20],
-                        "vy": [-20, 20]
+                        "vy": [-4, 4]
                     },
                     "grid_size": [[-27.5, 27.5], [-27.5, 27.5]],
                     "grid_step": [5, 5],
                     "absolute": False
                 },
-                "action": {
-                    "type": "ContinuousAction",
-                    "acceleration_range": (input_bounds["a_min"], input_bounds["a_max"]),
-                    "steering_range": (input_bounds["delta_min"], input_bounds["delta_max"]),
-                    "speed_range": (input_bounds["v_min"], input_bounds["v_max"]),
-                },
+                "action": action_dict,
                 "lanes_count": 4,
                 "other_vehicles_type": "highway_env.vehicle.behavior.IDMVehicle",
                 "duration": 30,
@@ -190,9 +230,10 @@ class HighEnvDecider(Decider):
             }
         }
         seed = random.choice(seeds)
-        return HighEnvDecider(env_config, seed, SanDRAConfiguration())
+        return HighEnvDecider(env_config, seed, config)
 
 
 if __name__ == "__main__":
-    decider = HighEnvDecider.configure([4213])
+    config = SanDRAConfiguration()
+    decider = HighEnvDecider.configure(config)
     decider.run()
