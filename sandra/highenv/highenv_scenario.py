@@ -56,7 +56,7 @@ class HighwayEnvScenario:
         # todo: better wrap the parameters using SanDRAConfiguration
         self.prediction_length = SanDRAConfiguration().h + 1
         self.minimum_interval = 1.0
-        self._commonroad_ids: set[int] = {-1}
+        self._commonroad_ids: set[int] = {0}
         self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
         self.maximum_lanelet_length = 1000
 
@@ -73,6 +73,10 @@ class HighwayEnvScenario:
         else:
             raise ValueError(f"Invalid input shape: {coordinates.shape}. ")
         return result
+
+    @staticmethod
+    def _convert_lane_id(lane_id: LaneIndex) -> int:
+        return lane_id[2] + 1
 
     def _create_vertices_along_line(
         self,
@@ -138,7 +142,7 @@ class HighwayEnvScenario:
         )
         lanelet_id = self._next_id()
         assert (
-            lanelet_id == lane_index[2]
+            lanelet_id == self._convert_lane_id(lane_index)
         ), "Commonroad LaneletID should match its HighEnv counterpart."
 
         # Add adjacent lanelet ids
@@ -150,7 +154,7 @@ class HighwayEnvScenario:
                 lane.start + 3 * center_offset, lane.heading
             )
         ) in neighbors:
-            adjacent_right = adj_right[2]
+            adjacent_right = self._convert_lane_id(adj_right)
             adjacent_right_lane: StraightLane = cast(
                 StraightLane, road_network.get_lane(adj_right)
             )
@@ -164,7 +168,7 @@ class HighwayEnvScenario:
                 lane.start - center_offset, lane.heading
             )
         ) in neighbors:
-            adjacent_left = adj_left[2]
+            adjacent_left = self._convert_lane_id(adj_left)
             adjacent_left_lane: StraightLane = cast(
                 StraightLane, road_network.get_lane(adj_left)
             )
@@ -213,7 +217,7 @@ class HighwayEnvScenario:
             yaw_rate=0.0,
         )
 
-        lanelet_id = vehicle.lane_index[2]
+        lanelet_id = self._convert_lane_id(vehicle.lane_index)
         return DynamicObstacle(
             obstacle_id,
             obstacle_type,
