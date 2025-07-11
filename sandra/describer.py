@@ -273,9 +273,9 @@ class DescriberBase(ABC):
             "You are driving a car and need to make a high-level driving decision.\n"
             f"{role}"
             f"{goal}"
-            f"{self._describe_past_actions(past_actions)}"
             # f"{reminder_description}"
             f"{self._describe_schema()}"
+            f"{self._describe_past_actions(past_actions)}"
         )
         # Keep these things in mind:
         # {reminder_description}
