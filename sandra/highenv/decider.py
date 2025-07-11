@@ -13,6 +13,9 @@ from matplotlib import pyplot as plt
 from highway_env.vehicle.behavior import IDMVehicle
 IDMVehicle.LANE_CHANGE_DELAY = 2.0
 
+from highway_env.vehicle.controller import ControlledVehicle
+ControlledVehicle.TAU_LATERAL = 2.0
+
 from sandra.actions import LateralAction, LongitudinalAction
 from sandra.common.config import SanDRAConfiguration
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
@@ -45,6 +48,7 @@ class HighEnvDecider(Decider):
             LongitudinalAction.ACCELERATE: 3,
             LongitudinalAction.DECELERATE: 4,
         }
+        self.time_step = 0
         self.seed = seed
         self.update(env_config)
 
@@ -53,6 +57,8 @@ class HighEnvDecider(Decider):
             self.scenario = HighwayEnvScenario(self.scenario._env, self.seed, dt=self.config.dt)
         else:
             self.scenario = HighwayEnvScenario(env_config, self.seed, dt=self.config.dt)
+        self.scenario.time_step = self.time_step
+        self.time_step += 1
         cr_scenario, _, cr_planning_problem = self.scenario.commonroad_representation
         self.describer = CommonRoadDescriber(
             cr_scenario,
@@ -86,7 +92,10 @@ class HighEnvDecider(Decider):
                 time_step += 1
                 if time_step >= 60:
                     break
-                self.update(None)
+                if self.scenario:
+                    self.update(self.scenario._env)
+                else:
+                    self.update(None)
                 longitudinal_action, lateral_action = self.decide()
                 if lateral_action in [
                     LateralAction.CHANGE_RIGHT,

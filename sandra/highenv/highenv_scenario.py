@@ -207,7 +207,7 @@ class HighwayEnvScenario:
             orientation=(-vehicle.heading),
             velocity=vehicle.speed,
             acceleration=vehicle.action["acceleration"],
-            time_step=self.time_step,
+            time_step=0,
             slip_angle=math.atan2(vehicle.velocity[1], vehicle.velocity[0]),
             yaw_rate=0.0,
         )
@@ -252,8 +252,8 @@ class HighwayEnvScenario:
                 math.pi / 2,
             ),
             time_step=Interval(
-                self.time_step,
-                self.time_step + self.prediction_length,
+                0,
+                self.prediction_length,
             ),
             velocity=Interval(
                 ego_vehicle.MIN_SPEED,
@@ -283,7 +283,11 @@ class HighwayEnvScenario:
         road = ego_vehicle.road
         scenario = Scenario(
             self.dt,
-            scenario_id=ScenarioID(map_name="Sandra", map_id=self.seed),
+            scenario_id=ScenarioID(
+                map_name="Sandra",
+                map_id=self.seed,
+                obstacle_behavior="T",
+                prediction_id=self.time_step),
         )
 
         # Add all lanelets
@@ -325,7 +329,7 @@ class HighwayEnvScenario:
             num_steps_prediction=self.prediction_length, dt=self.dt
         )
         predictor = ConstantVelocityCurvilinearPredictor(config)
-        scenario = predictor.predict(scenario, initial_time_step=self.time_step)
+        scenario = predictor.predict(scenario, initial_time_step=0)
 
         # Create planning problem
         planning_problem = self._make_commonroad_planning_problem(
