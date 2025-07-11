@@ -88,8 +88,13 @@ class HighEnvDecider(Decider):
             cr_planning_problem,
             road_network,
         )
-        self.verifier = ReachVerifier(cr_scenario, self.config, ego_lane_network=ego_lane_network,
-                                      initial_state=cr_planning_problem.initial_state, highenv=True)
+        self.verifier = ReachVerifier(
+            cr_scenario,
+            cr_planning_problem,
+            self.config,
+            ego_lane_network=ego_lane_network,
+            highenv=True
+        )
         return cr_scenario, cr_planning_problem
 
     def run(self):

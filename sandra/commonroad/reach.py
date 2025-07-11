@@ -41,14 +41,16 @@ class ReachVerifier(VerifierBase):
         planning_problem: PlanningProblem,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
-        verbose=False,
+        verbose: bool = False,
+        scenario_folder: str = None,
+        highenv: bool = False
     ):
 
         # basic elements
         super().__init__()
         self.verbose = verbose
         self.scenario = scenario
-        self.initial_state = initial_state
+        self.initial_state = planning_problem.initial_state
         self.sandra_config = sandra_config
         self.ego_lane_network = ego_lane_network
 
@@ -63,8 +65,8 @@ class ReachVerifier(VerifierBase):
             scenario_folder = PROJECT_ROOT + "/scenarios/"
         self.reach_config.general.path_scenarios = scenario_folder
         self.reach_config.general.path_scenario = (
-                 scenario_folder + str(scenario.scenario_id) + ".xml"
-            )
+                PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
+        )
         self.reach_config.vehicle.ego.v_lon_min = 0
         # fix the dimension
         self.reach_config.vehicle.ego.length = sandra_config.length
@@ -106,6 +108,9 @@ class ReachVerifier(VerifierBase):
         self,
         reach_config: SemanticConfiguration = None,
         actions: List[Union[LongitudinalAction, LateralAction]] = None,
+        save_distance: bool = True,
+        ego_lane_network: EgoLaneNetwork = None,
+        scenario: Scenario = None,
     ):
         """resets configs"""
         if reach_config:
@@ -125,21 +130,18 @@ class ReachVerifier(VerifierBase):
                     CLCS = self.ego_lane_network.lane.clcs
                 )
 
-        ltl_list = []
-
-        if save_distance:
-            assert self.initial_state is not None, "Initial state must be provided"
-            min_save_distance = 2 * self.initial_state.velocity
-            for obstacle in self.scenario.obstacles:
-                distance = np.linalg.norm(self.initial_state.position - obstacle.initial_state.position)
-                if distance < min_save_distance:
-                    rule = f"LTL G SafeDistance_V{obstacle.obstacle_id}"
-                    ltl_list.append(rule)
-
         if actions:
             ltl_list = []
+            if save_distance:
+                assert self.initial_state is not None, "Initial state must be provided"
+                min_save_distance = 2 * self.initial_state.velocity
+                for obstacle in self.scenario.obstacles:
+                    distance = np.linalg.norm(self.initial_state.position - obstacle.initial_state.position)
+                    if distance < min_save_distance:
+                        rule = f"LTL G SafeDistance_V{obstacle.obstacle_id}"
+                        ltl_list.append(rule)
+
             # reset the specification list within the rule interface
-            self.rule_interface.list_specifications_ltl = []
             for action in actions:
                 if type(action) is LateralAction and EgoLaneNetwork is None:
                     AssertionError("For lateral actions, the lane network is needed!")
