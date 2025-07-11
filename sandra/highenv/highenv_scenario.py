@@ -336,7 +336,7 @@ class HighwayEnvScenario:
             num_steps_prediction=self.prediction_length, dt=self.dt
         )
         predictor = ConstantVelocityCurvilinearPredictor(config)
-        scenario = predictor.predict(scenario, initial_time_step=0)
+        scenario = predictor.predict(scenario, initial_time_step=1)
 
         # Create planning problem
         planning_problem = self._make_commonroad_planning_problem(
