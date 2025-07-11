@@ -1,4 +1,4 @@
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, List
 from sandra.actions import Action, LongitudinalAction, LateralAction
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.reach import ReachVerifier
@@ -52,9 +52,9 @@ class Decider:
             )
         return action_ranking
 
-    def decide(self) -> Optional[Action]:
+    def decide(self, past_action: List[List[Union[LongitudinalAction, LateralAction]]] = None) -> Optional[Action]:
         user_prompt = self.describer.user_prompt()
-        system_prompt = self.describer.system_prompt()
+        system_prompt = self.describer.system_prompt(past_action)
         print(system_prompt)
         print(user_prompt)
         schema = self.describer.schema()

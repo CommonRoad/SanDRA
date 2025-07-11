@@ -1,6 +1,6 @@
 import math
 import random
-from typing import cast, Optional
+from typing import cast, Optional, List, Union
 
 import gymnasium
 import numpy as np
@@ -52,6 +52,15 @@ class HighEnvDecider(Decider):
         self.seed = seed
         self.update(env_config)
 
+        # Initialize the past_action list
+        self.past_actions: list = []
+
+    def record_action(self, actions: List[Union[LongitudinalAction, LateralAction, None]], action_nr: int = 5) -> None:
+        """Record a new action, maintaining at most 5 recent actions."""
+        self.past_actions.append(actions)
+        if len(self.past_actions) > action_nr:
+            self.past_actions.pop(0)
+
     def update(self, env_config: Optional[dict]):
         if env_config is None:
             self.scenario = HighwayEnvScenario(self.scenario._env, self.seed, dt=self.config.dt)
@@ -90,13 +99,17 @@ class HighEnvDecider(Decider):
             time_step = 0
             while not (done or truncated):
                 time_step += 1
-                if time_step >= 60:
+                if time_step >= 30:
                     break
                 if self.scenario:
                     self.update(self.scenario._env)
                 else:
                     self.update(None)
-                longitudinal_action, lateral_action = self.decide()
+                longitudinal_action, lateral_action = self.decide(self.past_actions)
+
+                # record the actions
+                self.record_action([longitudinal_action, lateral_action])
+
                 if lateral_action in [
                     LateralAction.CHANGE_RIGHT,
                     LateralAction.CHANGE_LEFT,

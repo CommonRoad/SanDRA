@@ -1,6 +1,6 @@
 import warnings
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Literal, overload
+from typing import Optional, Any, Literal, overload, Union, List
 
 from commonroad_dc.pycrccosy import CurvilinearCoordinateSystem
 from openai import BaseModel
@@ -195,11 +195,11 @@ class DescriberBase(ABC):
             + "\n"
         )
 
-    def system_prompt(self) -> str:
-        reminders = self._describe_reminders()
-        reminder_description = "Keep these things in mind:\n"
-        for reminder in reminders:
-            reminder_description += f"  - {reminder}\n"
+    def system_prompt(self, past_actions: List[List[Union[LongitudinalAction, LateralAction]]] = None) -> str:
+        # reminders = self._describe_reminders()
+        # reminder_description = "Keep these things in mind:\n"
+        # for reminder in reminders:
+        #     reminder_description += f"  - {reminder}\n"
 
         role = f"{self.role}\n" if self.role else ""
         goal = f"{self.goal}\n" if self.goal else ""
@@ -208,9 +208,37 @@ class DescriberBase(ABC):
             "You are driving a car and need to make a high-level driving decision.\n"
             f"{role}"
             f"{goal}"
+            f"{self._describe_past_actions(past_actions)}"
             # f"{reminder_description}"
             f"{self._describe_schema()}"
         )
         # Keep these things in mind:
         # {reminder_description}
         # """
+
+    @staticmethod
+    def _describe_past_actions(
+            past_actions: List[List[Union[LongitudinalAction, LateralAction]]]
+    ) -> str:
+        """
+        Returns a string description of the past action pairs.
+        """
+        if not past_actions:
+            return "No past actions recorded. "
+
+        pair_strs = []
+        for pair in past_actions:
+            if len(pair) != 2:
+                pair_strs.append("(Invalid action pair)")
+                continue
+
+            a1, a2 = pair
+
+            # Get readable names
+            n1 = a1.name if hasattr(a1, "name") else str(a1)
+            n2 = a2.name if hasattr(a2, "name") else str(a2)
+
+            pair_strs.append(f"({n1}, {n2})")
+
+        actions_str = "; ".join(pair_strs)
+        return f"The past {len(past_actions)} action pairs are: {actions_str}. "
