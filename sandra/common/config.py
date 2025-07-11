@@ -7,6 +7,11 @@ from dataclasses import dataclass, field
 class HighwayEnvConfig:
     seeds: List[int] = field(default_factory=lambda: [4213])
     action_input: bool = True
+    simulation_frequency: int = 15
+    policy_frequency: int = 5
+    lanes_count: int = 4
+    duration: float = 30 # [s]
+    vehicles_density: float = 2.0
 
 @dataclass
 class SanDRAConfiguration:

@@ -239,17 +239,17 @@ class HighEnvDecider(Decider):
                     "absolute": False
                 },
                 "action": action_dict,
-                "lanes_count": 4,
+                "lanes_count": config.highway_env.lanes_count,
                 "other_vehicles_type": "highway_env.vehicle.behavior.IDMVehicle",
-                "duration": 30,
-                "vehicles_density": 2.0,
+                "duration": config.highway_env.duration,
+                "vehicles_density": config.highway_env.vehicles_density,
                 "show_trajectories": True,
                 "render_agent": True,
                 "scaling": 5,
                 "initial_lane_id": None,
                 "ego_spacing": 4,
-                "simulation_frequency": 15,
-                "policy_frequency": 15,
+                "simulation_frequency": config.highway_env.simulation_frequency,
+                "policy_frequency": config.highway_env.policy_frequency,
             }
         }
         seed = random.choice(seeds)
