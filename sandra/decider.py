@@ -55,6 +55,8 @@ class Decider:
     def decide(self) -> Optional[Action]:
         user_prompt = self.describer.user_prompt()
         system_prompt = self.describer.system_prompt()
+        print(system_prompt)
+        print(user_prompt)
         schema = self.describer.schema()
         structured_response = get_structured_response(
             user_prompt, system_prompt, schema, self.config, save_dir=self.save_path

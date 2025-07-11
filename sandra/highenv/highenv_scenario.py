@@ -52,6 +52,7 @@ class HighwayEnvScenario:
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
         self.dt = dt
         self.time_step = start_time
+
         # todo: better wrap the parameters using SanDRAConfiguration
         self.prediction_length = SanDRAConfiguration().h + 1
         self.minimum_interval = 1.0
@@ -241,6 +242,8 @@ class HighwayEnvScenario:
         )
         goal_y: float = goal_lane.start[1] + goal_lane.width / 2 - 4.0
         goal_center = self._highenv_coordinate_to_commonroad(np.array([goal_x, goal_y]))
+        goal_center[1] = initial_state.position[1]
+        
         goal_state = CustomState(
             position=Rectangle(
                 ego_vehicle.LENGTH,
