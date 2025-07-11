@@ -35,23 +35,28 @@ from sandra.utility.visualization import plot_scenario
 
 class HighwayEnvScenario:
     def __init__(
-        self, config: dict, seed: int = 4213, dt: float = 0.2, start_time: int = 0
+        self, config: dict | RecordVideo, seed: int = 4213, dt: float = 0.2, start_time: int = 0
     ):
-        env = gymnasium.make(
-            "highway-v0", render_mode="rgb_array", config=config["highway-v0"]
-        )
         self.seed = seed
-        self._env = RecordVideo(env, video_folder="run", episode_trigger=lambda e: True)
-        # self._env.unwrapped.set_record_video_wrapper(env)
-        self.observation, _ = self._env.reset(seed=seed)
+        if isinstance(config, dict):
+            env = gymnasium.make(
+                "highway-v0", render_mode="rgb_array", config=config["highway-v0"]
+            )
+            self._env = RecordVideo(env, video_folder="run", episode_trigger=lambda e: True)
+            # self._env.unwrapped.set_record_video_wrapper(env)
+            self.observation, _ = self._env.reset(seed=seed)
+        else:
+            self._env = config
+            self.observation = None
         self.done = self.truncated = False
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
         self.dt = dt
         self.time_step = start_time
+
         # todo: better wrap the parameters using SanDRAConfiguration
         self.prediction_length = SanDRAConfiguration().h + 1
         self.minimum_interval = 1.0
-        self._commonroad_ids: set[int] = {-1}
+        self._commonroad_ids: set[int] = {0}
         self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
         self.maximum_lanelet_length = 1000
 
@@ -68,6 +73,10 @@ class HighwayEnvScenario:
         else:
             raise ValueError(f"Invalid input shape: {coordinates.shape}. ")
         return result
+
+    @staticmethod
+    def _convert_lane_id(lane_id: LaneIndex) -> int:
+        return lane_id[2] + 1
 
     def _create_vertices_along_line(
         self,
@@ -133,7 +142,7 @@ class HighwayEnvScenario:
         )
         lanelet_id = self._next_id()
         assert (
-            lanelet_id == lane_index[2]
+            lanelet_id == self._convert_lane_id(lane_index)
         ), "Commonroad LaneletID should match its HighEnv counterpart."
 
         # Add adjacent lanelet ids
@@ -145,7 +154,7 @@ class HighwayEnvScenario:
                 lane.start + 3 * center_offset, lane.heading
             )
         ) in neighbors:
-            adjacent_right = adj_right[2]
+            adjacent_right = self._convert_lane_id(adj_right)
             adjacent_right_lane: StraightLane = cast(
                 StraightLane, road_network.get_lane(adj_right)
             )
@@ -159,7 +168,7 @@ class HighwayEnvScenario:
                 lane.start - center_offset, lane.heading
             )
         ) in neighbors:
-            adjacent_left = adj_left[2]
+            adjacent_left = self._convert_lane_id(adj_left)
             adjacent_left_lane: StraightLane = cast(
                 StraightLane, road_network.get_lane(adj_left)
             )
@@ -203,12 +212,12 @@ class HighwayEnvScenario:
             orientation=(-vehicle.heading),
             velocity=vehicle.speed,
             acceleration=vehicle.action["acceleration"],
-            time_step=self.time_step,
+            time_step=0,
             slip_angle=math.atan2(vehicle.velocity[1], vehicle.velocity[0]),
             yaw_rate=0.0,
         )
 
-        lanelet_id = vehicle.lane_index[2]
+        lanelet_id = self._convert_lane_id(vehicle.lane_index)
         return DynamicObstacle(
             obstacle_id,
             obstacle_type,
@@ -223,15 +232,22 @@ class HighwayEnvScenario:
         self, ego_vehicle: MDPVehicle, initial_state: InitialState
     ) -> PlanningProblem:
         road = ego_vehicle.road
-        goal_lane: StraightLane = cast(
-            StraightLane, road.network.get_lane(ego_vehicle.target_lane_index)
-        )
+        if hasattr(ego_vehicle, "target_lane_index"):
+            goal_lane: StraightLane = cast(
+                StraightLane, road.network.get_lane(ego_vehicle.target_lane_index)
+            )
+        else:
+            goal_lane: StraightLane = cast(
+                StraightLane, road.network.get_lane(ego_vehicle.lane_index)
+            )
         goal_x: float = (
             ego_vehicle.position[0]
             + ego_vehicle.speed * self.dt * self.prediction_length
         )
-        goal_y: float = goal_lane.start[1] + goal_lane.width / 2
+        goal_y: float = goal_lane.start[1] + goal_lane.width / 2 - 4.0
         goal_center = self._highenv_coordinate_to_commonroad(np.array([goal_x, goal_y]))
+        goal_center[1] = initial_state.position[1]
+        
         goal_state = CustomState(
             position=Rectangle(
                 ego_vehicle.LENGTH,
@@ -243,8 +259,8 @@ class HighwayEnvScenario:
                 math.pi / 2,
             ),
             time_step=Interval(
-                self.time_step,
-                self.time_step + self.prediction_length,
+                0,
+                self.prediction_length,
             ),
             velocity=Interval(
                 ego_vehicle.MIN_SPEED,
@@ -265,7 +281,7 @@ class HighwayEnvScenario:
 
     @property
     def commonroad_representation(
-        self, add_ego=True
+        self, add_ego=False
     ) -> tuple[Scenario, DynamicObstacle, PlanningProblem]:
         """
         Get the commonroad representation of the scenario
@@ -274,7 +290,11 @@ class HighwayEnvScenario:
         road = ego_vehicle.road
         scenario = Scenario(
             self.dt,
-            scenario_id=ScenarioID(map_name="Sandra", map_id=self.seed),
+            scenario_id=ScenarioID(
+                map_name="Sandra",
+                map_id=self.seed,
+                obstacle_behavior="T",
+                prediction_id=self.time_step),
         )
 
         # Add all lanelets
@@ -316,7 +336,7 @@ class HighwayEnvScenario:
             num_steps_prediction=self.prediction_length, dt=self.dt
         )
         predictor = ConstantVelocityCurvilinearPredictor(config)
-        scenario = predictor.predict(scenario, initial_time_step=self.time_step)
+        scenario = predictor.predict(scenario, initial_time_step=0)
 
         # Create planning problem
         planning_problem = self._make_commonroad_planning_problem(
@@ -350,7 +370,7 @@ class HighwayEnvScenario:
             plot_scenario(scenario, planning_problem, plot_limits=[350, 500, -30, 0])
             # plot_predicted_trajectory(scenario, ego_vehicle)
 
-    def step(self, action_id: int) -> bool:
+    def step(self, action_id) -> bool:
         self.observation, reward, self.done, self.truncated, info = self._env.step(
             action_id
         )

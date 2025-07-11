@@ -8,7 +8,7 @@ from sandra.highenv.decider import HighEnvDecider
 
 class TestHighEnvDecider(unittest.TestCase):
     def setUp(self) -> None:
-        self.decider = HighEnvDecider.make([4213])
+        self.decider = HighEnvDecider.configure([4213])
 
     def test_user_prompt(self):
         user_prompt = self.decider.describer.user_prompt()

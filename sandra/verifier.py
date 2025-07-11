@@ -36,13 +36,19 @@ class VerifierBase(ABC):
 
     @abstractmethod
     def verify(
-        self, actions: List[Union[LongitudinalAction, LateralAction]]
+        self,
+        actions: List[Union[LongitudinalAction, LateralAction]],
+        visualization=False,
+        safe_distance: bool = False,
     ) -> VerificationStatus:
         pass
 
 
 class DummyVerifier(VerifierBase):
     def verify(
-        self, actions: List[Union[LongitudinalAction, LateralAction]]
+        self,
+        actions: List[Union[LongitudinalAction, LateralAction]],
+        visualization=False,
+        safe_distance: bool = False,
     ) -> VerificationStatus:
         return VerificationStatus.SAFE

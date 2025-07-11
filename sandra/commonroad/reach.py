@@ -1,7 +1,8 @@
 from typing import Optional, Union, List
-
+import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
+from commonroad.scenario.state import InitialState
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
     SemanticConfigurationBuilder,
@@ -40,14 +41,14 @@ class ReachVerifier(VerifierBase):
         planning_problem: PlanningProblem,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
-        verbose: bool = False,
-        scenario_folder: str = None
+        verbose=False,
     ):
 
         # basic elements
         super().__init__()
         self.verbose = verbose
         self.scenario = scenario
+        self.initial_state = initial_state
         self.sandra_config = sandra_config
         self.ego_lane_network = ego_lane_network
 
@@ -68,7 +69,13 @@ class ReachVerifier(VerifierBase):
         # fix the dimension
         self.reach_config.vehicle.ego.length = sandra_config.length
         self.reach_config.vehicle.ego.width = sandra_config.width
+        self.reach_config.general.path_scenarios = PROJECT_ROOT + "/scenarios/"
         self.reach_config.planning.dt = scenario.dt
+        if highenv:
+            self.reach_config.vehicle.ego.v_lat_max = 12
+            self.reach_config.vehicle.ego.v_lat_min = - 12
+            self.reach_config.vehicle.ego.a_lat_max = 10
+            self.reach_config.vehicle.ego.a_lat_min = - 10
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
 
@@ -84,11 +91,11 @@ class ReachVerifier(VerifierBase):
 
         # initialize semantic model and traffic rule interface
         self.semantic_model = SemanticModel(self.reach_config)
-        self.rule_interface = TrafficRuleInterface(
+        rule_interface = TrafficRuleInterface(
             self.reach_config, self.semantic_model
         )
         self.reach_interface = SemanticReachableSetInterface(
-            self.reach_config, self.semantic_model, self.rule_interface
+            self.reach_config, self.semantic_model, rule_interface
         )
 
         # default params to be stored
@@ -99,8 +106,6 @@ class ReachVerifier(VerifierBase):
         self,
         reach_config: SemanticConfiguration = None,
         actions: List[Union[LongitudinalAction, LateralAction]] = None,
-        ego_lane_network: EgoLaneNetwork = None,
-        scenario: Scenario = None,
     ):
         """resets configs"""
         if reach_config:
@@ -120,6 +125,17 @@ class ReachVerifier(VerifierBase):
                     CLCS = self.ego_lane_network.lane.clcs
                 )
 
+        ltl_list = []
+
+        if save_distance:
+            assert self.initial_state is not None, "Initial state must be provided"
+            min_save_distance = 2 * self.initial_state.velocity
+            for obstacle in self.scenario.obstacles:
+                distance = np.linalg.norm(self.initial_state.position - obstacle.initial_state.position)
+                if distance < min_save_distance:
+                    rule = f"LTL G SafeDistance_V{obstacle.obstacle_id}"
+                    ltl_list.append(rule)
+
         if actions:
             ltl_list = []
             # reset the specification list within the rule interface
@@ -131,16 +147,20 @@ class ReachVerifier(VerifierBase):
                 if action_ltl:
                     ltl_list.append(action_ltl)
             self.reach_config.traffic_rule.list_traffic_rules_activated = ltl_list
+
+            rule_interface = TrafficRuleInterface(
+                self.reach_config, self.semantic_model
+            )
             for item in self.reach_config.traffic_rule.list_traffic_rules_activated:
-                self.rule_interface._parse_traffic_rule(item, allow_abstract_rules=True)
-            self.rule_interface.print_summary()
+                rule_interface._parse_traffic_rule(item, allow_abstract_rules=True)
+            rule_interface.print_summary()
 
             # reset the interface
             self.reach_interface.reset(
-                config=self.reach_config, rule_interface=self.rule_interface
+                config=self.reach_config, rule_interface=rule_interface
             )
 
-    def parse_action(self, action: Union[LongitudinalAction, LateralAction]) -> str:
+    def parse_action(self, action: Union[LongitudinalAction, LateralAction, None]) -> str:
         """
         Parses the given action into an appropriate LTL formula or modifies reachability configuration.
 
@@ -182,6 +202,8 @@ class ReachVerifier(VerifierBase):
             clause = self._format_lane_clause([self.ego_lane_network.lane])
             return ActionLTL.from_action(action).replace("InCurrentLane", clause)
 
+        elif action is None:
+            return "LTL true"
         else:
             return ActionLTL.from_action(action)
 
@@ -198,6 +220,7 @@ class ReachVerifier(VerifierBase):
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
         visualization=False,
+        safe_distance: bool = False,
     ) -> VerificationStatus:
         """
         verifies the given actions (in a list)
@@ -205,6 +228,7 @@ class ReachVerifier(VerifierBase):
         print("[Verifier] Resetting with given actions...")
         self.reset(
             actions=actions,
+            save_distance=safe_distance,
         )
 
         print("[Verifier] Computing reachable sets...")

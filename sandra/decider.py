@@ -1,6 +1,7 @@
-from typing import Optional, Any
+from typing import Optional, Any, Union, List
 from sandra.actions import Action, LongitudinalAction, LateralAction
 from sandra.commonroad.describer import CommonRoadDescriber
+from sandra.commonroad.reach import ReachVerifier
 from sandra.describer import DescriberBase
 from sandra.llm import get_structured_response
 from sandra.common.config import SanDRAConfiguration
@@ -12,7 +13,7 @@ class Decider:
         self,
         config: SanDRAConfiguration,
         describer: DescriberBase,
-        verifier: Optional[VerifierBase] = None,
+        verifier: Optional[Union[VerifierBase, ReachVerifier]],
         save_path: Optional[str] = None,
     ):
         self.config: SanDRAConfiguration = config
@@ -49,9 +50,11 @@ class Decider:
             )
         return action_ranking
 
-    def decide(self) -> Optional[Action]:
+    def decide(self, past_action: List[List[Union[LongitudinalAction, LateralAction]]] = None) -> Optional[Action]:
         user_prompt = self.describer.user_prompt()
-        system_prompt = self.describer.system_prompt()
+        system_prompt = self.describer.system_prompt(past_action)
+        print(system_prompt)
+        print(user_prompt)
         schema = self.describer.schema()
         structured_response = get_structured_response(
             user_prompt, system_prompt, schema, self.config, save_dir=self.save_path
@@ -67,4 +70,5 @@ class Decider:
                 print(f"Successfully verified {action}.")
                 return action
             print(f"Failed to verify {action}.")
-        return None
+        return (LongitudinalAction.DECELERATE,
+                LateralAction.FOLLOW_LANE)

@@ -181,7 +181,10 @@ class CommonRoadDescriber(DescriberBase):
         return None, None, None
 
     def _describe_vehicle(self, vehicle: DynamicObstacle) -> Optional[str]:
-        vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
+        if self.timestep == 0:
+            vehicle_state = vehicle.initial_state
+        else:
+            vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
         vehicle_lanelet_id = find_lanelet_id_from_state(
             vehicle_state, self.scenario.lanelet_network
         )
@@ -213,6 +216,16 @@ class CommonRoadDescriber(DescriberBase):
 
     def _get_relevant_obstacles(self, perception_radius: float) -> list[DynamicObstacle]:
         circle_center = self.ego_state.position
+        if self.timestep == 0:
+            return [
+                x
+                for x in self.scenario.dynamic_obstacles
+                if np.linalg.norm(
+                    x.initial_state.position
+                    - circle_center
+                )
+                   < perception_radius
+            ]
         return [
             x
             for x in self.scenario.dynamic_obstacles
@@ -261,12 +274,12 @@ class CommonRoadDescriber(DescriberBase):
 
     def _describe_ego_state(self) -> str:
         if self.scenario_type == "intersection":
-            ego_description = "You are currently approaching an intersection."
+            ego_description = "You are currently approaching an intersection. "
         elif self.scenario_type == "roundabout":
-            ego_description = "You are currently entering a roundabout."
+            ego_description = "You are currently entering a roundabout. "
         elif self.scenario_type:
             article = "an" if self.scenario_type[0].lower() in "aeiou" else "a"
-            ego_description = f"You are currently driving in {article} {self.scenario_type} scenario."
+            ego_description = f"You are currently driving in {article} {self.scenario_type} scenario. "
         else:
             ego_description = ""
 
@@ -274,11 +287,11 @@ class CommonRoadDescriber(DescriberBase):
             self.ego_lane_network.lane_incoming_left
             and self.ego_lane_network.lane_incoming_right
         ):
-            ego_description += " There are incoming lanes on both the left and right. "
+            ego_description += "There are incoming lanes on both the left and right. "
         elif self.ego_lane_network.lane_incoming_left:
-            ego_description += " There are incoming lanes on the left. "
+            ego_description += "There are incoming lanes on the left. "
         elif self.ego_lane_network.lane_incoming_right:
-            ego_description += " There are incoming lanes on the right. "
+            ego_description += "There are incoming lanes on the right. "
 
         sides = {"left": [], "right": []}
 
