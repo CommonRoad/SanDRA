@@ -44,7 +44,7 @@ class DescriberBase(ABC):
         self.scenario_type = (
             ""
             if scenario_type is None
-            else f"You are currently in an {scenario_type} scenario."
+            else f"{scenario_type}"
         )
         self.update(timestep=timestep)
 

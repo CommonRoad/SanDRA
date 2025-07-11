@@ -40,7 +40,8 @@ class ReachVerifier(VerifierBase):
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
         initial_state: InitialState = None,
-        verbose=False,
+        verbose: bool = False,
+        highenv: bool = False
     ):
 
         # basic elements
@@ -69,10 +70,11 @@ class ReachVerifier(VerifierBase):
         self.reach_config.vehicle.other.width = sandra_config.width
         self.reach_config.general.path_scenarios = PROJECT_ROOT + "/scenarios/"
         self.reach_config.planning.dt = scenario.dt
-        self.reach_config.vehicle.ego.v_lat_max = 12
-        self.reach_config.vehicle.ego.v_lat_min = - 12
-        self.reach_config.vehicle.ego.a_lat_max = 10
-        self.reach_config.vehicle.ego.a_lat_min = - 10
+        if highenv:
+            self.reach_config.vehicle.ego.v_lat_max = 12
+            self.reach_config.vehicle.ego.v_lat_min = - 12
+            self.reach_config.vehicle.ego.a_lat_max = 10
+            self.reach_config.vehicle.ego.a_lat_min = - 10
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
 

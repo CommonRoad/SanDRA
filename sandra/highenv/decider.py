@@ -74,6 +74,7 @@ class HighEnvDecider(Decider):
             cr_planning_problem,
             0,
             self.config,
+            role="Don't change the lanes too often. ",
             scenario_type="highway",
         )
         road_network = RoadNetwork.from_lanelet_network_and_position(
@@ -88,7 +89,7 @@ class HighEnvDecider(Decider):
             road_network,
         )
         self.verifier = ReachVerifier(cr_scenario, self.config, ego_lane_network=ego_lane_network,
-                                      initial_state=cr_planning_problem.initial_state)
+                                      initial_state=cr_planning_problem.initial_state, highenv=True)
         return cr_scenario, cr_planning_problem
 
     def run(self):
