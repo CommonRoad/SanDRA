@@ -83,8 +83,7 @@ class TestReachVerifier(unittest.TestCase):
             self.cr_planning_problem,
             road_network,
         )
-        self.reach_ver = ReachVerifier(self.cr_scenario, self.config, ego_lane_network=ego_lane_network,
-                                  initial_state=self.cr_planning_problem.initial_state)
+        self.reach_ver = ReachVerifier(self.cr_scenario, self.cr_planning_problem, self.config, ego_lane_network=ego_lane_network)
 
     def test_reactive_planning(self):
         simulation_length = 60
@@ -111,8 +110,8 @@ class TestReachVerifier(unittest.TestCase):
                 self.cr_planning_problem,
                 road_network,
             )
-            self.reach_ver = ReachVerifier(self.cr_scenario, self.config, ego_lane_network=ego_lane_network,
-                                      initial_state=self.cr_planning_problem.initial_state)
+            self.reach_ver = ReachVerifier(self.cr_scenario, self.cr_planning_problem, self.config,
+                                           ego_lane_network=ego_lane_network)
 
         for i in range(simulation_length):
             if i % replanning_frequency == 0:
