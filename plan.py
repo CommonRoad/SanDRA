@@ -36,7 +36,7 @@ ego_lane_network = EgoLaneNetwork.from_route_planner(
 )
 
 # reachability analysis
-reach_ver = ReachVerifier(scenario, config, ego_lane_network)
+reach_ver = ReachVerifier(scenario, planning_problem, config, ego_lane_network)
 
 if use_sonia:
     reach_ver.sandra_config.a_lim = 0.11

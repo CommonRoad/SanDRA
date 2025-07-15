@@ -177,3 +177,5 @@ outputs/
 sandra/highenv/run/
 test/output
 output
+*/run/
+/run/

@@ -20,6 +20,8 @@ from commonroad_reach_semantic.data_structure.driving_corridor_extractor import 
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 from commonroad_rp.reactive_planner import ReactivePlanner as CRReactivePlanner
 from commonroad_rp.utility.visualization import visualize_planner_at_timestep
+from matplotlib import pyplot as plt
+
 from sandra.common.config import SanDRAConfiguration
 
 

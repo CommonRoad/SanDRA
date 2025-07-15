@@ -1,7 +1,9 @@
+import math
 import warnings
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Literal, overload
+from typing import Optional, Any, Literal, overload, Union, List
 
+from commonroad.scenario.state import InitialState, CustomState, KSState
 from commonroad_dc.pycrccosy import CurvilinearCoordinateSystem
 from openai import BaseModel
 import numpy as np
@@ -44,7 +46,7 @@ class DescriberBase(ABC):
         self.scenario_type = (
             ""
             if scenario_type is None
-            else f"You are currently in an {scenario_type} scenario."
+            else f"{scenario_type}"
         )
         self.update(timestep=timestep)
 
@@ -55,18 +57,81 @@ class DescriberBase(ABC):
             self.timestep = self.timestep + 1
 
     @staticmethod
-    def velocity_descr(v: float, to_km=False) -> str:
+    def velocity_descr(state: Union[InitialState, CustomState, KSState] = None, velocity: float = None,  to_km=False) -> str:
+        if velocity is not None:
+            v = velocity
+        elif state is not None:
+            v = state.velocity
+        else:
+            raise ValueError("Either 'state' or 'velocity' must be provided.")
         if to_km:
             v *= 3.6
             return f"{v:.1f} km/h"
         return f"{v:.1f} m/s"
 
     @staticmethod
-    def acceleration_descr(a: float, to_km=False) -> str:
+    def acceleration_descr(
+            state:  Union[InitialState, CustomState, KSState] = None,
+            acceleration: float = None,
+            to_km: bool = False
+    ) -> str:
+        if acceleration is not None:
+            a = acceleration
+        elif state is not None:
+            a = state.acceleration
+        else:
+            raise ValueError("Either 'state' or 'acceleration' must be provided.")
         if to_km:
             a *= 12960
             return f"{a:.1f} km/h²"
         return f"{a:.1f} m/s²"
+
+    @staticmethod
+    def orientation_descr(
+            state: Union[InitialState, CustomState, KSState] = None,
+            orientation: float = None,
+            degrees: bool = False
+    ) -> str:
+        if orientation is not None:
+            theta = orientation
+        elif state is not None:
+            theta = state.orientation
+        else:
+            raise ValueError("Either 'state' or 'orientation' must be provided.")
+        # Normalize to [-pi, pi]
+        theta = (theta + math.pi) % (2 * math.pi) - math.pi
+
+        if degrees:
+            theta_deg = theta * 180 / math.pi
+            return f"{theta_deg:.1f}°"
+        return f"{theta:.3f} rad"
+
+    @staticmethod
+    def steering_descr(
+            state: Union[InitialState, CustomState, KSState] = None,
+            steering_angle: float = None,
+            degrees: bool = False,
+            wheelbase: float = 2.578
+    ) -> str:
+        if steering_angle is not None:
+            delta = steering_angle
+        elif state is not None:
+            if hasattr(state, "steering_angle"):
+                delta = state.steering_angle
+            elif hasattr(state, "yaw_rate"):
+                delta = np.arctan2(wheelbase * state.yaw_rate, state.velocity)
+            else:
+                delta = 0.0
+        else:
+            raise ValueError("Either 'state' or 'steering_angle' must be provided.")
+
+        # Normalize to [-pi, pi]
+        delta = (delta + math.pi) % (2 * math.pi) - math.pi
+
+        if degrees:
+            delta_deg = delta * 180 / math.pi
+            return f"{delta_deg:.1f}°"
+        return f"{delta:.3f} rad"
 
     @staticmethod
     def angle_description(theta: float) -> str:
@@ -195,11 +260,11 @@ class DescriberBase(ABC):
             + "\n"
         )
 
-    def system_prompt(self) -> str:
-        reminders = self._describe_reminders()
-        reminder_description = "Keep these things in mind:\n"
-        for reminder in reminders:
-            reminder_description += f"  - {reminder}\n"
+    def system_prompt(self, past_actions: List[List[Union[LongitudinalAction, LateralAction]]] = None) -> str:
+        # reminders = self._describe_reminders()
+        # reminder_description = "Keep these things in mind:\n"
+        # for reminder in reminders:
+        #     reminder_description += f"  - {reminder}\n"
 
         role = f"{self.role}\n" if self.role else ""
         goal = f"{self.goal}\n" if self.goal else ""
@@ -210,7 +275,35 @@ class DescriberBase(ABC):
             f"{goal}"
             # f"{reminder_description}"
             f"{self._describe_schema()}"
+            f"{self._describe_past_actions(past_actions)}"
         )
         # Keep these things in mind:
         # {reminder_description}
         # """
+
+    @staticmethod
+    def _describe_past_actions(
+            past_actions: List[List[Union[LongitudinalAction, LateralAction]]]
+    ) -> str:
+        """
+        Returns a string description of the past action pairs.
+        """
+        if not past_actions:
+            return "No past actions recorded. "
+
+        pair_strs = []
+        for pair in past_actions:
+            if len(pair) != 2:
+                pair_strs.append("(Invalid action pair)")
+                continue
+
+            a1, a2 = pair
+
+            # Get readable names
+            n1 = a1.name if hasattr(a1, "name") else str(a1)
+            n2 = a2.name if hasattr(a2, "name") else str(a2)
+
+            pair_strs.append(f"({n1}, {n2})")
+
+        actions_str = "; ".join(pair_strs)
+        return f"The past {len(past_actions)} action pairs are: {actions_str}. "

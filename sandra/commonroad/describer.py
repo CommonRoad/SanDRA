@@ -41,7 +41,6 @@ class CommonRoadDescriber(DescriberBase):
         goal: Optional[str] = None,
         scenario_type: Optional[str] = None,
         describe_ttc=True,
-        k=3,
         past_action: List[Union[LongitudinalAction, LateralAction]] = None,
         country: Optional[str] = "Germany",
     ):
@@ -54,8 +53,8 @@ class CommonRoadDescriber(DescriberBase):
         self.country = country
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
-        assert 1 <= k <= 10, f"Unsupported k {k}"
-        self.k = k
+        assert 1 <= config.k <= 10, f"Unsupported k {config.k}"
+        self.k = config.k
 
         if describe_ttc:
             crime_config = CriMeConfiguration()
@@ -138,7 +137,7 @@ class CommonRoadDescriber(DescriberBase):
         initial_len = len(traffic_signs_description)
         if max_speed is not None:
             traffic_signs_description += (
-                f"\nThe maximum speed is {self.velocity_descr(max_speed)}."
+                f"\nThe maximum speed is {self.velocity_descr(velocity=max_speed)}."
             )
 
         if len(traffic_signs_description) > initial_len:
@@ -182,7 +181,10 @@ class CommonRoadDescriber(DescriberBase):
         return None, None, None
 
     def _describe_vehicle(self, vehicle: DynamicObstacle) -> Optional[str]:
-        vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
+        if self.timestep == 0:
+            vehicle_state = vehicle.initial_state
+        else:
+            vehicle_state = vehicle.prediction.trajectory.state_list[self.timestep]
         vehicle_lanelet_id = find_lanelet_id_from_state(
             vehicle_state, self.scenario.lanelet_network
         )
@@ -201,11 +203,12 @@ class CommonRoadDescriber(DescriberBase):
         #     self.ego_direction, relative_vehicle_direction
         # )
         # vehicle_description += f"It is located {self.angle_description(angle)} you, "
-        vehicle_description += f"and is {self.distance_description_clcs(ego_position, vehicle_state.position, self.ego_lane_network.lane.clcs, direction)}. "
         vehicle_description += (
-            f"Its velocity is {self.velocity_descr(vehicle_state.velocity)} "
+            f"Its velocity is {self.velocity_descr(vehicle_state)}, "
+            f"orientation is {self.orientation_descr(vehicle_state)}, "
+            f"steering angle is {self.steering_descr(vehicle_state)}, "
+            f"and acceleration is {self.acceleration_descr(vehicle_state)}."
         )
-        vehicle_description += f"and its acceleration is {self.acceleration_descr(vehicle_state.acceleration)}."
         if (ttc := self.ttc_description(vehicle.obstacle_id)) is not None:
             if ttc:
                 vehicle_description += f" The time-to-collision is {ttc}."
@@ -213,6 +216,16 @@ class CommonRoadDescriber(DescriberBase):
 
     def _get_relevant_obstacles(self, perception_radius: float) -> list[DynamicObstacle]:
         circle_center = self.ego_state.position
+        if self.timestep == 0:
+            return [
+                x
+                for x in self.scenario.dynamic_obstacles
+                if np.linalg.norm(
+                    x.initial_state.position
+                    - circle_center
+                )
+                   < perception_radius
+            ]
         return [
             x
             for x in self.scenario.dynamic_obstacles
@@ -261,12 +274,12 @@ class CommonRoadDescriber(DescriberBase):
 
     def _describe_ego_state(self) -> str:
         if self.scenario_type == "intersection":
-            ego_description = "You are currently approaching an intersection."
+            ego_description = "You are currently approaching an intersection. "
         elif self.scenario_type == "roundabout":
-            ego_description = "You are currently entering a roundabout."
+            ego_description = "You are currently entering a roundabout. "
         elif self.scenario_type:
             article = "an" if self.scenario_type[0].lower() in "aeiou" else "a"
-            ego_description = f"You are currently driving in {article} {self.scenario_type} scenario."
+            ego_description = f"You are currently driving in {article} {self.scenario_type} scenario. "
         else:
             ego_description = ""
 
@@ -274,11 +287,11 @@ class CommonRoadDescriber(DescriberBase):
             self.ego_lane_network.lane_incoming_left
             and self.ego_lane_network.lane_incoming_right
         ):
-            ego_description += " There are incoming lanes on both the left and right. "
+            ego_description += "There are incoming lanes on both the left and right. "
         elif self.ego_lane_network.lane_incoming_left:
-            ego_description += " There are incoming lanes on the left. "
+            ego_description += "There are incoming lanes on the left. "
         elif self.ego_lane_network.lane_incoming_right:
-            ego_description += " There are incoming lanes on the right. "
+            ego_description += "There are incoming lanes on the right. "
 
         sides = {"left": [], "right": []}
 
@@ -296,9 +309,11 @@ class CommonRoadDescriber(DescriberBase):
                 ego_description += f"There is no {side}-adjacent lane. "
 
         ego_description += (
-            f"\nYour velocity is {self.velocity_descr(self.ego_state.velocity)}"
+            f"\nYour velocity is {self.velocity_descr(self.ego_state)}, "
+            f"orientation is {self.orientation_descr(self.ego_state)}, "
+            f"steering angle is {self.steering_descr(self.ego_state)}, "
+            f"and acceleration is {self.acceleration_descr(self.ego_state)}. "
         )
-        ego_description += f" and your acceleration is {self.acceleration_descr(self.ego_state.acceleration)}."
         if self.ego_past_action:
             actions_str = ", ".join(action.value for action in self.ego_past_action)
             ego_description += f"Your last actions are: {actions_str}. "
@@ -309,12 +324,13 @@ class CommonRoadDescriber(DescriberBase):
         laterals_str = "\n".join([f"  - {x.value}" for x in laterals])
         longitudinals_str = "\n".join([f"  - {x.value}" for x in longitudinals])
         return (
-            "First observe the environment and formulate your decision in natural language.\n"
-            f"Then, return the top {self.k} advisable longitudinal–lateral action pairs, ranked from best to worst.\n"
+            "First, carefully observe the environment.\n"
+            "Then, reason through your decision step by step and present it in natural language.\n"
+            f"Finally, return the top {self.k} advisable longitudinal–lateral action pairs, ranked from best to worst.\n"
             "Feasible longitudinal actions:\n"
             f"{longitudinals_str}\n"
             "Feasible lateral actions:\n"
-            f"{laterals_str}"
+            f"{laterals_str}\n"
         )
 
     def _describe_reminders(self) -> list[str]:
@@ -335,7 +351,7 @@ class CommonRoadDescriber(DescriberBase):
             self.ego_lane_network.lane_right_adjacent
         ):
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
-        longitudinal_actions = [x for x in LongitudinalAction]
+        longitudinal_actions = [x for x in LongitudinalAction if x != LongitudinalAction.UNKNOWN]
         return lateral_actions, longitudinal_actions
 
     def schema(self) -> dict[str, Any]:

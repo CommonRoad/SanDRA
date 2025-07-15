@@ -23,7 +23,7 @@ draw_scenario_paper(scenario,
                     0,
                     config,
                     draw_planning_problem=False,
-                    plot_limits=[-6.36, 79.56, 4.07, 25.65], # [-10., 102.46, 0.48, 27.42],
+                    plot_limits=config.plot_limits
                     )
 
 

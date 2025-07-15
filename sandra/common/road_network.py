@@ -28,10 +28,6 @@ class Lane:
         else:
             self.contained_ids = [l.lanelet_id for l in self.lanelets]
 
-        # Adjacency relationships
-        self.left_adjacent: Optional[Lane] = None
-        self.right_adjacent: Optional[Lane] = None
-
         self.clcs: Optional[CurvilinearCoordinateSystem] = None
 
     def __repr__(self):
@@ -51,14 +47,6 @@ class Lane:
         """Insert a lanelet at a specific position"""
         self.lanelets.insert(index, lanelet)
         self.contained_ids.insert(index, lanelet.lanelet_id)
-
-    def set_left_adjacent(self, lane: "Lane") -> None:
-        assert isinstance(lane, Lane), "left_adjacent must be a Lane instance"
-        self.left_adjacent = lane
-
-    def set_right_adjacent(self, lane: "Lane") -> None:
-        assert isinstance(lane, Lane), "right_adjacent must be a Lane instance"
-        self.right_adjacent = lane
 
     def contains(self, lanelet_id: int) -> bool:
         return lanelet_id in self.contained_ids
