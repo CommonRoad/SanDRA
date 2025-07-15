@@ -1,5 +1,7 @@
 import copy
 import math
+import os
+import sys
 from typing import Optional, Any, Union, List, Tuple
 import numpy as np
 from commonroad.geometry.shape import Rectangle
@@ -22,6 +24,17 @@ from sandra.utility.vehicle import (
     extract_ego_vehicle,
     calculate_relative_orientation,
 )
+from contextlib import contextmanager
+
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
 
 
 class HighLevelDrivingDecision(BaseModel):
@@ -112,7 +125,8 @@ class CommonRoadDescriber(DescriberBase):
             return None
 
         try:
-            ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
+            with suppress_stdout():
+                ttc = self.ttc_evaluator.compute(obstacle_id, self.timestep)
             ttc_val = float(ttc)
             if math.isnan(ttc_val):
                 return "inf sec"
