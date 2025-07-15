@@ -17,3 +17,11 @@ ollama pull qwen3:8b
 ```bash
 ollama serve
 ```
+
+## Submodules
+
+You have to manually install the following packages:
+
+* [commonroad-reach-semantic](https://gitlab.lrz.de/cps/commonroad/commonroad-reach-semantic): branch `feature/repair-new` 
+(use `export CXX=/usr/bin/g++-10` before installation to use the correct compiler)
+* [sonia (spot)](https://gitlab.lrz.de/cps/spot-cpp): branch `master` (`python setup.py install`)

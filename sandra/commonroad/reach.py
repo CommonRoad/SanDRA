@@ -222,7 +222,20 @@ class ReachVerifier(VerifierBase):
     def verify(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        visualization=False,
+        visualization: bool = False,
+        safe_distance: bool = False,
+        only_in_lane: bool = False,
+    ) -> VerificationStatus:
+        if self.sandra_config.use_sonia:
+            # self.sandra_config.a_lim = 0.11
+            return self.verify_sonia(actions, visualization, safe_distance, only_in_lane)
+        else:
+            return self.verify_base(actions, visualization, safe_distance)
+
+    def verify_base(
+        self,
+        actions: List[Union[LongitudinalAction, LateralAction]],
+        visualization: bool = False,
         safe_distance: bool = False,
     ) -> VerificationStatus:
         """
@@ -257,8 +270,9 @@ class ReachVerifier(VerifierBase):
     def verify_sonia(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        visualization=False,
-        only_in_lane=False
+        visualization: bool = False,
+        safe_distance: bool = False,
+        only_in_lane: bool = False,
     ) -> VerificationStatus:
         update_dict = {
             "Vehicle": {
@@ -296,9 +310,10 @@ class ReachVerifier(VerifierBase):
         sonia_interface.update_scenario_with_results(
             set_based_prediction_dict, scenario_to_update=self.reach_config.scenario
         )
-        return self.verify(
+        return self.verify_base(
             actions=actions,
             visualization=visualization,
+            safe_distance=safe_distance,
         )
 
 

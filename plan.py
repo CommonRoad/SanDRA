@@ -9,8 +9,6 @@ from sandra.commonroad.plan import ReactivePlanner
 from sandra.commonroad.reach import ReachVerifier, VerificationStatus
 from sandra.actions import LongitudinalAction, LateralAction
 
-use_sonia = True
-
 # scenario basic information
 name_scenario = "DEU_Goeppingen-37_1_T-4"
 path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
@@ -38,15 +36,9 @@ ego_lane_network = EgoLaneNetwork.from_route_planner(
 # reachability analysis
 reach_ver = ReachVerifier(scenario, planning_problem, config, ego_lane_network)
 
-if use_sonia:
-    reach_ver.sandra_config.a_lim = 0.11
-    status = reach_ver.verify_sonia(
-        [LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE], visualization=True
-    )
-else:
-    status = reach_ver.verify(
-        [LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE], visualization=True
-    )
+status = reach_ver.verify(
+    [LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE], visualization=True
+)
 
 # plot the reachable set
 # plot_reachable_sets(reach_ver.reach_interface, plot_limits=config.plot_limits)

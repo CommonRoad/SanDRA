@@ -332,10 +332,10 @@ class HighwayEnvScenario:
             )
 
         # Add all obstacle predictions
-        config = PredictorParams(
+        predict_config = PredictorParams(
             num_steps_prediction=self.prediction_length, dt=self.dt
         )
-        predictor = ConstantVelocityCurvilinearPredictor(config)
+        predictor = ConstantVelocityCurvilinearPredictor(predict_config)
         scenario = predictor.predict(scenario, initial_time_step=1)
 
         # Create planning problem
