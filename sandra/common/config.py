@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 
 @dataclass
 class HighwayEnvConfig:
-    seeds: List[int] = field(default_factory=lambda: [4213])
+    seeds: List[int] = field(default_factory=lambda: [6382])
     action_input: bool = True
     simulation_frequency: int = 15
-    policy_frequency: int = 5
+    policy_frequency: int = 1
     lanes_count: int = 4
     duration: float = 30 # [s]
     vehicles_density: float = 2.0
@@ -16,7 +16,7 @@ class HighwayEnvConfig:
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
-    model_name = "gpt-4o"
+    model_name = "gpt-4o" # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
     use_ollama = False
     a_lim = 0.2
     v_err = 0.1
@@ -35,7 +35,7 @@ class SanDRAConfiguration:
     highway_env: HighwayEnvConfig = field(default_factory=HighwayEnvConfig)
 
 COMMONROAD_REACH_SEMANTIC_ROOT = (
-    "/home/liny/repairverse/commonroad-reach-semantic"
+    "/home/sebastian/Documents/Uni/Sandra/commonroad-reach-semantic"
 )
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

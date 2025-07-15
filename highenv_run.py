@@ -10,11 +10,33 @@ matplotlib.use('TkAgg')
 def main():
     config = SanDRAConfiguration()
 
-    # Create decider with seed 4213
-    decider = HighEnvDecider.configure(config)
+    seeds = [
+        5838,
+        2421,
+        7294,
+        9650,
+        4176,
+        6382,
+        8765,
+        1348,
+        4213,
+        2572,
+        5678,
+        8587,
+        512,
+        7523,
+        6321,
+        5214,
+        31,
+    ]
 
-    # Run the decider (this likely starts your planning/interaction loop)
-    decider.run()
+    for seed in seeds:
+        config.highway_env.seeds = [seed]
+        decider = HighEnvDecider.configure(
+            config=config,
+            save_path=f"results-{config.highway_env.action_input}-{config.model_name}-{config.highway_env.lanes_count}-{config.highway_env.vehicles_density}/run-{seed}.csv"
+        )
+        decider.run()
 
 
 if __name__ == "__main__":

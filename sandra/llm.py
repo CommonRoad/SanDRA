@@ -1,4 +1,5 @@
 import os
+from json import JSONDecodeError
 from typing import Any
 
 from openai import OpenAI
@@ -119,6 +120,7 @@ def get_structured_response(
     config: SanDRAConfiguration,
     save_dir: str = None,
     temperature: float = 0.6,
+    retry_limit: int = 1,
 ) -> dict[str, Any]:
     """
     Query the API with a message consisting of:
@@ -127,24 +129,30 @@ def get_structured_response(
     (3. Image)
     and save both request and response in text and json formats.
     """
-    if config.use_ollama:
-        return get_structured_response_offline(
-            user_prompt,
-            system_prompt,
-            schema,
-            config,
-            save_dir=save_dir,
-            temperature=temperature,
-        )
-    else:
-        return get_structured_response_online(
-            user_prompt,
-            system_prompt,
-            schema,
-            config,
-            save_dir=save_dir,
-            temperature=temperature,
-        )
+    retries = retry_limit
+    while retries > 0:
+        try:
+            if config.use_ollama:
+                return get_structured_response_offline(
+                    user_prompt,
+                    system_prompt,
+                    schema,
+                    config,
+                    save_dir=save_dir,
+                    temperature=temperature,
+                )
+            else:
+                return get_structured_response_online(
+                    user_prompt,
+                    system_prompt,
+                    schema,
+                    config,
+                    save_dir=save_dir,
+                    temperature=temperature,
+                )
+        except JSONDecodeError:
+            print(f"JSON Decode Error, trying again in {retries} retries")
+    raise JSONDecodeError("No more retries left")
 
 
 if __name__ == "__main__":

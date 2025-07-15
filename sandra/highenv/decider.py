@@ -1,5 +1,7 @@
 import math
+import os
 import random
+import sys
 from typing import cast, Optional, List, Union
 
 import gymnasium
@@ -28,6 +30,17 @@ from sandra.highenv.highenv_scenario import HighwayEnvScenario
 from sandra.llm import get_structured_response
 from sandra.utility.vehicle import get_input_bounds
 from sandra.verifier import VerificationStatus
+from contextlib import contextmanager
+
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
 
 
 class HighEnvDecider(Decider):
@@ -36,8 +49,9 @@ class HighEnvDecider(Decider):
         env_config: dict,
         seed: int,
         config: SanDRAConfiguration,
+        save_path: str = None,
     ):
-        super().__init__(config, None, None)
+        super().__init__(config, None, None, save_path=save_path)
         self.lateral_action_to_id: dict[LateralAction, int] = {
             LateralAction.CHANGE_LEFT: 0,
             LateralAction.FOLLOW_LANE: 1,
@@ -48,7 +62,6 @@ class HighEnvDecider(Decider):
             LongitudinalAction.ACCELERATE: 3,
             LongitudinalAction.DECELERATE: 4,
         }
-        self.time_step = 0
         self.seed = seed
         self.update(env_config)
 
@@ -63,11 +76,9 @@ class HighEnvDecider(Decider):
 
     def update(self, env_config: Optional[dict]):
         if env_config is None:
-            self.scenario = HighwayEnvScenario(self.scenario._env, self.seed, dt=self.config.dt)
+            self.scenario = HighwayEnvScenario(self.scenario._env, self.seed, dt=self.config.dt, start_time=self.time_step)
         else:
-            self.scenario = HighwayEnvScenario(env_config, self.seed, dt=self.config.dt)
-        self.scenario.time_step = self.time_step
-        self.time_step += 1
+            self.scenario = HighwayEnvScenario(env_config, self.seed, dt=self.config.dt, start_time=self.time_step)
         cr_scenario, _, cr_planning_problem = self.scenario.commonroad_representation
         self.describer = CommonRoadDescriber(
             cr_scenario,
@@ -88,13 +99,14 @@ class HighEnvDecider(Decider):
             cr_planning_problem,
             road_network,
         )
-        self.verifier = ReachVerifier(
-            cr_scenario,
-            cr_planning_problem,
-            self.config,
-            ego_lane_network=ego_lane_network,
-            highenv=True
-        )
+        with suppress_stdout():
+            self.verifier = ReachVerifier(
+                cr_scenario,
+                cr_planning_problem,
+                self.config,
+                ego_lane_network=ego_lane_network,
+                highenv=True
+            )
         return cr_scenario, cr_planning_problem
 
     def run(self):
@@ -102,10 +114,9 @@ class HighEnvDecider(Decider):
             done = truncated = False
             # plt.imshow(self.scenario._env.render())
             # plt.show()
-            time_step = 0
             while not (done or truncated):
-                time_step += 1
-                if time_step >= 30:
+                self.time_step += 1
+                if self.time_step > self.config.highway_env.policy_frequency * self.config.highway_env.duration + 1:
                     break
                 if self.scenario:
                     self.update(self.scenario._env)
@@ -135,10 +146,11 @@ class HighEnvDecider(Decider):
                 return 2 * normalized_v - 1
 
             input_bounds = get_input_bounds()
-            simulation_length = 60
             replanning_frequency = 5
+            simulation_length = 30 * 5
             current_ego_prediction = None
             for i in range(simulation_length):
+                print(f"STEP ID: {self.scenario._env.step_id}")
                 if i % replanning_frequency == 0:
                     cr_scenario, cr_planning_problem = self.update(None)
                     user_prompt = self.describer.user_prompt()
@@ -152,12 +164,13 @@ class HighEnvDecider(Decider):
                     for action in ranking:
                         if self.verifier.verify(list(action), safe_distance=True) == VerificationStatus.SAFE:
                             try:
-                                planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
-                                planner.reset(self.verifier.reach_config.planning.CLCS)
-                                driving_corridor = self.verifier.reach_interface.extract_driving_corridors(
-                                    to_goal_region=False
-                                )[0]
-                                planner.plan(driving_corridor)
+                                with suppress_stdout():
+                                    planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
+                                    planner.reset(self.verifier.reach_config.planning.CLCS)
+                                    driving_corridor = self.verifier.reach_interface.extract_driving_corridors(
+                                        to_goal_region=False
+                                    )[0]
+                                    planner.plan(driving_corridor)
                                 current_ego_prediction = planner.ego_vehicle.prediction.trajectory.state_list[1:]
                                 found_viable_action = True
                                 break
@@ -167,6 +180,8 @@ class HighEnvDecider(Decider):
                     if not found_viable_action:
                         if self.verifier.verify([None], safe_distance=False) == VerificationStatus.SAFE:
                             try:
+                                # Prevent a bug in the planner where it deletes slip_angle attribute a second time
+                                cr_planning_problem.initial_state.slip_angle = 0
                                 planner = ReactivePlanner(self.config, cr_scenario, cr_planning_problem)
                                 planner.reset(self.verifier.reach_config.planning.CLCS)
                                 driving_corridor = self.verifier.reach_interface.extract_driving_corridors(
@@ -188,7 +203,7 @@ class HighEnvDecider(Decider):
             self.scenario._env.close()
 
     @staticmethod
-    def configure(config: SanDRAConfiguration = None) -> "HighEnvDecider":
+    def configure(config: SanDRAConfiguration = None, save_path = None) -> "HighEnvDecider":
         if config is None:
             seeds = [
                 5838,
@@ -220,7 +235,6 @@ class HighEnvDecider(Decider):
                     "target_speeds": np.linspace(5, 32, 9),
                 }
         else:
-
             action_dict = {
                     "type": "ContinuousAction",
                     "acceleration_range": (input_bounds["a_min"], input_bounds["a_max"]),
@@ -258,7 +272,7 @@ class HighEnvDecider(Decider):
             }
         }
         seed = random.choice(seeds)
-        return HighEnvDecider(env_config, seed, config)
+        return HighEnvDecider(env_config, seed, config, save_path=save_path)
 
 
 if __name__ == "__main__":
