@@ -76,9 +76,11 @@ class HighEnvDecider(Decider):
 
     def update(self, env_config: Optional[dict]):
         if env_config is None:
-            self.scenario = HighwayEnvScenario(self.scenario._env, self.seed, dt=self.config.dt, start_time=self.time_step)
+            self.scenario = HighwayEnvScenario(self.scenario._env, self.seed, dt=self.config.dt, horizon=self.config.h, use_sonia=self.config.use_sonia)
         else:
-            self.scenario = HighwayEnvScenario(env_config, self.seed, dt=self.config.dt, start_time=self.time_step)
+            self.scenario = HighwayEnvScenario(env_config, self.seed, dt=self.config.dt, horizon=self.config.h, use_sonia=self.config.use_sonia)
+        self.scenario.time_step = self.time_step
+        self.time_step += 1
         cr_scenario, _, cr_planning_problem = self.scenario.commonroad_representation
         self.describer = CommonRoadDescriber(
             cr_scenario,

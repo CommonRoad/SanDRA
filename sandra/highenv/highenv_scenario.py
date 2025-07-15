@@ -28,14 +28,20 @@ from commonroad.common.file_writer import CommonRoadFileWriter
 from commonroad.common.file_writer import OverwriteExistingFile
 from commonroad.scenario.scenario import Tag
 
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.common.config import PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.utility.visualization import plot_scenario
 
 
 class HighwayEnvScenario:
     def __init__(
-        self, config: dict | RecordVideo, seed: int = 4213, dt: float = 0.2, start_time: int = 0
+            self,
+            config: dict | RecordVideo,
+            seed: int = 4213,
+            dt: float = 0.2,
+            start_time: int = 0,
+            horizon: int = 30,
+            use_sonia: bool = False,
     ):
         self.seed = seed
         if isinstance(config, dict):
@@ -49,12 +55,12 @@ class HighwayEnvScenario:
             self._env = config
             self.observation = None
         self.done = self.truncated = False
+        self.use_sonia = use_sonia # whether set-based prediction
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
         self.dt = dt
         self.time_step = start_time
 
-        # todo: better wrap the parameters using SanDRAConfiguration
-        self.prediction_length = SanDRAConfiguration().h + 1
+        self.prediction_length = horizon + 1
         self.minimum_interval = 1.0
         self._commonroad_ids: set[int] = {0}
         self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
@@ -279,6 +285,18 @@ class HighwayEnvScenario:
         self._commonroad_ids.add(next_id)
         return next_id
 
+    def _prediction(self, scenario: Scenario) -> Scenario:
+        if self.use_sonia:
+            return scenario
+        else:
+            # Add all obstacle predictions
+            predict_config = PredictorParams(
+                num_steps_prediction=self.prediction_length, dt=self.dt
+            )
+            predictor = ConstantVelocityCurvilinearPredictor(predict_config)
+            return predictor.predict(scenario, initial_time_step=1)
+
+
     @property
     def commonroad_representation(
         self, add_ego=False
@@ -331,12 +349,9 @@ class HighwayEnvScenario:
                 self._make_commonroad_obstacle(vehicle, self._next_id())
             )
 
+
         # Add all obstacle predictions
-        config = PredictorParams(
-            num_steps_prediction=self.prediction_length, dt=self.dt
-        )
-        predictor = ConstantVelocityCurvilinearPredictor(config)
-        scenario = predictor.predict(scenario, initial_time_step=1)
+        scenario = self._prediction(scenario)
 
         # Create planning problem
         planning_problem = self._make_commonroad_planning_problem(

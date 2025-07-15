@@ -30,6 +30,7 @@ from sandra.common.config import (
 from sandra.utility.vehicle import extract_ego_vehicle
 from sandra.common.road_network import EgoLaneNetwork, Lane
 from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
+from spot_interface import SPOTInterface
 
 
 class ReachVerifier(VerifierBase):
@@ -220,7 +221,20 @@ class ReachVerifier(VerifierBase):
     def verify(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        visualization=False,
+        visualization: bool = False,
+        safe_distance: bool = False,
+        only_in_lane: bool = False,
+    ) -> VerificationStatus:
+        if self.sandra_config.use_sonia:
+            # self.sandra_config.a_lim = 0.11
+            return self.verify_sonia(actions, visualization, safe_distance, only_in_lane)
+        else:
+            return self.verify_base(actions, visualization, safe_distance)
+
+    def verify_base(
+        self,
+        actions: List[Union[LongitudinalAction, LateralAction]],
+        visualization: bool = False,
         safe_distance: bool = False,
     ) -> VerificationStatus:
         """
@@ -251,6 +265,56 @@ class ReachVerifier(VerifierBase):
         else:
             print("[Verifier] Result: SAFE")
             return VerificationStatus.SAFE
+
+    def verify_sonia(
+        self,
+        actions: List[Union[LongitudinalAction, LateralAction]],
+        visualization: bool = False,
+        safe_distance: bool = False,
+        only_in_lane: bool = False,
+    ) -> VerificationStatus:
+        update_dict = {
+            "Vehicle": {
+                0: {  # 0 means that all vehicles will be changed
+                    "a_max": 6.0,
+                    "v_max": 20.0,
+                    "compute_occ_m1": True,
+                    "compute_occ_m2": True,
+                    "compute_occ_m3": True,
+                    "onlyInLane": only_in_lane
+                }
+            },
+            "EgoVehicle": {
+                0: {  # ID is ignored for ego vehicle (which is created based on cr_planning problem)
+                    "a_max": 1.0,
+                    "length": 5.0,
+                    "width": 2.0
+                }
+            }
+        }
+        sonia_interface = SPOTInterface(
+            scenario=self.reach_config.scenario,
+            planning_problem=self.reach_config.planning_problem,
+        )
+        sonia_interface.set_logging_mode(True)
+        sonia_interface.update_properties(update_dict)
+        prediction_dict, scenario_time_step, occ_poly_list_dict, vel_interval_dict =\
+            sonia_interface.do_occupancy_prediction(
+                prediction_horizon=self.sandra_config.h + 1,
+                update_dict=update_dict
+        )
+        set_based_prediction_dict = sonia_interface.postprocess_results(scenario_time_step,
+                                                                       prediction_dict,
+                                                                       increment=1e-2)
+        sonia_interface.update_scenario_with_results(
+            set_based_prediction_dict, scenario_to_update=self.reach_config.scenario
+        )
+        return self.verify_base(
+            actions=actions,
+            visualization=visualization,
+            safe_distance=safe_distance,
+        )
+
 
     def extract_corridor(self):
         # todo: goal shape?

@@ -5,19 +5,25 @@ from dataclasses import dataclass, field
 
 @dataclass
 class HighwayEnvConfig:
-    seeds: List[int] = field(default_factory=lambda: [6382])
-    action_input: bool = True
+    seeds: List[int] = field(default_factory=lambda: [4213])
+
     simulation_frequency: int = 15
     policy_frequency: int = 1
     lanes_count: int = 4
     duration: float = 30 # [s]
     vehicles_density: float = 2.0
 
+    action_input: bool = True
+
+
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
     model_name = "gpt-4o" # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
     use_ollama = False
+
+    use_sonia: bool = False
+
     a_lim = 0.2
     v_err = 0.1
 
