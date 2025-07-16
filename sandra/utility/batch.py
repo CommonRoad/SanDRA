@@ -50,7 +50,7 @@ def batch_labelling(
     evaluate_safety: bool = False,
     evaluate_trajectory_labels: bool = True,
     evaluate_reachset_labels: bool = True,
-    nr_scenarios: int = None
+    nr_scenarios: int = None,
 ):
     scenario_entries = load_scenarios_recursively(scenario_folder)
 
@@ -62,7 +62,9 @@ def batch_labelling(
         safe_role = re.sub(r"[^a-zA-Z0-9_]+", "", role.replace(" ", "_").lower())
         filename = f"batch_labelling_results_{safe_role}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     else:
-        filename = f"batch_labelling_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = (
+            f"batch_labelling_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
     csv_path = os.path.join(scenario_folder, filename)
 
     total_scenarios = 0
@@ -105,7 +107,7 @@ def batch_labelling(
         writer.writerow(headers)
 
         for i, (scenario_id, file_dir) in enumerate(
-                tqdm(scenario_entries, desc="Scenarios processed", colour="red")
+            tqdm(scenario_entries, desc="Scenarios processed", colour="red")
         ):
             if nr_scenarios is not None and i >= nr_scenarios:
                 break
@@ -127,11 +129,7 @@ def batch_labelling(
 
                 if evaluate_prompt:
                     describer = CommonRoadDescriber(
-                        scenario,
-                        planning_problem,
-                        0,
-                        config,
-                        role=role
+                        scenario, planning_problem, 0, config, role=role
                     )
                     decider = Decider(config, describer)
                     system_prompt = decider.describer.system_prompt()
@@ -178,7 +176,10 @@ def batch_labelling(
                             scenario.obstacle_by_id(ego_vehicle.obstacle_id)
                         )
                     reach_labeler = ReachSetLabeler(
-                        config, scenario, planning_problem, scenario_folder=scenario_folder
+                        config,
+                        scenario,
+                        planning_problem,
+                        scenario_folder=scenario_folder,
                     )
                     reach_actions = reach_labeler.label(ego_vehicle, ego_lane_network)
                     reach_long, reach_lat = _split_long_lat(reach_actions)
@@ -188,19 +189,20 @@ def batch_labelling(
                 highd_verified = None
 
                 if evaluate_prompt and evaluate_llm and evaluate_safety:
-                    reach_ver = ReachVerifier(scenario, planning_problem, config, ego_lane_network,
-                                              scenario_folder=scenario_folder)
-                    status = reach_ver.verify(
-                        ranking[0], visualization=False
+                    reach_ver = ReachVerifier(
+                        scenario,
+                        planning_problem,
+                        config,
+                        ego_lane_network,
+                        scenario_folder=scenario_folder,
                     )
+                    status = reach_ver.verify(ranking[0], visualization=False)
                     llm1_verified = status == VerificationStatus.SAFE
                     if llm1_verified == True:
                         llmk_verified = True
                     else:
                         for action_pair in ranking[1:]:
-                            status = reach_ver.verify(
-                                action_pair, visualization=False
-                            )
+                            status = reach_ver.verify(action_pair, visualization=False)
                             llmk_verified = status == VerificationStatus.SAFE
                             if llmk_verified == True:
                                 break
@@ -209,16 +211,19 @@ def batch_labelling(
                     llmk_safe += llmk_verified
 
                     if evaluate_trajectory_labels:
-                        status = reach_ver.verify(
-                            traj_actions[0], visualization=False
-                        )
+                        status = reach_ver.verify(traj_actions[0], visualization=False)
                         highd_verified = status == VerificationStatus.SAFE
 
                     highd_safe += highd_verified
 
                 match_top1 = None
                 match_topk = None
-                if evaluate_llm and evaluate_trajectory_labels and ranking and traj_actions:
+                if (
+                    evaluate_llm
+                    and evaluate_trajectory_labels
+                    and ranking
+                    and traj_actions
+                ):
                     # Compare tuple equality
                     match_top1 = tuple(traj_actions[0]) == tuple(ranking[0])
 
@@ -266,18 +271,27 @@ def batch_labelling(
         ratio_highd = highd_safe / total_scenarios
 
         print("\n📊 Matching Statistics:")
-        print(f"  Match Top-1 Accuracy: {ratio_top1:.2%} ({top1_hits}/{total_scenarios})")
-        print(f"  Match Top-K Accuracy: {ratio_topk:.2%} ({topk_hits}/{total_scenarios})")
+        print(
+            f"  Match Top-1 Accuracy: {ratio_top1:.2%} ({top1_hits}/{total_scenarios})"
+        )
+        print(
+            f"  Match Top-K Accuracy: {ratio_topk:.2%} ({topk_hits}/{total_scenarios})"
+        )
 
         print("\n📊 Safe Statistics:")
-        print(f"  Safe with 1 action: {ratio_safe1:.2%} ({llm1_safe}/{total_scenarios})")
-        print(f"  Safe with k actions: {ratio_safek:.2%} ({llmk_safe}/{total_scenarios})")
-        print(f"  highD safely labeled: {ratio_highd:.2%} ({highd_safe}/{total_scenarios})")
+        print(
+            f"  Safe with 1 action: {ratio_safe1:.2%} ({llm1_safe}/{total_scenarios})"
+        )
+        print(
+            f"  Safe with k actions: {ratio_safek:.2%} ({llmk_safe}/{total_scenarios})"
+        )
+        print(
+            f"  highD safely labeled: {ratio_highd:.2%} ({highd_safe}/{total_scenarios})"
+        )
     else:
         print("\nNo scenarios were evaluated for matching.")
 
     print(f"\n✅ All labels saved to: {csv_path}")
-
 
 
 def _split_long_lat(actions: List[List]) -> Tuple[List[str], List[str]]:
@@ -297,6 +311,7 @@ def _serialize_list(labels: List[str]) -> str:
     Join labels by semicolons (only used for trajectory labels).
     """
     return "; ".join(labels)
+
 
 def _write_labels_row(
     writer: csv.writer,
@@ -333,10 +348,12 @@ def _write_labels_row(
             row.extend([long_label, lat_label])
 
     if eval_traj:
-        row.extend([
-            "; ".join(traj_long),
-            "; ".join(traj_lat),
-        ])
+        row.extend(
+            [
+                "; ".join(traj_long),
+                "; ".join(traj_lat),
+            ]
+        )
 
     if eval_reach:
         for i in range(max_steps):
@@ -371,5 +388,5 @@ if __name__ == "__main__":
         evaluate_safety=False,
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
-        nr_scenarios=10000
+        nr_scenarios=10000,
     )

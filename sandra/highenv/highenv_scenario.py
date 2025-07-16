@@ -35,28 +35,30 @@ from sandra.utility.visualization import plot_scenario
 
 class HighwayEnvScenario:
     def __init__(
-            self,
-            config: dict | RecordVideo,
-            seed: int = 4213,
-            dt: float = 0.2,
-            start_time: int = 0,
-            horizon: int = 30,
-            maximum_lanelet_length: float = 1000,
-            use_sonia: bool = False,
+        self,
+        config: dict | RecordVideo,
+        seed: int = 4213,
+        dt: float = 0.2,
+        start_time: int = 0,
+        horizon: int = 30,
+        maximum_lanelet_length: float = 1000,
+        use_sonia: bool = False,
     ):
         self.seed = seed
         if isinstance(config, dict):
             env = gymnasium.make(
                 "highway-v0", render_mode="rgb_array", config=config["highway-v0"]
             )
-            self._env = RecordVideo(env, video_folder="run", episode_trigger=lambda e: True)
+            self._env = RecordVideo(
+                env, video_folder="run", episode_trigger=lambda e: True
+            )
             # self._env.unwrapped.set_record_video_wrapper(env)
             self.observation, _ = self._env.reset(seed=seed)
         else:
             self._env = config
             self.observation = None
         self.done = self.truncated = False
-        self.use_sonia = use_sonia # whether set-based prediction
+        self.use_sonia = use_sonia  # whether set-based prediction
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
         self.dt = dt
         self.time_step = start_time
@@ -148,8 +150,8 @@ class HighwayEnvScenario:
             lane.start + center_offset, lane.heading
         )
         lanelet_id = self._next_id()
-        assert (
-            lanelet_id == self._convert_lane_id(lane_index)
+        assert lanelet_id == self._convert_lane_id(
+            lane_index
         ), "Commonroad LaneletID should match its HighEnv counterpart."
 
         # Add adjacent lanelet ids
@@ -254,7 +256,7 @@ class HighwayEnvScenario:
         goal_y: float = goal_lane.start[1] + goal_lane.width / 2 - 4.0
         goal_center = self._highenv_coordinate_to_commonroad(np.array([goal_x, goal_y]))
         goal_center[1] = initial_state.position[1]
-        
+
         goal_state = CustomState(
             position=Rectangle(
                 ego_vehicle.LENGTH,
@@ -297,7 +299,6 @@ class HighwayEnvScenario:
             predictor = ConstantVelocityCurvilinearPredictor(predict_config)
             return predictor.predict(scenario, initial_time_step=1)
 
-
     @property
     def commonroad_representation(
         self, add_ego=False
@@ -313,7 +314,8 @@ class HighwayEnvScenario:
                 map_name="Sandra",
                 map_id=self.seed,
                 obstacle_behavior="T",
-                prediction_id=self.time_step),
+                prediction_id=self.time_step,
+            ),
         )
 
         # Add all lanelets
@@ -349,7 +351,6 @@ class HighwayEnvScenario:
             scenario.add_objects(
                 self._make_commonroad_obstacle(vehicle, self._next_id())
             )
-
 
         # Add all obstacle predictions
         scenario = self._prediction(scenario)

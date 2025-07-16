@@ -10,10 +10,10 @@ class HighwayEnvConfig:
     simulation_frequency: int = 15
     policy_frequency: int = 1
     lanes_count: int = 4
-    duration: float = 30 # [s]
+    duration: float = 30  # [s]
     vehicles_density: float = 2.0
 
-    maximum_lanelet_length: float = 1000.
+    maximum_lanelet_length: float = 1000.0
 
     action_input: bool = True
 
@@ -21,7 +21,7 @@ class HighwayEnvConfig:
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
-    model_name = "gpt-4o" # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
+    model_name = "gpt-4o"  # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
 
     use_ollama: bool = False
     use_sonia: bool = True
@@ -30,7 +30,7 @@ class SanDRAConfiguration:
     a_lim = 0.2
     v_err = 0.1
 
-    k = 3   # number of returned actions
+    k = 3  # number of returned actions
     h: int = 15  # time horizon of decision-making
     dt: float = 0.2
 
@@ -42,6 +42,7 @@ class SanDRAConfiguration:
     plot_limits: list = field(default_factory=lambda: [-6.36, 79.56, 4.07, 25.65])
 
     highway_env: HighwayEnvConfig = field(default_factory=HighwayEnvConfig)
+
 
 COMMONROAD_REACH_SEMANTIC_ROOT = (
     "/home/sebastian/Documents/Uni/Sandra/commonroad-reach-semantic"

@@ -44,7 +44,7 @@ class ReachVerifier(VerifierBase):
         ego_lane_network: EgoLaneNetwork = None,
         verbose: bool = False,
         scenario_folder: str = None,
-        highenv: bool = False
+        highenv: bool = False,
     ):
 
         # basic elements
@@ -66,7 +66,7 @@ class ReachVerifier(VerifierBase):
             scenario_folder = PROJECT_ROOT + "/scenarios/"
         self.reach_config.general.path_scenarios = scenario_folder
         self.reach_config.general.path_scenario = (
-                scenario_folder + str(scenario.scenario_id) + ".xml"
+            scenario_folder + str(scenario.scenario_id) + ".xml"
         )
         self.reach_config.vehicle.ego.v_lon_min = 0
         # fix the dimension
@@ -75,16 +75,18 @@ class ReachVerifier(VerifierBase):
         self.reach_config.planning.dt = scenario.dt
         if highenv:
             self.reach_config.vehicle.ego.v_lat_max = 12
-            self.reach_config.vehicle.ego.v_lat_min = - 12
+            self.reach_config.vehicle.ego.v_lat_min = -12
             self.reach_config.vehicle.ego.a_lat_max = 10
-            self.reach_config.vehicle.ego.a_lat_min = - 10
+            self.reach_config.vehicle.ego.a_lat_min = -10
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
 
         # remove ego vehicle if existed
         ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         if ego_vehicle:
-            if ego_in_sce := self.reach_config.scenario.obstacle_by_id(ego_vehicle.obstacle_id):
+            if ego_in_sce := self.reach_config.scenario.obstacle_by_id(
+                ego_vehicle.obstacle_id
+            ):
                 self.reach_config.scenario.remove_obstacle(ego_in_sce)
                 self.reset(
                     ego_lane_network=ego_lane_network,
@@ -93,9 +95,7 @@ class ReachVerifier(VerifierBase):
 
         # initialize semantic model and traffic rule interface
         self.semantic_model = SemanticModel(self.reach_config)
-        rule_interface = TrafficRuleInterface(
-            self.reach_config, self.semantic_model
-        )
+        rule_interface = TrafficRuleInterface(self.reach_config, self.semantic_model)
         self.reach_interface = SemanticReachableSetInterface(
             self.reach_config, self.semantic_model, rule_interface
         )
@@ -127,7 +127,7 @@ class ReachVerifier(VerifierBase):
                 self.reach_config.update(
                     planning_problem=self.reach_config.planning_problem,
                     scenario=scenario,
-                    CLCS = self.ego_lane_network.lane.clcs
+                    CLCS=self.ego_lane_network.lane.clcs,
                 )
 
         if actions:
@@ -136,7 +136,9 @@ class ReachVerifier(VerifierBase):
                 assert self.initial_state is not None, "Initial state must be provided"
                 min_save_distance = 2 * self.initial_state.velocity
                 for obstacle in self.scenario.obstacles:
-                    distance = np.linalg.norm(self.initial_state.position - obstacle.initial_state.position)
+                    distance = np.linalg.norm(
+                        self.initial_state.position - obstacle.initial_state.position
+                    )
                     if distance < min_save_distance:
                         rule = f"LTL G SafeDistance_V{obstacle.obstacle_id}"
                         ltl_list.append(rule)
@@ -162,7 +164,9 @@ class ReachVerifier(VerifierBase):
                 config=self.reach_config, rule_interface=rule_interface
             )
 
-    def parse_action(self, action: Union[LongitudinalAction, LateralAction, None]) -> str:
+    def parse_action(
+        self, action: Union[LongitudinalAction, LateralAction, None]
+    ) -> str:
         """
         Parses the given action into an appropriate LTL formula or modifies reachability configuration.
 
@@ -278,16 +282,16 @@ class ReachVerifier(VerifierBase):
                     "compute_occ_m1": True,
                     "compute_occ_m2": True,
                     "compute_occ_m3": True,
-                    "onlyInLane": only_in_lane
+                    "onlyInLane": only_in_lane,
                 }
             },
             "EgoVehicle": {
                 0: {  # ID is ignored for ego vehicle (which is created based on cr_planning problem)
                     "a_max": 1.0,
                     "length": 5.0,
-                    "width": 2.0
+                    "width": 2.0,
                 }
-            }
+            },
         }
         sonia_interface = SPOTInterface(
             scenario=self.reach_config.scenario,
@@ -295,14 +299,14 @@ class ReachVerifier(VerifierBase):
         )
         sonia_interface.set_logging_mode(True)
         sonia_interface.update_properties(update_dict)
-        prediction_dict, scenario_time_step, occ_poly_list_dict, vel_interval_dict =\
+        prediction_dict, scenario_time_step, occ_poly_list_dict, vel_interval_dict = (
             sonia_interface.do_occupancy_prediction(
-                prediction_horizon=self.sandra_config.h + 1,
-                update_dict=update_dict
+                prediction_horizon=self.sandra_config.h + 1, update_dict=update_dict
+            )
         )
-        set_based_prediction_dict = sonia_interface.postprocess_results(scenario_time_step,
-                                                                       prediction_dict,
-                                                                       increment=1e-2)
+        set_based_prediction_dict = sonia_interface.postprocess_results(
+            scenario_time_step, prediction_dict, increment=1e-2
+        )
         sonia_interface.update_scenario_with_results(
             set_based_prediction_dict, scenario_to_update=self.reach_config.scenario
         )
@@ -310,7 +314,6 @@ class ReachVerifier(VerifierBase):
             actions=actions,
             safe_distance=safe_distance,
         )
-
 
     def extract_corridor(self):
         # todo: goal shape?

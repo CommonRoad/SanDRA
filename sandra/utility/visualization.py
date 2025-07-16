@@ -1,4 +1,3 @@
-
 from enum import Enum
 from typing import Optional, List, Tuple
 import os
@@ -10,8 +9,11 @@ from matplotlib.transforms import Affine2D
 from pathlib import Path
 
 from commonroad.scenario.trajectory import Trajectory
-from commonroad.visualization.draw_params import DynamicObstacleParams, OccupancyParams, \
-    PlanningProblemParams
+from commonroad.visualization.draw_params import (
+    DynamicObstacleParams,
+    OccupancyParams,
+    PlanningProblemParams,
+)
 from commonroad.geometry.shape import Rectangle, Polygon
 
 from commonroad.planning.planning_problem import PlanningProblem
@@ -46,6 +48,7 @@ class TUMcolor(tuple, Enum):
     TUMblack = (0, 0, 0)
     TUMlightgray = (217 / 255, 218 / 255, 219 / 255)
     TUMyellow = (254 / 255, 215 / 255, 2 / 255)
+
 
 if SUPPRESS_PLOTS:
     import matplotlib
@@ -221,16 +224,17 @@ def plot_road_network(
     rnd.render(show=True, filename=save_path)
     plt.show()
 
+
 def draw_scenario_paper(
-        scenario: Scenario,
-        planning_problem: PlanningProblem,
-        step: int,
-        config: SanDRAConfiguration,
-        ego_vehicle: Optional[DynamicObstacle] = None,
-        draw_planning_problem: bool = False,
-        plot_limits: Optional[List[float]] = None,
-        output_path: Optional[str] = None,
-        rotate_deg: float = 0.0,
+    scenario: Scenario,
+    planning_problem: PlanningProblem,
+    step: int,
+    config: SanDRAConfiguration,
+    ego_vehicle: Optional[DynamicObstacle] = None,
+    draw_planning_problem: bool = False,
+    plot_limits: Optional[List[float]] = None,
+    output_path: Optional[str] = None,
+    rotate_deg: float = 0.0,
 ) -> None:
     rnd = MPRenderer(figsize=(20, 10))
 
@@ -278,9 +282,16 @@ def draw_scenario_paper(
         if ego_vehicle is None:
             # draw ego vehicle at initial state only
             ego_shape = Rectangle(config.length, config.width)
-            pred = TrajectoryPrediction(Trajectory(initial_time_step=planning_problem.initial_state.time_step,
-                                                   state_list=[planning_problem.initial_state]), ego_shape)
-            ego = DynamicObstacle(42, ObstacleType.CAR, ego_shape, planning_problem.initial_state, pred)
+            pred = TrajectoryPrediction(
+                Trajectory(
+                    initial_time_step=planning_problem.initial_state.time_step,
+                    state_list=[planning_problem.initial_state],
+                ),
+                ego_shape,
+            )
+            ego = DynamicObstacle(
+                42, ObstacleType.CAR, ego_shape, planning_problem.initial_state, pred
+            )
             ego.draw(rnd, draw_params=ego_params)
         else:
             # draw ego vehicle from trajectory
@@ -288,13 +299,13 @@ def draw_scenario_paper(
 
             # draw ego trajectory occupancies
             occ_params = OccupancyParams()
-            occ_params.shape.facecolor = '#E37222'
-            occ_params.shape.edgecolor = '#9C4100'
+            occ_params.shape.facecolor = "#E37222"
+            occ_params.shape.edgecolor = "#9C4100"
             occ_params.shape.opacity = 0.25
             i = 0
             for occ in ego_vehicle.prediction.occupancy_set:
-                if i>= 23:
-                    occ_params.shape.facecolor = '#a2ad00'
+                if i >= 23:
+                    occ_params.shape.facecolor = "#a2ad00"
                 occ.draw(rnd, draw_params=occ_params)
                 i += 1
 
@@ -310,21 +321,28 @@ def draw_scenario_paper(
         for artist in ax.get_children():
             artist.set_transform(rotation + artist.get_transform())
 
-    plt.axis('off')
+    plt.axis("off")
     if not output_path:
         output_path = Path(__file__).resolve().parents[2] / "output"
     os.makedirs(output_path, exist_ok=True)
-    plt.savefig(f"{output_path}/{str(scenario.scenario_id)}/scenario.svg",
-                format="svg", dpi=100,
-                bbox_inches='tight')
+    plt.savefig(
+        f"{output_path}/{str(scenario.scenario_id)}/scenario.svg",
+        format="svg",
+        dpi=100,
+        bbox_inches="tight",
+    )
 
     plt.show()
 
-def plot_reachable_sets(reach_interface: ReachableSetInterface,
-                        driving_corridor = None,
-                        step_start: int = 0, step_end: int = 0,
-                        plot_limits: List = None, path_output: str = None,
-                        ):
+
+def plot_reachable_sets(
+    reach_interface: ReachableSetInterface,
+    driving_corridor=None,
+    step_start: int = 0,
+    step_end: int = 0,
+    plot_limits: List = None,
+    path_output: str = None,
+):
     """
     Plots scenario with computed reachable sets.
     """
@@ -372,16 +390,20 @@ def plot_reachable_sets(reach_interface: ReachableSetInterface,
         # Draw reachable sets
         for node in list_nodes:
             position_rectangle = node.position_rectangle
-            list_polygons_cart = util_coordinate_system.convert_to_cartesian_polygons(position_rectangle,
-                                                                                      config.planning.CLCS, True)
+            list_polygons_cart = util_coordinate_system.convert_to_cartesian_polygons(
+                position_rectangle, config.planning.CLCS, True
+            )
             for polygon in list_polygons_cart:
                 Polygon(vertices=np.array(polygon.vertices)).draw(rnd, reach_params)
 
     rnd.render()
-    plt.axis('off')
+    plt.axis("off")
 
-    plt.savefig(f"{path_output}/{str(scenario.scenario_id)}/reach.svg",
-                    format="svg", dpi=100,
-                    bbox_inches='tight')
+    plt.savefig(
+        f"{path_output}/{str(scenario.scenario_id)}/reach.svg",
+        format="svg",
+        dpi=100,
+        bbox_inches="tight",
+    )
 
     plt.show()

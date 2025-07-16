@@ -128,10 +128,21 @@ class TrajectoryLabeler(LabelerBase):
 
 
 class ReachSetLabeler(LabelerBase):
-    def __init__(self, config: SanDRAConfiguration, scenario: Scenario, planning_problem: PlanningProblem, scenario_folder: str = None):
+    def __init__(
+        self,
+        config: SanDRAConfiguration,
+        scenario: Scenario,
+        planning_problem: PlanningProblem,
+        scenario_folder: str = None,
+    ):
         super().__init__(config, scenario)
 
-        self.reach_ver = ReachVerifier(self.scenario, planning_problem, self.config, scenario_folder=scenario_folder)
+        self.reach_ver = ReachVerifier(
+            self.scenario,
+            planning_problem,
+            self.config,
+            scenario_folder=scenario_folder,
+        )
 
     def label(
         self,
@@ -198,8 +209,13 @@ class ReachSetLabeler(LabelerBase):
             status = self.reach_ver.verify([lat, lon])
             area = 0.0
             if status == VerificationStatus.SAFE:
-                for _, reach_set_nodes in self.reach_ver.reach_interface.reachable_set.items():
-                    area += util_reach_operation.compute_area_of_reach_nodes(reach_set_nodes)
+                for (
+                    _,
+                    reach_set_nodes,
+                ) in self.reach_ver.reach_interface.reachable_set.items():
+                    area += util_reach_operation.compute_area_of_reach_nodes(
+                        reach_set_nodes
+                    )
 
             action_area_dict[(lat, lon)] = area
 
@@ -208,7 +224,9 @@ class ReachSetLabeler(LabelerBase):
             )
 
         print("\n=== All action areas (sorted descending) ===")
-        sorted_items = sorted(action_area_dict.items(), key=lambda item: item[1], reverse=True)
+        sorted_items = sorted(
+            action_area_dict.items(), key=lambda item: item[1], reverse=True
+        )
         for (lat, lon), area in sorted_items:
             print(f"\t- ({lat.value}, {lon.value}): area = {area:.3f}")
 
@@ -238,10 +256,7 @@ class ReachSetLabeler(LabelerBase):
 
         # Take top m
         top_action_list = [
-            [lon, lat] for (lat, lon) in non_zero_actions[:self.config.k]
+            [lon, lat] for (lat, lon) in non_zero_actions[: self.config.k]
         ]
 
         return top_action_list
-
-
-

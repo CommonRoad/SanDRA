@@ -64,7 +64,7 @@ def extract_available_actions(text: str) -> tuple[list[str], list[str]]:
     Returns:
         tuple: (longitudinal_actions, lateral_actions)
     """
-    lines = [line.strip() for line in text.split('\n')]
+    lines = [line.strip() for line in text.split("\n")]
 
     longitudinal_actions = []
     lateral_actions = []
@@ -91,10 +91,10 @@ def extract_available_actions(text: str) -> tuple[list[str], list[str]]:
 
 
 def pick_remaining_actions(
-        combination: tuple[str, str],
-        available_strings1: list[str],
-        available_strings2: list[str],
-        n: int = 2
+    combination: tuple[str, str],
+    available_strings1: list[str],
+    available_strings2: list[str],
+    n: int = 2,
 ) -> list[tuple[str, str]]:
     """
     Randomly pick n combinations of strings where the first part is from available_strings1
@@ -116,7 +116,7 @@ def generate_conversations(save_path: str = None) -> list[list[dict]]:
     """
     Extract prompts and labels, formulate a correct response, and save the resulting conversations as jsonl.
     """
-    df = pd.read_csv('labeled_highd_scenarios.csv')
+    df = pd.read_csv("labeled_highd_scenarios.csv")
     conversations = []
     for row in df.itertuples():
         full_prompt = row.Prompt
@@ -125,40 +125,47 @@ def generate_conversations(save_path: str = None) -> list[list[dict]]:
         system_prompt = split_prompt[0]
         user_prompt = split_sentence + split_prompt[1]
 
-        available_longitudinal_actions, available_lateral_actions = extract_available_actions(system_prompt)
+        available_longitudinal_actions, available_lateral_actions = (
+            extract_available_actions(system_prompt)
+        )
 
         # remove "stop"
         available_longitudinal_actions.remove("stop")
         lateral_label = row.Trajectory_Lateral
         longitudinal_label = row.Trajectory_Longitudinal
-        actions = [(lateral_label, longitudinal_label)] + pick_remaining_actions(lateral_label, available_lateral_actions, available_longitudinal_actions)
+        actions = [(lateral_label, longitudinal_label)] + pick_remaining_actions(
+            lateral_label, available_lateral_actions, available_longitudinal_actions
+        )
         response = instantiate_normal_output(actions)
         item = [
-            {"role": "system",    "content": system_prompt},
-            {"role": "user",      "content": user_prompt},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
             {"role": "assistant", "content": response},
         ]
         conversations.append({"messages": item})
     if save_path:
-        with open(save_path, 'w') as f:
+        with open(save_path, "w") as f:
             json.dump(conversations, f)
 
     return conversations
 
+
 def load_jsonl(filepath):
     """Load data from JSONL format."""
     data = []
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         for line in f:
             data.append(json.loads(line.strip()))
     return data
 
+
 def save_jsonl(data, filepath):
     """Save data as JSONL format."""
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, 'w', encoding='utf-8') as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         for item in data:
-            f.write(json.dumps(item, ensure_ascii=False) + '\n')
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
 
 def create_batch(batch_file_name: str, api_key_name="OPENAI_API_KEY") -> Batch:
     client = OpenAI(api_key=os.getenv(api_key_name))
@@ -226,6 +233,7 @@ def create_finetuning_job(
     )
     print(fine_tuning_job.id)
 
+
 def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
     save_folder = "finetuning_files"
     samples = load_jsonl(sample_path)[0]
@@ -241,7 +249,9 @@ def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
                 break
 
     # Create train samples by excluding validation samples
-    train_samples = [sample for i, sample in enumerate(all_samples) if i not in val_indices]
+    train_samples = [
+        sample for i, sample in enumerate(all_samples) if i not in val_indices
+    ]
 
     train_path = os.path.join(save_folder, "train.jsonl")
     val_path = os.path.join(save_folder, "val.jsonl")
@@ -249,6 +259,6 @@ def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
     save_jsonl(val_samples, val_path)
 
 
-if __name__ == '__main__':
-    generate_conversations('conversations.jsonl')
-    split_fine_tuning_samples('conversations.jsonl')
+if __name__ == "__main__":
+    generate_conversations("conversations.jsonl")
+    split_fine_tuning_samples("conversations.jsonl")

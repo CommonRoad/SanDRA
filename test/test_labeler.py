@@ -17,7 +17,7 @@ from sandra.utility.vehicle import extract_ego_vehicle
 class TestLabeler(unittest.TestCase):
     def setUp(self) -> None:
         self.config = SanDRAConfiguration()
-        self.config.h = 20 # for highd scenarios
+        self.config.h = 20  # for highd scenarios
 
     def _load_scenario_and_ego_vehicle(self, scenario_name: str):
         """Helper to load scenario and ego vehicle"""
@@ -96,7 +96,8 @@ class TestLabeler(unittest.TestCase):
         ]
 
         assert set(frozenset(a) for a in actions) == set(
-            frozenset(a) for a in expected), "Actions do not match expected"
+            frozenset(a) for a in expected
+        ), "Actions do not match expected"
 
 
 if __name__ == "__main__":

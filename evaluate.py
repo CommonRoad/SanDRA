@@ -11,7 +11,7 @@ def evaluate_highenv_results():
     verifier_fails = []
 
     for filename in os.listdir(results_dir):
-        if not filename.startswith('new'):
+        if not filename.startswith("new"):
             continue
         result_df = pd.read_csv(results_dir + filename)
 
@@ -19,16 +19,16 @@ def evaluate_highenv_results():
         verifier_fail = 0
         counter = 0
         for idx, row in result_df.iterrows():
-            if max_iteration < int(row['iteration-id']):
-                max_iteration = int(row['iteration-id'])
+            if max_iteration < int(row["iteration-id"]):
+                max_iteration = int(row["iteration-id"])
             if int(row["verified-id"]) > 2:
                 verifier_fail += 1
             counter += 1
         max_iterations.append(max_iteration)
-        verifier_fails.append(verifier_fail) # / counter)
+        verifier_fails.append(verifier_fail)  # / counter)
 
     average_max_iterations = sum(max_iterations) / len(max_iterations)
-    average_verifier_fails = sum(verifier_fails) # / len(verifier_fails)
+    average_verifier_fails = sum(verifier_fails)  # / len(verifier_fails)
     passed = [x > 30 for x in max_iterations]
     average_passed = sum(passed) / len(passed)
     average_passed *= 100
@@ -53,9 +53,9 @@ def evaluate_highd_results():
             print(f"Skipping scenario {filename}")
             raise ValueError()
         scenario_id = filename[:-4]
-        matching_rows = labels_df[labels_df['ScenarioID'] == scenario_id]
+        matching_rows = labels_df[labels_df["ScenarioID"] == scenario_id]
 
-        verified_id = result_df['verified-id']
+        verified_id = result_df["verified-id"]
         save_at.append(verified_id + 1)
         if verified_id >= k:
             match_at.append(scenario_id)
@@ -64,7 +64,9 @@ def evaluate_highd_results():
         if len(matching_rows) == 1:
             row = matching_rows.iloc[0]
         else:
-            raise ValueError(f"Found {len(matching_rows)} matches for scenario {scenario_id}")
+            raise ValueError(
+                f"Found {len(matching_rows)} matches for scenario {scenario_id}"
+            )
         lateral_label = row["Trajectory_Lateral"]
         longitudinal_label = row["Trajectory_Longitudinal"]
         for i in range(k):
@@ -93,5 +95,5 @@ def evaluate_highd_results():
     print(f"Match@5: {match_at_5:.1f}%")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     evaluate_highd_results()

@@ -315,8 +315,10 @@ class EgoLaneNetwork:
             if ego_incoming:
                 left_of_id = ego_incoming.left_of
                 if left_of_id:
-                    instance.lane_incoming_right = road_network.get_lanes_by_lanelet_ids(
-                        list(incoming_dict[left_of_id].incoming_lanelets)
+                    instance.lane_incoming_right = (
+                        road_network.get_lanes_by_lanelet_ids(
+                            list(incoming_dict[left_of_id].incoming_lanelets)
+                        )
                     )
 
                 # Instead of another loop, access left directly from the inverse mapping

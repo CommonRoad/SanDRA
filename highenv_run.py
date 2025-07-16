@@ -1,11 +1,14 @@
 """
 Standalone script to create HighEnvDecider and run it.
 """
+
 from sandra.common.config import SanDRAConfiguration
 from sandra.highenv.decider import HighEnvDecider
 import matplotlib
+
 print(matplotlib.get_backend())
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
+
 
 def main():
     config = SanDRAConfiguration()
@@ -34,7 +37,7 @@ def main():
         config.highway_env.seeds = [seed]
         decider = HighEnvDecider.configure(
             config=config,
-            save_path=f"results-{config.highway_env.action_input}-{config.model_name}-{config.highway_env.lanes_count}-{config.highway_env.vehicles_density}/run-{seed}.csv"
+            save_path=f"results-{config.highway_env.action_input}-{config.model_name}-{config.highway_env.lanes_count}-{config.highway_env.vehicles_density}/run-{seed}.csv",
         )
         decider.run()
 

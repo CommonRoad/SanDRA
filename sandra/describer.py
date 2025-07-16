@@ -43,11 +43,7 @@ class DescriberBase(ABC):
         self.config = config
         self.role = "" if role is None else role
         self.goal = "" if goal is None else goal
-        self.scenario_type = (
-            ""
-            if scenario_type is None
-            else f"{scenario_type}"
-        )
+        self.scenario_type = "" if scenario_type is None else f"{scenario_type}"
         self.update(timestep=timestep)
 
     def update(self, timestep=None):
@@ -57,7 +53,11 @@ class DescriberBase(ABC):
             self.timestep = self.timestep + 1
 
     @staticmethod
-    def velocity_descr(state: Union[InitialState, CustomState, KSState] = None, velocity: float = None,  to_km=False) -> str:
+    def velocity_descr(
+        state: Union[InitialState, CustomState, KSState] = None,
+        velocity: float = None,
+        to_km=False,
+    ) -> str:
         if velocity is not None:
             v = velocity
         elif state is not None:
@@ -71,9 +71,9 @@ class DescriberBase(ABC):
 
     @staticmethod
     def acceleration_descr(
-            state:  Union[InitialState, CustomState, KSState] = None,
-            acceleration: float = None,
-            to_km: bool = False
+        state: Union[InitialState, CustomState, KSState] = None,
+        acceleration: float = None,
+        to_km: bool = False,
     ) -> str:
         if acceleration is not None:
             a = acceleration
@@ -88,9 +88,9 @@ class DescriberBase(ABC):
 
     @staticmethod
     def orientation_descr(
-            state: Union[InitialState, CustomState, KSState] = None,
-            orientation: float = None,
-            degrees: bool = False
+        state: Union[InitialState, CustomState, KSState] = None,
+        orientation: float = None,
+        degrees: bool = False,
     ) -> str:
         if orientation is not None:
             theta = orientation
@@ -108,10 +108,10 @@ class DescriberBase(ABC):
 
     @staticmethod
     def steering_descr(
-            state: Union[InitialState, CustomState, KSState] = None,
-            steering_angle: float = None,
-            degrees: bool = False,
-            wheelbase: float = 2.578
+        state: Union[InitialState, CustomState, KSState] = None,
+        steering_angle: float = None,
+        degrees: bool = False,
+        wheelbase: float = 2.578,
     ) -> str:
         if steering_angle is not None:
             delta = steering_angle
@@ -170,7 +170,9 @@ class DescriberBase(ABC):
             ego_position_clcs, obstacle_position_clcs = curvilinear_points
 
             if len(curvilinear_points) != 2:
-                warnings.warn(f"Unexpected number of curvilinear points: {len(curvilinear_points)}")
+                warnings.warn(
+                    f"Unexpected number of curvilinear points: {len(curvilinear_points)}"
+                )
                 return "far away from you"
 
             s_dist = obstacle_position_clcs[0] - ego_position_clcs[0]
@@ -260,7 +262,9 @@ class DescriberBase(ABC):
             + "\n"
         )
 
-    def system_prompt(self, past_actions: List[List[Union[LongitudinalAction, LateralAction]]] = None) -> str:
+    def system_prompt(
+        self, past_actions: List[List[Union[LongitudinalAction, LateralAction]]] = None
+    ) -> str:
         # reminders = self._describe_reminders()
         # reminder_description = "Keep these things in mind:\n"
         # for reminder in reminders:
@@ -283,7 +287,7 @@ class DescriberBase(ABC):
 
     @staticmethod
     def _describe_past_actions(
-            past_actions: List[List[Union[LongitudinalAction, LateralAction]]]
+        past_actions: List[List[Union[LongitudinalAction, LateralAction]]]
     ) -> str:
         """
         Returns a string description of the past action pairs.

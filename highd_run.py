@@ -1,6 +1,7 @@
 """
 Standalone script to create HighEnvDecider and run it.
 """
+
 import os
 
 from sandra.common.config import SanDRAConfiguration
@@ -14,7 +15,8 @@ import matplotlib
 from sandra.utility.general import extract_scenario_and_planning_problem
 
 print(matplotlib.get_backend())
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
+
 
 def main():
     config = SanDRAConfiguration()
@@ -28,7 +30,9 @@ def main():
         if filename[:-4] in results:
             continue
 
-        scenario, planning_problem = extract_scenario_and_planning_problem(path_to_scenarios + filename)
+        scenario, planning_problem = extract_scenario_and_planning_problem(
+            path_to_scenarios + filename
+        )
         describer = CommonRoadDescriber(
             scenario,
             planning_problem,
@@ -71,7 +75,7 @@ def main():
             config,
             describer,
             verifier=verifier,
-            save_path=f"results-highD-{config.model_name}/{scenario.scenario_id}.csv"
+            save_path=f"results-highD-{config.model_name}/{scenario.scenario_id}.csv",
         )
         decider.decide()
 

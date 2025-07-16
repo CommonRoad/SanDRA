@@ -12,7 +12,9 @@ def main(scenario_path: str):
     config = SanDRAConfiguration()
     save_path = scenario_path
     scenario, planning_problem = extract_scenario_and_planning_problem(scenario_path)
-    describer = CommonRoadDescriber(scenario, planning_problem, 0, config, goal="Drive faster.", describe_ttc=False)
+    describer = CommonRoadDescriber(
+        scenario, planning_problem, 0, config, goal="Drive faster.", describe_ttc=False
+    )
     verifier = ReachVerifier(scenario, planning_problem, config)
     decider = Decider(config, describer, verifier, save_path=save_path)
     print(f"-----------------SYSTEM PROMPT-------------------")
@@ -40,7 +42,7 @@ if __name__ == "__main__":
         "DEU_AachenHeckstrasse-1_30520_T-539.xml",
         "DEU_LocationALower-11_10_T-1.xml",
         "DEU_Gar-1_1_T-1.xml",
-        "DEU_Goeppingen-37_1_T-4.xml"
+        "DEU_Goeppingen-37_1_T-4.xml",
     ]
 
     scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")

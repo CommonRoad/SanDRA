@@ -26,6 +26,7 @@ from sandra.utility.vehicle import (
 )
 from contextlib import contextmanager
 
+
 @contextmanager
 def suppress_stdout():
     with open(os.devnull, "w") as devnull:
@@ -90,7 +91,6 @@ class CommonRoadDescriber(DescriberBase):
             self.ttc_evaluator = None
         super().__init__(timestep, config, role, goal, scenario_type)
 
-
     def update(self, timestep=None):
         if timestep is not None:
             self.timestep = timestep
@@ -112,7 +112,9 @@ class CommonRoadDescriber(DescriberBase):
 
         # clcs for crime
         if self.ttc_evaluator:
-            self.ttc_evaluator.configuration.update(CLCS=self.ego_lane_network.lane.clcs)
+            self.ttc_evaluator.configuration.update(
+                CLCS=self.ego_lane_network.lane.clcs
+            )
 
         if not self.scenario_type and (
             self.ego_lane_network.lane_incoming_left
@@ -228,17 +230,16 @@ class CommonRoadDescriber(DescriberBase):
                 vehicle_description += f" The time-to-collision is {ttc}."
         return vehicle_description
 
-    def _get_relevant_obstacles(self, perception_radius: float) -> list[DynamicObstacle]:
+    def _get_relevant_obstacles(
+        self, perception_radius: float
+    ) -> list[DynamicObstacle]:
         circle_center = self.ego_state.position
         if self.timestep == 0:
             return [
                 x
                 for x in self.scenario.dynamic_obstacles
-                if np.linalg.norm(
-                    x.initial_state.position
-                    - circle_center
-                )
-                   < perception_radius
+                if np.linalg.norm(x.initial_state.position - circle_center)
+                < perception_radius
             ]
         return [
             x
@@ -264,7 +265,10 @@ class CommonRoadDescriber(DescriberBase):
                 ObstacleType.BICYCLE,
                 ObstacleType.TRUCK,
             ]:
-                if self.ego_vehicle and obstacle.obstacle_id == self.ego_vehicle.obstacle_id:
+                if (
+                    self.ego_vehicle
+                    and obstacle.obstacle_id == self.ego_vehicle.obstacle_id
+                ):
                     continue
                 try:
                     temp = self._describe_vehicle(obstacle)
@@ -357,15 +361,13 @@ class CommonRoadDescriber(DescriberBase):
         self,
     ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
         lateral_actions = [LateralAction.FOLLOW_LANE]
-        if (
-            self.ego_lane_network.lane_left_adjacent
-        ):
+        if self.ego_lane_network.lane_left_adjacent:
             lateral_actions.append(LateralAction.CHANGE_LEFT)
-        if (
-            self.ego_lane_network.lane_right_adjacent
-        ):
+        if self.ego_lane_network.lane_right_adjacent:
             lateral_actions.append(LateralAction.CHANGE_RIGHT)
-        longitudinal_actions = [x for x in LongitudinalAction if x != LongitudinalAction.UNKNOWN]
+        longitudinal_actions = [
+            x for x in LongitudinalAction if x != LongitudinalAction.UNKNOWN
+        ]
         return lateral_actions, longitudinal_actions
 
     def schema(self) -> dict[str, Any]:

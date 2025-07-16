@@ -33,17 +33,17 @@ class Decider:
             self.save_path = save_path
 
         columns = [
-            'iteration-id',
-            'Lateral1',
-            'Longitudinal1',
-            'Lateral2',
-            'Longitudinal2',
-            'Lateral3',
-            'Longitudinal3',
-            'verified-id',
-            'user-prompt',
-            'system-prompt',
-            'schema'
+            "iteration-id",
+            "Lateral1",
+            "Longitudinal1",
+            "Lateral2",
+            "Longitudinal2",
+            "Lateral3",
+            "Longitudinal3",
+            "verified-id",
+            "user-prompt",
+            "system-prompt",
+            "schema",
         ]
 
         directory = os.path.dirname(self.save_path)
@@ -86,7 +86,9 @@ class Decider:
         new_df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
         new_df.to_csv(self.save_path, index=False)
 
-    def decide(self, past_action: List[List[Union[LongitudinalAction, LateralAction]]] = None) -> Optional[Action]:
+    def decide(
+        self, past_action: List[List[Union[LongitudinalAction, LateralAction]]] = None
+    ) -> Optional[Action]:
         user_prompt = self.describer.user_prompt()
         system_prompt = self.describer.system_prompt(past_action)
         schema = self.describer.schema()
@@ -96,24 +98,24 @@ class Decider:
         ranking = self._parse_action_ranking(structured_response)
 
         new_row = {
-            'iteration-id': self.time_step,
-            'Lateral1': None,
-            'Longitudinal1': None,
-            'Lateral2': None,
-            'Longitudinal2': None,
-            'Lateral3': None,
-            'Longitudinal3': None,
-            'verified-id': None,
-            'user-prompt': user_prompt,
-            'system-prompt': system_prompt,
-            'schema': schema
+            "iteration-id": self.time_step,
+            "Lateral1": None,
+            "Longitudinal1": None,
+            "Lateral2": None,
+            "Longitudinal2": None,
+            "Lateral3": None,
+            "Longitudinal3": None,
+            "verified-id": None,
+            "user-prompt": user_prompt,
+            "system-prompt": system_prompt,
+            "schema": schema,
         }
 
         print("Ranking:")
         for i, (longitudinal, lateral) in enumerate(ranking):
             print(f"{i + 1}. ({longitudinal}, {lateral})")
-            new_row[f'Lateral{i + 1}'] = lateral.value
-            new_row[f'Longitudinal{i + 1}'] = longitudinal.value
+            new_row[f"Lateral{i + 1}"] = lateral.value
+            new_row[f"Longitudinal{i + 1}"] = longitudinal.value
 
         for i, action in enumerate(ranking):
             try:
@@ -128,5 +130,4 @@ class Decider:
             print(f"Failed to verify {action}.")
         new_row["verified-id"] = len(ranking)
         self.save_iteration(new_row)
-        return (LongitudinalAction.DECELERATE,
-                LateralAction.FOLLOW_LANE)
+        return (LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE)

@@ -50,8 +50,13 @@ def calculate_relative_orientation(
         angle = 2 * np.pi - angle
     return angle
 
-def get_input_bounds(vehicle_type: int = 2, a_max: float = 8.0, v_max: float = 30.0) -> dict[str, float]:
-    vehicle_parameters: VehicleParameters = VehicleParameterMapping.from_vehicle_type(VehicleType(vehicle_type))
+
+def get_input_bounds(
+    vehicle_type: int = 2, a_max: float = 8.0, v_max: float = 30.0
+) -> dict[str, float]:
+    vehicle_parameters: VehicleParameters = VehicleParameterMapping.from_vehicle_type(
+        VehicleType(vehicle_type)
+    )
     return {
         "delta_min": vehicle_parameters.steering.min,
         "delta_max": vehicle_parameters.steering.max,

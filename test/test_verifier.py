@@ -14,8 +14,9 @@ from sandra.commonroad.plan import ReactivePlanner
 from sandra.actions import LongitudinalAction, LateralAction
 
 import matplotlib
+
 print(matplotlib.get_backend())
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
 
 
 class TestReachVerifier(unittest.TestCase):
@@ -33,7 +34,9 @@ class TestReachVerifier(unittest.TestCase):
         self.config = SanDRAConfiguration()
         self.config.h = 20
 
-        self.reach_ver = ReachVerifier(self.scenario, self.planning_problem, self.config)
+        self.reach_ver = ReachVerifier(
+            self.scenario, self.planning_problem, self.config
+        )
 
     def _build_ego_lane_network(self, scenario, planning_problem):
         """Helper to build EgoLaneNetwork"""
@@ -81,6 +84,7 @@ class TestReachVerifier(unittest.TestCase):
         )
 
     def test_verification_sonia(self):
-        status = self.reach_ver.verify_sonia([LongitudinalAction.STOP], visualization=True)
+        status = self.reach_ver.verify_sonia(
+            [LongitudinalAction.STOP], visualization=True
+        )
         assert status == VerificationStatus.SAFE
-

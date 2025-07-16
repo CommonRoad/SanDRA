@@ -60,4 +60,3 @@ if status == VerificationStatus.SAFE:
         driving_corridor=driving_corridor,
         reach_interface=reach_ver.reach_interface,
     )
-
