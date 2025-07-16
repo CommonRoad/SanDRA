@@ -13,6 +13,8 @@ class HighwayEnvConfig:
     duration: float = 30 # [s]
     vehicles_density: float = 2.0
 
+    maximum_lanelet_length: float = 1000.
+
     action_input: bool = True
 
 
@@ -20,9 +22,10 @@ class HighwayEnvConfig:
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
     model_name = "gpt-4o" # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
-    use_ollama = False
 
-    use_sonia: bool = False
+    use_ollama: bool = False
+    use_sonia: bool = True
+    visualize_reach: bool = False
 
     a_lim = 0.2
     v_err = 0.1

@@ -221,20 +221,18 @@ class ReachVerifier(VerifierBase):
     def verify(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        visualization: bool = False,
         safe_distance: bool = False,
         only_in_lane: bool = False,
     ) -> VerificationStatus:
         if self.sandra_config.use_sonia:
             # self.sandra_config.a_lim = 0.11
-            return self.verify_sonia(actions, visualization, safe_distance, only_in_lane)
+            return self.verify_sonia(actions, safe_distance, only_in_lane)
         else:
-            return self.verify_base(actions, visualization, safe_distance)
+            return self.verify_base(actions, safe_distance)
 
     def verify_base(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        visualization: bool = False,
         safe_distance: bool = False,
     ) -> VerificationStatus:
         """
@@ -253,7 +251,7 @@ class ReachVerifier(VerifierBase):
         )
 
         # plot
-        if visualization:
+        if self.sandra_config.visualize_reach:
             util_visual.plot_scenario_with_reachable_sets(
                 self.reach_interface, save_gif=True
             )
@@ -269,7 +267,6 @@ class ReachVerifier(VerifierBase):
     def verify_sonia(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        visualization: bool = False,
         safe_distance: bool = False,
         only_in_lane: bool = False,
     ) -> VerificationStatus:
@@ -311,7 +308,6 @@ class ReachVerifier(VerifierBase):
         )
         return self.verify_base(
             actions=actions,
-            visualization=visualization,
             safe_distance=safe_distance,
         )
 

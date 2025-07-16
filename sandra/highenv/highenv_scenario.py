@@ -41,6 +41,7 @@ class HighwayEnvScenario:
             dt: float = 0.2,
             start_time: int = 0,
             horizon: int = 30,
+            maximum_lanelet_length: float = 1000,
             use_sonia: bool = False,
     ):
         self.seed = seed
@@ -64,7 +65,7 @@ class HighwayEnvScenario:
         self.minimum_interval = 1.0
         self._commonroad_ids: set[int] = {0}
         self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
-        self.maximum_lanelet_length = 1000
+        self.maximum_lanelet_length = maximum_lanelet_length
 
     @staticmethod
     def _highenv_coordinate_to_commonroad(coordinates: np.ndarray) -> np.ndarray:
