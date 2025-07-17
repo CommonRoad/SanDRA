@@ -101,7 +101,6 @@ class HighEnvDecider(Decider):
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
             )
         self.scenario.time_step = self.time_step
-        self.time_step += 1
         cr_scenario, _, cr_planning_problem = self.scenario.commonroad_representation
         self.describer = CommonRoadDescriber(
             cr_scenario,
@@ -110,6 +109,7 @@ class HighEnvDecider(Decider):
             self.config,
             role="Don't change the lanes too often. ",
             scenario_type="highway",
+            highway_env=True
         )
         road_network = RoadNetwork.from_lanelet_network_and_position(
             cr_scenario.lanelet_network,
@@ -135,10 +135,9 @@ class HighEnvDecider(Decider):
     def run(self):
         if self.config.highway_env.action_input:
             done = truncated = False
-            # plt.imshow(self.scenario._env.render())
-            # plt.show()
+            svg_save_folder = self.config.highway_env.get_save_folder(self.config.model_name, self.seed)
+            os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):
-                self.time_step += 1
                 if (
                     self.time_step
                     > self.config.highway_env.policy_frequency
@@ -164,9 +163,23 @@ class HighEnvDecider(Decider):
                     action = self.longitudinal_action_to_id[longitudinal_action]
                 obs, reward, done, truncated, info = self.scenario._env.step(action)
                 # self.describer.update_with_observation(obs)
-                self.scenario._env.render()
-                # plt.imshow(self.scenario._env.render())
-                # plt.show()
+                # Render frame
+                frame = self.scenario._env.render()  # RGB NumPy array
+                if self.config.highway_env.save_frame:
+                    # Save as SVG
+                    fig, ax = plt.subplots()
+                    ax.imshow(frame)
+                    ax.axis('off')
+                    ax.set_aspect('equal')
+                    fig.savefig(
+                        os.path.join(svg_save_folder, f"frame_{self.time_step:04d}.svg"),
+                        format='svg',
+                        bbox_inches='tight',
+                        pad_inches=0
+                    )
+                    plt.close(fig)
+                # only add the time step after the simulation
+                self.time_step += 1
             self.scenario._env.close()
         else:
 

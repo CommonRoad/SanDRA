@@ -54,9 +54,10 @@ class CommonRoadDescriber(DescriberBase):
         role: Optional[str] = None,
         goal: Optional[str] = None,
         scenario_type: Optional[str] = None,
-        describe_ttc=True,
+        describe_ttc: bool = True,
         past_action: List[Union[LongitudinalAction, LateralAction]] = None,
         country: Optional[str] = "Germany",
+        highway_env: bool = False
     ):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
@@ -67,6 +68,7 @@ class CommonRoadDescriber(DescriberBase):
         self.country = country
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
         self.describe_ttc = describe_ttc
+        self.highway_env = highway_env
         assert 1 <= config.k <= 10, f"Unsupported k {config.k}"
         self.k = config.k
 
@@ -368,6 +370,9 @@ class CommonRoadDescriber(DescriberBase):
         longitudinal_actions = [
             x for x in LongitudinalAction if x != LongitudinalAction.UNKNOWN
         ]
+        # In highway environments, disallow STOP
+        if self.highway_env and LongitudinalAction.STOP in longitudinal_actions:
+            longitudinal_actions.remove(LongitudinalAction.STOP)
         return lateral_actions, longitudinal_actions
 
     def schema(self) -> dict[str, Any]:

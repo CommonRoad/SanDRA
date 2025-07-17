@@ -8,14 +8,18 @@ class HighwayEnvConfig:
     seeds: List[int] = field(default_factory=lambda: [4213])
 
     simulation_frequency: int = 15
-    policy_frequency: int = 1
+    policy_frequency: int = 5
     lanes_count: int = 4
     duration: float = 30  # [s]
-    vehicles_density: float = 2.0
+    vehicles_density: float = 3.0
 
     maximum_lanelet_length: float = 1000.0
 
     action_input: bool = True
+    save_frame: bool = True
+
+    def get_save_folder(self, model_name: str, seed: int) -> str:
+        return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}"
 
 
 @dataclass
@@ -24,7 +28,7 @@ class SanDRAConfiguration:
     model_name = "gpt-4o"  # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
 
     use_ollama: bool = False
-    use_sonia: bool = True
+    use_sonia: bool = False
     visualize_reach: bool = False
 
     a_lim = 0.2

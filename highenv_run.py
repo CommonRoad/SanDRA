@@ -37,7 +37,7 @@ def main():
         config.highway_env.seeds = [seed]
         decider = HighEnvDecider.configure(
             config=config,
-            save_path=f"results-{config.highway_env.action_input}-{config.model_name}-{config.highway_env.lanes_count}-{config.highway_env.vehicles_density}/run-{seed}.csv",
+            save_path=config.highway_env.get_save_folder(config.model_name, seed) + '/evaluation.csv',
         )
         decider.run()
 
