@@ -109,7 +109,7 @@ class HighEnvDecider(Decider):
             self.config,
             role="Don't change the lanes too often. ",
             scenario_type="highway",
-            highway_env=True
+            highway_env=True,
         )
         road_network = RoadNetwork.from_lanelet_network_and_position(
             cr_scenario.lanelet_network,
@@ -135,7 +135,9 @@ class HighEnvDecider(Decider):
     def run(self):
         if self.config.highway_env.action_input:
             done = truncated = False
-            svg_save_folder = self.config.highway_env.get_save_folder(self.config.model_name, self.seed)
+            svg_save_folder = self.config.highway_env.get_save_folder(
+                self.config.model_name, self.seed
+            )
             os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):
                 if (
@@ -169,13 +171,15 @@ class HighEnvDecider(Decider):
                     # Save as SVG
                     fig, ax = plt.subplots()
                     ax.imshow(frame)
-                    ax.axis('off')
-                    ax.set_aspect('equal')
+                    ax.axis("off")
+                    ax.set_aspect("equal")
                     fig.savefig(
-                        os.path.join(svg_save_folder, f"frame_{self.time_step:04d}.svg"),
-                        format='svg',
-                        bbox_inches='tight',
-                        pad_inches=0
+                        os.path.join(
+                            svg_save_folder, f"frame_{self.time_step:04d}.svg"
+                        ),
+                        format="svg",
+                        bbox_inches="tight",
+                        pad_inches=0,
                     )
                     plt.close(fig)
                 # only add the time step after the simulation

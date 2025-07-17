@@ -57,7 +57,7 @@ class CommonRoadDescriber(DescriberBase):
         describe_ttc: bool = True,
         past_action: List[Union[LongitudinalAction, LateralAction]] = None,
         country: Optional[str] = "Germany",
-        highway_env: bool = False
+        highway_env: bool = False,
     ):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None

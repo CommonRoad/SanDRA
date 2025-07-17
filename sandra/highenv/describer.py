@@ -164,6 +164,7 @@ class HighEnvDescriber(DescriberBase):
         laterals, longitudinals = self._get_available_actions()
         laterals_str = "\n".join([f"    - {x.value}" for x in laterals])
         longitudinals_str = "\n".join([f"    - {x.value}" for x in longitudinals])
+        print(longitudinals_str, laterals_str)
         return f"""First observe the environment and formulate your decision in natural language. Then return a ranking of the advisable actions which consist of {len(laterals) * len(longitudinals)} combinations:
 Longitudinal actions:
 {longitudinals_str}
