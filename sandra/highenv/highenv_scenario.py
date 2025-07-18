@@ -223,7 +223,7 @@ class HighwayEnvScenario:
             acceleration=vehicle.action["acceleration"],
             time_step=0,
             slip_angle=math.atan2(vehicle.velocity[1], vehicle.velocity[0]),
-            yaw_rate=0.0,
+            yaw_rate=-vehicle.action["steering"],
         )
 
         lanelet_id = self._convert_lane_id(vehicle.lane_index)

@@ -119,7 +119,9 @@ class DescriberBase(ABC):
             if hasattr(state, "steering_angle"):
                 delta = state.steering_angle
             elif hasattr(state, "yaw_rate"):
-                delta = np.arctan2(wheelbase * state.yaw_rate, state.velocity)
+                # np.arctan2(wheelbase * state.yaw_rate, state.velocity)
+                # initial state does not have steering angle attribute, which is saved in yaw rate
+                delta = state.yaw_rate
             else:
                 delta = 0.0
         else:
