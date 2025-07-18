@@ -66,10 +66,13 @@ class HighEnvDecider(Decider):
             LongitudinalAction.DECELERATE: 4,
         }
         self.seed = seed
-        self.update(env_config)
+        _, planning_problem = self.update(env_config)
 
         # Initialize the past_action list
         self.past_actions: list = []
+
+        # record the initial position
+        self.initial_position = planning_problem.initial_state.position
 
     def record_action(
         self,
@@ -184,7 +187,6 @@ class HighEnvDecider(Decider):
                     plt.close(fig)
                 # only add the time step after the simulation
                 self.time_step += 1
-            self.scenario._env.close()
         else:
 
             def normalize(v, a, b):
@@ -276,7 +278,17 @@ class HighEnvDecider(Decider):
                 print(f" Actions {action_first}, {action_second}")
                 action = action_second, action_first
                 _ = self.scenario.step(action)
-            self.scenario._env.close()
+
+        # store the travelled distance
+        _, planning_problem = self.update(None)
+        travelled_distance = (
+            planning_problem.initial_state.position[0] - self.initial_position[0]
+        )
+        new_row = {"iteration-id": "Travelled", "Lateral1": travelled_distance}
+        self.save_iteration(new_row)
+
+        # close afterwards
+        self.scenario._env.close()
 
     @staticmethod
     def configure(
