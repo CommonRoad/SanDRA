@@ -58,7 +58,7 @@ class HighwayEnvScenario:
         self.minimum_interval = 1.0
         self._commonroad_ids: set[int] = {0}
         self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}
-        self.maximum_lanelet_length = 1000
+        self.maximum_lanelet_length = 1500
 
     @staticmethod
     def _highenv_coordinate_to_commonroad(coordinates: np.ndarray) -> np.ndarray:
@@ -120,25 +120,24 @@ class HighwayEnvScenario:
         road_network = self.scenario.vehicle.road.network
         end = lane.start + lane.direction * self.maximum_lanelet_length
         # Generate lanelet vertices
-        left_vertices = self._highenv_coordinate_to_commonroad(
+        center_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start, end, lane.direction)
         )
         center_offset = lane.direction_lateral * (lane.width / 2)
-        center_vertices = self._highenv_coordinate_to_commonroad(
+        left_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(
-                lane.start + center_offset, end + center_offset, lane.direction
+                lane.start - center_offset, end - center_offset, lane.direction
             )
         )
-        right_offset = lane.direction_lateral * lane.width
         right_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(
-                lane.start + right_offset, end + right_offset, lane.direction
+                lane.start + center_offset, end + center_offset, lane.direction
             )
         )
 
         # Generate lanelet id
         lane_index = road_network.get_closest_lane_index(
-            lane.start + center_offset, lane.heading
+            lane.start, lane.heading
         )
         lanelet_id = self._next_id()
         assert (
@@ -151,7 +150,7 @@ class HighwayEnvScenario:
         adjacent_right_same_direction = None
         if (
             adj_right := road_network.get_closest_lane_index(
-                lane.start + 3 * center_offset, lane.heading
+                lane.start + 2 * center_offset, lane.heading
             )
         ) in neighbors:
             adjacent_right = self._convert_lane_id(adj_right)
@@ -165,7 +164,7 @@ class HighwayEnvScenario:
         adjacent_left_same_direction = None
         if (
             adj_left := road_network.get_closest_lane_index(
-                lane.start - center_offset, lane.heading
+                lane.start - 2 * center_offset, lane.heading
             )
         ) in neighbors:
             adjacent_left = self._convert_lane_id(adj_left)
@@ -200,9 +199,7 @@ class HighwayEnvScenario:
         self, vehicle: MDPVehicle | IDMVehicle, obstacle_id: int
     ) -> DynamicObstacle:
         obstacle_type = ObstacleType.CAR
-        top_left_corner = vehicle.position
-        # First, transform top-left into center coordinates, then
-        center = top_left_corner + np.array([vehicle.LENGTH, vehicle.WIDTH])
+        center = vehicle.position
         center = self._highenv_coordinate_to_commonroad(center)
         obstacle_shape = Rectangle(
             vehicle.LENGTH, vehicle.WIDTH, center=np.array([0.0, 0.0]), orientation=0.0
