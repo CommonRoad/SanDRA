@@ -143,10 +143,11 @@ class HighEnvDecider(Decider):
             )
             os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):
+                print(f"***** Simulation frame {self.time_step}: ...")
                 if (
                     self.time_step
-                    > self.config.highway_env.policy_frequency
-                    * self.config.highway_env.duration
+                    > # self.config.highway_env.policy_frequency *
+                    self.config.highway_env.duration
                     + 1
                 ):
                     break
@@ -154,6 +155,7 @@ class HighEnvDecider(Decider):
                     self.update(self.scenario._env)
                 else:
                     self.update(None)
+
                 longitudinal_action, lateral_action = self.decide(self.past_actions)
 
                 # record the actions
