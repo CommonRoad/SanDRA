@@ -76,8 +76,11 @@ class ReachVerifier(VerifierBase):
         if highenv:
             self.reach_config.vehicle.ego.v_lat_max = 12
             self.reach_config.vehicle.ego.v_lat_min = -12
-            self.reach_config.vehicle.ego.a_lat_max = 10
-            self.reach_config.vehicle.ego.a_lat_min = -10
+            self.reach_config.vehicle.ego.a_lat_max = 6
+            self.reach_config.vehicle.ego.a_lat_min = -6
+
+            self.reach_config.vehicle.ego.a_lon_max = 6
+            self.reach_config.vehicle.ego.a_lon_min = -6
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
 
