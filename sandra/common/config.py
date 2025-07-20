@@ -18,7 +18,9 @@ class HighwayEnvConfig:
     action_input: bool = True
     save_frame: bool = True
 
-    def get_save_folder(self, model_name: str, seed: int, use_sonia: bool = False) -> str:
+    def get_save_folder(
+        self, model_name: str, seed: int, use_sonia: bool = False
+    ) -> str:
         if use_sonia:
             return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot"
         else:

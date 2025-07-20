@@ -15,7 +15,7 @@ from crpred.basic_models.constant_velocity_predictor import (
     ConstantVelocityCurvilinearPredictor,
 )
 from crpred.basic_models.constant_acceleration_predictor import (
-    ConstantAccelerationLinearPredictor
+    ConstantAccelerationLinearPredictor,
 )
 from crpred.utility.config import PredictorParams
 from gymnasium import Env
@@ -56,8 +56,10 @@ class HighwayEnvScenario:
             if use_sonia:
                 name_prefix += "_spot"
             self._env = RecordVideo(
-                env, video_folder="run", episode_trigger=lambda e: True,
-                name_prefix=name_prefix
+                env,
+                video_folder="run",
+                episode_trigger=lambda e: True,
+                name_prefix=name_prefix,
             )
             # self._env.unwrapped.set_record_video_wrapper(env)
             self.observation, _ = self._env.reset(seed=seed)
@@ -153,9 +155,7 @@ class HighwayEnvScenario:
         )
 
         # Generate lanelet id
-        lane_index = road_network.get_closest_lane_index(
-            lane.start, lane.heading
-        )
+        lane_index = road_network.get_closest_lane_index(lane.start, lane.heading)
         lanelet_id = self._next_id()
         assert lanelet_id == self._convert_lane_id(
             lane_index

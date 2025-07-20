@@ -213,14 +213,11 @@ class CommonRoadDescriber(DescriberBase):
         )
         if not implicit_lanelet_description:
             return None
+
         vehicle_description = f"It is driving on {implicit_lanelet_description} "
-        ego_position = self.ego_state.position
-        # todo: clcs distance
-        # relative_vehicle_direction = vehicle_state.position - ego_position
-        # angle = calculate_relative_orientation(
-        #     self.ego_direction, relative_vehicle_direction
-        # )
-        # vehicle_description += f"It is located {self.angle_description(angle)} you, "
+        vehicle_description += \
+            f"and is {self.distance_description_clcs(self.ego_state.position, vehicle_state.position, self.ego_lane_network.lane.clcs, direction)}. "
+
         vehicle_description += (
             f"Its velocity is {self.velocity_descr(vehicle_state)}, "
             f"orientation is {self.orientation_descr(vehicle_state)}, "

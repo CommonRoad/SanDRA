@@ -146,8 +146,7 @@ class HighEnvDecider(Decider):
                 print(f"***** Simulation frame {self.time_step}: ...")
                 if (
                     self.time_step
-                    > # self.config.highway_env.policy_frequency *
-                    self.config.highway_env.duration
+                    > self.config.highway_env.duration  # self.config.highway_env.policy_frequency *
                     + 1
                 ):
                     break
@@ -188,10 +187,16 @@ class HighEnvDecider(Decider):
                     )
                     plt.close(fig)
                 if done:
-                    print("[red]Simulation crash after running steps: [/red] ", self.time_step)
+                    print(
+                        "[red]Simulation crash after running steps: [/red] ",
+                        self.time_step,
+                    )
                     break
                 if truncated:
-                    print("[red]The agent reaches the terminal state: [/red]", self.time_step)
+                    print(
+                        "[red]The agent reaches the terminal state: [/red]",
+                        self.time_step,
+                    )
                     break
                 # only add the time step after the simulation
                 self.time_step += 1
@@ -296,7 +301,6 @@ class HighEnvDecider(Decider):
         )
         new_row = {"iteration-id": "Travelled", "Lateral1": travelled_distance}
         self.save_iteration(new_row)
-
 
     @staticmethod
     def configure(

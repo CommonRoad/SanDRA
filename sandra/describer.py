@@ -183,7 +183,7 @@ class DescriberBase(ABC):
                 if d_dist > 0:
                     return f"{d_dist:.1f} meters right of you"
                 else:
-                    return f"{d_dist:.1f} meters left of you"
+                    return f"{abs(d_dist):.1f} meters left of you"
             else:
                 if s_dist > 0:
                     return f"{s_dist:.1f} meters in front of you"
