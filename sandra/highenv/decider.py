@@ -139,7 +139,7 @@ class HighEnvDecider(Decider):
         if self.config.highway_env.action_input:
             done = truncated = False
             svg_save_folder = self.config.highway_env.get_save_folder(
-                self.config.model_name, self.seed
+                self.config.model_name, self.seed, self.config.use_sonia
             )
             os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):
@@ -185,8 +185,15 @@ class HighEnvDecider(Decider):
                         pad_inches=0,
                     )
                     plt.close(fig)
+                if done:
+                    print("[red]Simulation crash after running steps: [/red] ", self.time_step)
+                    break
+                if truncated:
+                    print("[red]The agent reaches the terminal state: [/red]", self.time_step)
+                    break
                 # only add the time step after the simulation
                 self.time_step += 1
+            self.scenario._env.close()
         else:
 
             def normalize(v, a, b):
@@ -278,6 +285,7 @@ class HighEnvDecider(Decider):
                 print(f" Actions {action_first}, {action_second}")
                 action = action_second, action_first
                 _ = self.scenario.step(action)
+                self.scenario._env.close()
 
         # store the travelled distance
         _, planning_problem = self.update(None)
@@ -287,8 +295,6 @@ class HighEnvDecider(Decider):
         new_row = {"iteration-id": "Travelled", "Lateral1": travelled_distance}
         self.save_iteration(new_row)
 
-        # close afterwards
-        self.scenario._env.close()
 
     @staticmethod
     def configure(

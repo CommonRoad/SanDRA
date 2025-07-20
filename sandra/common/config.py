@@ -13,13 +13,16 @@ class HighwayEnvConfig:
     duration: float = 30  # [s]
     vehicles_density: float = 3.0
 
-    maximum_lanelet_length: float = 1000.0
+    maximum_lanelet_length: float = 1500.0
 
     action_input: bool = True
     save_frame: bool = True
 
-    def get_save_folder(self, model_name: str, seed: int) -> str:
-        return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}"
+    def get_save_folder(self, model_name: str, seed: int, use_sonia: bool = False) -> str:
+        if use_sonia:
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot"
+        else:
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}"
 
 
 @dataclass

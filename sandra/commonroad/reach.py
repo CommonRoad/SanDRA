@@ -249,10 +249,14 @@ class ReachVerifier(VerifierBase):
         )
 
         print("[Verifier] Computing reachable sets...")
-        # the formulas corresponding to all actions are conjunctively combined.
-        self.reach_interface.compute_reachable_sets(
-            step_end=self.sandra_config.h, verbose=self.verbose
-        )
+        try:
+            # the formulas corresponding to all actions are conjunctively combined.
+            self.reach_interface.compute_reachable_sets(
+                step_end=self.sandra_config.h, verbose=self.verbose
+            )
+        except Exception as e:
+            print("[Error] Exception during reachable set computation:", str(e))
+            return VerificationStatus.UNSAFE
 
         # plot
         if self.sandra_config.visualize_reach:
