@@ -14,6 +14,9 @@ from commonroad.scenario.state import InitialState, CustomState
 from crpred.basic_models.constant_velocity_predictor import (
     ConstantVelocityCurvilinearPredictor,
 )
+from crpred.basic_models.constant_acceleration_predictor import (
+    ConstantAccelerationLinearPredictor
+)
 from crpred.utility.config import PredictorParams
 from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
@@ -49,14 +52,19 @@ class HighwayEnvScenario:
             env = gymnasium.make(
                 "highway-v0", render_mode="rgb_array", config=config["highway-v0"]
             )
+            name_prefix = f"highway_{seed}"
+            if use_sonia:
+                name_prefix += "_spot"
             self._env = RecordVideo(
-                env, video_folder="run", episode_trigger=lambda e: True
+                env, video_folder="run", episode_trigger=lambda e: True,
+                name_prefix=name_prefix
             )
             # self._env.unwrapped.set_record_video_wrapper(env)
             self.observation, _ = self._env.reset(seed=seed)
         else:
             self._env = config
             self.observation = None
+
         self.done = self.truncated = False
         self.use_sonia = use_sonia  # whether set-based prediction
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
@@ -297,6 +305,7 @@ class HighwayEnvScenario:
                 num_steps_prediction=self.prediction_length, dt=self.dt
             )
             predictor = ConstantVelocityCurvilinearPredictor(predict_config)
+            # predictor = ConstantAccelerationLinearPredictor(predict_config)
             return predictor.predict(scenario, initial_time_step=1)
 
     @property
@@ -353,7 +362,14 @@ class HighwayEnvScenario:
             )
 
         # Add all obstacle predictions
-        scenario = self._prediction(scenario)
+        try:
+            scenario = self._prediction(scenario)
+        except ValueError as e:
+            print(f"[Warning] Prediction failed due to value error: {e}")
+            pass
+        except Exception as e:
+            print(f"[Error] Unexpected prediction failure: {e}")
+            pass
 
         # Create planning problem
         planning_problem = self._make_commonroad_planning_problem(
