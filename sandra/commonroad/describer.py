@@ -216,7 +216,7 @@ class CommonRoadDescriber(DescriberBase):
 
         vehicle_description = f"It is driving on {implicit_lanelet_description} "
         vehicle_description += \
-            f"and is {self.distance_description_clcs(self.ego_state.position, vehicle_state.position, self.ego_lane_network.lane.clcs, direction)}. "
+            f"and is {self.distance_description_clcs(self.ego_state.position, vehicle_state.position, vehicle.obstacle_shape, self.config, self.ego_lane_network.lane.clcs, direction)}. "
 
         vehicle_description += (
             f"Its velocity is {self.velocity_descr(vehicle_state)}, "

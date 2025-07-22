@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Any, Literal, overload, Union, List
 
 from commonroad.scenario.state import InitialState, CustomState, KSState
+from commonroad.scenario.obstacle import Rectangle
 from commonroad_dc.pycrccosy import CurvilinearCoordinateSystem
 from openai import BaseModel
 import numpy as np
@@ -157,8 +158,10 @@ class DescriberBase(ABC):
     def distance_description_clcs(
         ego_position: np.ndarray,
         obstacle_position: np.ndarray,
+        obstacle_shape: Rectangle,
+        config: SanDRAConfiguration,
         clcs: "CurvilinearCoordinateSystem",
-        direction="",
+        direction: str = "",
     ) -> str:
         points = [
             np.array(ego_position).reshape(2, 1),
@@ -180,15 +183,22 @@ class DescriberBase(ABC):
             s_dist = obstacle_position_clcs[0] - ego_position_clcs[0]
             d_dist = obstacle_position_clcs[1] - ego_position_clcs[1]
             if direction == "incoming":
+                # todo: fix vehicle width
                 if d_dist > 0:
                     return f"{d_dist:.1f} meters right of you"
                 else:
                     return f"{abs(d_dist):.1f} meters left of you"
             else:
-                if s_dist > 0:
-                    return f"{s_dist:.1f} meters in front of you"
+                overlap_threshold = (config.length + obstacle_shape.length) / 2
+
+                if abs(s_dist) <= overlap_threshold:
+                    return "directly aligned with you"
+                elif s_dist > 0:
+                    gap = s_dist - overlap_threshold
+                    return f"{gap:.1f} meters in front of you"
                 else:
-                    return f"{abs(s_dist):.1f} meters behind you"
+                    gap = abs(s_dist) - overlap_threshold
+                    return f"{gap:.1f} meters behind you"
         except Exception as e:
             print(f"[Error] Failed to compute curvilinear distance: {e}")
             return "far away from you"
