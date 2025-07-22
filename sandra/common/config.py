@@ -16,7 +16,7 @@ class HighwayEnvConfig:
     maximum_lanelet_length: float = 1500.0
 
     action_input: bool = True
-    save_frame: bool = True
+    save_frame: bool = False
 
     def get_save_folder(
         self, model_name: str, seed: int, use_sonia: bool = False
