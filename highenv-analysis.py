@@ -105,6 +105,45 @@ def average_travelled_value(base_dir, model_name, lanes_count, vehicles_density,
         return None
 
 
+def average_travelled_value_finished(base_dir, model_name, lanes_count, vehicles_density, use_sonia=False):
+
+    base_path = Path(base_dir)
+    # Adjust regex based on use_sonia flag
+    if use_sonia:
+        pattern_str = rf"results-True-{re.escape(model_name)}-{lanes_count}-{vehicles_density}-\d+-spot"
+    else:
+        pattern_str = rf"results-True-{re.escape(model_name)}-{lanes_count}-{vehicles_density}-\d+"
+
+    pattern = re.compile(pattern_str)
+    travelled_values = []
+
+    for folder in base_path.iterdir():
+        if folder.is_dir() and pattern.fullmatch(folder.name):
+            csv_file = folder / "evaluation.csv"
+            if csv_file.exists():
+                try:
+                    df = pd.read_csv(csv_file, sep=None, engine='python')  # Let pandas infer delimiter
+                    if "iteration-id" in df.columns:
+                        if pd.to_numeric(df["iteration-id"], errors="coerce").max() == 31.:
+                            val = df.iloc[-1, 1]  # second column (assumed to be the travelled value)
+                            try:
+                                numeric_val = float(val)
+                                travelled_values.append(numeric_val)
+                            except (ValueError, TypeError):
+                                print(f"Warning: Non-numeric travelled value '{val}' in file {csv_file}")
+                    else:
+                        print(f"Warning: 'iteration-id' not found in {csv_file}")
+                except Exception as e:
+                    print(f"Error reading {csv_file}: {e}")
+
+    if travelled_values:
+        avg_travelled = sum(travelled_values) / len(travelled_values)
+        return avg_travelled
+    else:
+        print("No travelled values found where iteration-id reached 31.")
+        return None
+
+
 def average_max_iteration_id(base_dir, model_name, lanes_count, vehicles_density, use_sonia=False):
     """
     Computes the average of the maximum 'iteration-id' values across all evaluation.csv files.
@@ -138,7 +177,10 @@ def average_max_iteration_id(base_dir, model_name, lanes_count, vehicles_density
                     if "iteration-id" in df.columns:
                         max_iter = pd.to_numeric(df["iteration-id"], errors="coerce").max()
                         if pd.notna(max_iter):
+                            if max_iter == 31:
+                                max_iter = 30
                             print(csv_file, max_iter)
+
                             max_iterations.append(max_iter)
                 except Exception as e:
                     print(f"Error reading {csv_file}: {e}")
@@ -200,12 +242,21 @@ def aggregate_verified_stats(base_dir, model_name, lanes_count, vehicles_density
     }
     return result
 
+
+LANE_COUNT = 4
+VEHICLE_DENSITY = 3.0
+USE_SONIA = False
+
 # ---- Call 1: Just Average Travelled ----
-avg = average_travelled_value("./", "gpt-4o", 4, 3.0, use_sonia=False)
+avg = average_travelled_value("./", "gpt-4o", LANE_COUNT, VEHICLE_DENSITY, use_sonia=USE_SONIA)
 print(f"Average Travelled: {avg}")
 
+avg_f = average_travelled_value_finished("./", "gpt-4o", LANE_COUNT, VEHICLE_DENSITY, use_sonia=USE_SONIA)
+print(f"Average Travelled for the finished runs: {avg_f}")
+
+
 # ---- Call 2: Verified-ID Stats ----
-verified_stats = aggregate_verified_stats("./", "gpt-4o", 4, 3.0, use_sonia=False)
+verified_stats = aggregate_verified_stats("./", "gpt-4o", LANE_COUNT, VEHICLE_DENSITY, use_sonia=USE_SONIA)
 print(f"Average Verified-ID (not 3): {verified_stats['average_verified_not_3']}")
 print(f"Percentage of Fail-safe: {verified_stats['percentage_verified_3']}%")
 
@@ -213,12 +264,12 @@ print(f"Percentage of Fail-safe: {verified_stats['percentage_verified_3']}%")
 plot_aggregate_verified_id_histogram(
     base_dir="./",
     model_name="gpt-4o",
-    lanes_count=4,
-    vehicles_density=3.0,
-    use_sonia=False,
-    save_path="aggregate_verified_id_histogram.png"
+    lanes_count=LANE_COUNT,
+    vehicles_density=VEHICLE_DENSITY,
+    use_sonia=USE_SONIA,
+    save_path=f"aggregate_verified_id_histogram_{LANE_COUNT}_{VEHICLE_DENSITY}.png"
 )
 
 # ---- Call 4
-avg_max_iter = average_max_iteration_id("./", "gpt-4o", 4, 3.0, use_sonia=False)
+avg_max_iter = average_max_iteration_id("./", "gpt-4o", LANE_COUNT, VEHICLE_DENSITY, use_sonia=USE_SONIA)
 print(f"Average Max Iteration-ID: {avg_max_iter}")
