@@ -76,8 +76,8 @@ class ReachVerifier(VerifierBase):
         if highenv:
             self.reach_config.vehicle.ego.v_lat_max = 12
             self.reach_config.vehicle.ego.v_lat_min = -12
-            self.reach_config.vehicle.ego.a_lat_max = 6
-            self.reach_config.vehicle.ego.a_lat_min = -6
+            self.reach_config.vehicle.ego.a_lat_max = 4
+            self.reach_config.vehicle.ego.a_lat_min = -4
 
             self.reach_config.vehicle.ego.a_lon_max = 6
             self.reach_config.vehicle.ego.a_lon_min = -6
@@ -284,8 +284,8 @@ class ReachVerifier(VerifierBase):
         update_dict = {
             "Vehicle": {
                 0: {  # 0 means that all vehicles will be changed
-                    "a_max": 6.0,
-                    "v_max": 20.0,
+                    "a_max": 12.0,
+                    "v_max": 30.0,
                     "compute_occ_m1": True,
                     "compute_occ_m2": True,
                     "compute_occ_m3": True,
@@ -294,7 +294,7 @@ class ReachVerifier(VerifierBase):
             },
             "EgoVehicle": {
                 0: {  # ID is ignored for ego vehicle (which is created based on cr_planning problem)
-                    "a_max": 1.0,
+                    "a_max": 6.0,
                     "length": 5.0,
                     "width": 2.0,
                 }
