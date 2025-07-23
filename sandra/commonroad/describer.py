@@ -67,6 +67,9 @@ class CommonRoadDescriber(DescriberBase):
         self.planning_problem = planning_problem
         self.country = country
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
+        if self.ego_vehicle is not None:
+            config.length = self.ego_vehicle.obstacle_shape.length
+            config.width = self.ego_vehicle.obstacle_shape.width
         self.describe_ttc = describe_ttc
         self.highway_env = highway_env
         assert 1 <= config.k <= 10, f"Unsupported k {config.k}"
