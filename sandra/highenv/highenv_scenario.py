@@ -46,6 +46,7 @@ class HighwayEnvScenario:
         horizon: int = 30,
         maximum_lanelet_length: float = 1000,
         use_sonia: bool = False,
+        video_folder: str = None,
     ):
         self.seed = seed
         if isinstance(config, dict):
@@ -55,9 +56,11 @@ class HighwayEnvScenario:
             name_prefix = f"highway_{seed}"
             if use_sonia:
                 name_prefix += "_spot"
+            if not video_folder:
+                video_folder = "run"
             self._env = RecordVideo(
                 env,
-                video_folder="run",
+                video_folder=video_folder,
                 episode_trigger=lambda e: True,
                 name_prefix=name_prefix,
             )

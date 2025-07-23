@@ -93,6 +93,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
+                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
             )
         else:
             self.scenario = HighwayEnvScenario(
@@ -102,6 +103,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
+                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
             )
         self.scenario.time_step = self.time_step
         cr_scenario, _, cr_planning_problem = self.scenario.commonroad_representation

@@ -325,6 +325,8 @@ def draw_scenario_paper(
     if not output_path:
         output_path = Path(__file__).resolve().parents[2] / "output"
     os.makedirs(output_path, exist_ok=True)
+    os.makedirs(f"{output_path}/{str(scenario.scenario_id)}", exist_ok=True)
+
     plt.savefig(
         f"{output_path}/{str(scenario.scenario_id)}/scenario.svg",
         format="svg",
