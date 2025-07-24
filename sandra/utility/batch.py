@@ -17,6 +17,11 @@ from sandra.llm import get_structured_response
 from sandra.utility.vehicle import extract_ego_vehicle
 from sandra.verifier import VerificationStatus
 
+import matplotlib
+
+print(matplotlib.get_backend())
+matplotlib.use("Agg")
+
 
 def load_scenarios_recursively(scenario_folder: str) -> List[Tuple[str, str]]:
     """
@@ -105,11 +110,11 @@ def batch_labelling(
             headers.extend(["Match_Top1", "Match_TopK"])
 
         writer.writerow(headers)
-
+        nr = 0
         for i, (scenario_id, file_dir) in enumerate(
             tqdm(scenario_entries, desc="Scenarios processed", colour="red")
         ):
-            if nr_scenarios is not None and i >= nr_scenarios:
+            if nr > nr_scenarios:
                 break
             scenario_path = os.path.join(file_dir, scenario_id + ".xml")
             print(f"\nProcessing scenario '{scenario_id}' in {file_dir}")
@@ -135,6 +140,8 @@ def batch_labelling(
                     system_prompt = decider.describer.system_prompt()
                     user_prompt = decider.describer.user_prompt()
                     prompt = system_prompt + user_prompt
+
+                    print(system_prompt)
 
                     if evaluate_llm:
                         schema = decider.describer.schema()
@@ -196,13 +203,15 @@ def batch_labelling(
                         ego_lane_network,
                         scenario_folder=scenario_folder,
                     )
-                    status = reach_ver.verify(ranking[0], visualization=False)
+                    print(ranking[0])
+                    status = reach_ver.verify(ranking[0])
                     llm1_verified = status == VerificationStatus.SAFE
                     if llm1_verified == True:
                         llmk_verified = True
                     else:
                         for action_pair in ranking[1:]:
-                            status = reach_ver.verify(action_pair, visualization=False)
+                            print(action_pair)
+                            status = reach_ver.verify(action_pair)
                             llmk_verified = status == VerificationStatus.SAFE
                             if llmk_verified == True:
                                 break
@@ -211,7 +220,7 @@ def batch_labelling(
                     llmk_safe += llmk_verified
 
                     if evaluate_trajectory_labels:
-                        status = reach_ver.verify(traj_actions[0], visualization=False)
+                        status = reach_ver.verify(traj_actions[0])
                         highd_verified = status == VerificationStatus.SAFE
 
                     highd_safe += highd_verified
@@ -258,7 +267,7 @@ def batch_labelling(
                     evaluate_reachset_labels,
                     config.k,
                 )
-
+                nr += 1
             except Exception as e:
                 print(f"Failed to label '{scenario_id}': {e}")
 
@@ -375,7 +384,7 @@ def _write_labels_row(
 
 
 if __name__ == "__main__":
-    scenarios_path = "/home/liny/Documents/commonroad/highD-sandra-0.04/"
+    scenarios_path = "/home/liny/Documents/commonroad/mona-update-fixed/"
     config = SanDRAConfiguration()
     config.h = 25
     config.k = 3
@@ -384,9 +393,9 @@ if __name__ == "__main__":
         config,
         # role="Drive cautiously", # aggressively
         evaluate_prompt=True,
-        evaluate_llm=False,
-        evaluate_safety=False,
+        evaluate_llm=True,
+        evaluate_safety=True,
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
-        nr_scenarios=10000,
+        nr_scenarios=800,
     )
