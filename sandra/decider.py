@@ -11,13 +11,15 @@ from sandra.llm import get_structured_response
 from sandra.common.config import SanDRAConfiguration
 from sandra.verifier import VerifierBase, DummyVerifier, VerificationStatus
 
+from highway_env.vehicle.controller import ControlledVehicle
+
 
 class Decider:
     def __init__(
         self,
         config: SanDRAConfiguration,
         describer: DescriberBase,
-        verifier: Optional[Union[VerifierBase, ReachVerifier]],
+        verifier: Optional[Union[VerifierBase, ReachVerifier]] = None,
         save_path: Optional[str] = None,
     ):
         self.config: SanDRAConfiguration = config
@@ -126,8 +128,16 @@ class Decider:
                 print(f"Successfully verified {action}.")
                 new_row["verified-id"] = i
                 self.save_iteration(new_row)
+
+                ControlledVehicle.KP_A = 1 / 0.6
+                ControlledVehicle.DELTA_SPEED = 5
+
                 return action
             print(f"Failed to verify {action}.")
         new_row["verified-id"] = len(ranking)
         self.save_iteration(new_row)
+
+        ControlledVehicle.KP_A = 1 / 0.2
+        ControlledVehicle.DELTA_SPEED = 15
+
         return (LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE)

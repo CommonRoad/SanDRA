@@ -54,9 +54,10 @@ class CommonRoadDescriber(DescriberBase):
         role: Optional[str] = None,
         goal: Optional[str] = None,
         scenario_type: Optional[str] = None,
-        describe_ttc=True,
+        describe_ttc: bool = True,
         past_action: List[Union[LongitudinalAction, LateralAction]] = None,
         country: Optional[str] = "Germany",
+        highway_env: bool = False,
     ):
         self.ego_lane_network: EgoLaneNetwork = None
         self.ego_direction = None
@@ -66,7 +67,11 @@ class CommonRoadDescriber(DescriberBase):
         self.planning_problem = planning_problem
         self.country = country
         self.ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
+        if self.ego_vehicle is not None:
+            config.length = self.ego_vehicle.obstacle_shape.length
+            config.width = self.ego_vehicle.obstacle_shape.width
         self.describe_ttc = describe_ttc
+        self.highway_env = highway_env
         assert 1 <= config.k <= 10, f"Unsupported k {config.k}"
         self.k = config.k
 
@@ -211,14 +216,11 @@ class CommonRoadDescriber(DescriberBase):
         )
         if not implicit_lanelet_description:
             return None
+
         vehicle_description = f"It is driving on {implicit_lanelet_description} "
-        ego_position = self.ego_state.position
-        # todo: clcs distance
-        # relative_vehicle_direction = vehicle_state.position - ego_position
-        # angle = calculate_relative_orientation(
-        #     self.ego_direction, relative_vehicle_direction
-        # )
-        # vehicle_description += f"It is located {self.angle_description(angle)} you, "
+        vehicle_description += \
+            f"and is {self.distance_description_clcs(self.ego_state.position, vehicle_state.position, vehicle.obstacle_shape, self.config, self.ego_lane_network.lane.clcs, direction)}. "
+
         vehicle_description += (
             f"Its velocity is {self.velocity_descr(vehicle_state)}, "
             f"orientation is {self.orientation_descr(vehicle_state)}, "
@@ -368,6 +370,9 @@ class CommonRoadDescriber(DescriberBase):
         longitudinal_actions = [
             x for x in LongitudinalAction if x != LongitudinalAction.UNKNOWN
         ]
+        # In highway environments, disallow STOP
+        if self.highway_env and LongitudinalAction.STOP in longitudinal_actions:
+            longitudinal_actions.remove(LongitudinalAction.STOP)
         return lateral_actions, longitudinal_actions
 
     def schema(self) -> dict[str, Any]:

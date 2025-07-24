@@ -85,6 +85,6 @@ class TestReachVerifier(unittest.TestCase):
 
     def test_verification_sonia(self):
         status = self.reach_ver.verify_sonia(
-            [LongitudinalAction.STOP], visualization=True
+            [LongitudinalAction.STOP]
         )
         assert status == VerificationStatus.SAFE

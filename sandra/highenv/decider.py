@@ -66,10 +66,13 @@ class HighEnvDecider(Decider):
             LongitudinalAction.DECELERATE: 4,
         }
         self.seed = seed
-        self.update(env_config)
+        _, planning_problem = self.update(env_config)
 
         # Initialize the past_action list
         self.past_actions: list = []
+
+        # record the initial position
+        self.initial_position = planning_problem.initial_state.position
 
     def record_action(
         self,
@@ -90,6 +93,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
+                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
             )
         else:
             self.scenario = HighwayEnvScenario(
@@ -99,9 +103,9 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
+                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
             )
         self.scenario.time_step = self.time_step
-        self.time_step += 1
         cr_scenario, _, cr_planning_problem = self.scenario.commonroad_representation
         self.describer = CommonRoadDescriber(
             cr_scenario,
@@ -110,6 +114,7 @@ class HighEnvDecider(Decider):
             self.config,
             role="Don't change the lanes too often. ",
             scenario_type="highway",
+            highway_env=True,
         )
         road_network = RoadNetwork.from_lanelet_network_and_position(
             cr_scenario.lanelet_network,
@@ -135,21 +140,22 @@ class HighEnvDecider(Decider):
     def run(self):
         if self.config.highway_env.action_input:
             done = truncated = False
-            # plt.imshow(self.scenario._env.render())
-            # plt.show()
+            svg_save_folder = self.config.highway_env.get_save_folder(
+                self.config.model_name, self.seed, self.config.use_sonia
+            )
+            os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):
-                self.time_step += 1
+                print(f"***** Simulation frame {self.time_step}: ...")
                 if (
                     self.time_step
-                    > self.config.highway_env.policy_frequency
-                    * self.config.highway_env.duration
-                    + 1
+                    > self.config.highway_env.duration  # self.config.highway_env.policy_frequency *
                 ):
                     break
                 if self.scenario:
                     self.update(self.scenario._env)
                 else:
                     self.update(None)
+
                 longitudinal_action, lateral_action = self.decide(self.past_actions)
 
                 # record the actions
@@ -164,9 +170,37 @@ class HighEnvDecider(Decider):
                     action = self.longitudinal_action_to_id[longitudinal_action]
                 obs, reward, done, truncated, info = self.scenario._env.step(action)
                 # self.describer.update_with_observation(obs)
-                self.scenario._env.render()
-                # plt.imshow(self.scenario._env.render())
-                # plt.show()
+                # Render frame
+                frame = self.scenario._env.render()  # RGB NumPy array
+                if self.config.highway_env.save_frame:
+                    # Save as SVG
+                    fig, ax = plt.subplots()
+                    ax.imshow(frame)
+                    ax.axis("off")
+                    ax.set_aspect("equal")
+                    fig.savefig(
+                        os.path.join(
+                            svg_save_folder, f"frame_{self.time_step:04d}.svg"
+                        ),
+                        format="svg",
+                        bbox_inches="tight",
+                        pad_inches=0,
+                    )
+                    plt.close(fig)
+                if done:
+                    print(
+                        "[red]Simulation crash after running steps: [/red] ",
+                        self.time_step,
+                    )
+                    break
+                if truncated:
+                    print(
+                        "[red]The agent reaches the terminal state: [/red]",
+                        self.time_step,
+                    )
+                    break
+                # only add the time step after the simulation
+                self.time_step += 1
             self.scenario._env.close()
         else:
 
@@ -259,7 +293,15 @@ class HighEnvDecider(Decider):
                 print(f" Actions {action_first}, {action_second}")
                 action = action_second, action_first
                 _ = self.scenario.step(action)
-            self.scenario._env.close()
+                self.scenario._env.close()
+
+        # store the travelled distance
+        _, planning_problem = self.update(None)
+        travelled_distance = (
+            planning_problem.initial_state.position[0] - self.initial_position[0]
+        )
+        new_row = {"iteration-id": "Travelled", "Lateral1": travelled_distance}
+        self.save_iteration(new_row)
 
     @staticmethod
     def configure(

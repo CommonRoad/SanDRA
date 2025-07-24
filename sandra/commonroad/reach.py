@@ -69,15 +69,16 @@ class ReachVerifier(VerifierBase):
             scenario_folder + str(scenario.scenario_id) + ".xml"
         )
         self.reach_config.vehicle.ego.v_lon_min = 0
-        # fix the dimension
-        self.reach_config.vehicle.ego.length = sandra_config.length
-        self.reach_config.vehicle.ego.width = sandra_config.width
+
         self.reach_config.planning.dt = scenario.dt
         if highenv:
             self.reach_config.vehicle.ego.v_lat_max = 12
             self.reach_config.vehicle.ego.v_lat_min = -12
-            self.reach_config.vehicle.ego.a_lat_max = 10
-            self.reach_config.vehicle.ego.a_lat_min = -10
+            self.reach_config.vehicle.ego.a_lat_max = 4
+            self.reach_config.vehicle.ego.a_lat_min = -4
+
+            self.reach_config.vehicle.ego.a_lon_max = 6
+            self.reach_config.vehicle.ego.a_lon_min = -6
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
 
@@ -92,6 +93,11 @@ class ReachVerifier(VerifierBase):
                     ego_lane_network=ego_lane_network,
                     scenario=self.reach_config.scenario,
                 )
+            self.reach_config.vehicle.ego.length = ego_vehicle.obstacle_shape.length
+            self.reach_config.vehicle.ego.width = ego_vehicle.obstacle_shape.width
+        else:
+            self.reach_config.vehicle.ego.length = sandra_config.length
+            self.reach_config.vehicle.ego.width = sandra_config.width
 
         # initialize semantic model and traffic rule interface
         self.semantic_model = SemanticModel(self.reach_config)
@@ -205,6 +211,9 @@ class ReachVerifier(VerifierBase):
                 raise AssertionError(
                     f"No current lane assigned to ego for action {action}"
                 )
+            # fixme: reach semantic error -- no region for single lane
+            if not self.ego_lane_network.lane_left_adjacent and not self.ego_lane_network.lane_right_adjacent:
+                return "LTL true"
             clause = self._format_lane_clause([self.ego_lane_network.lane])
             return ActionLTL.from_action(action).replace("InCurrentLane", clause)
 
@@ -249,16 +258,21 @@ class ReachVerifier(VerifierBase):
         )
 
         print("[Verifier] Computing reachable sets...")
-        # the formulas corresponding to all actions are conjunctively combined.
-        self.reach_interface.compute_reachable_sets(
-            step_end=self.sandra_config.h, verbose=self.verbose
-        )
+        try:
+            # the formulas corresponding to all actions are conjunctively combined.
+            self.reach_interface.compute_reachable_sets(
+                step_end=self.sandra_config.h, verbose=self.verbose
+            )
+        except Exception as e:
+            print("[Error] Exception during reachable set computation:", str(e))
+            return VerificationStatus.UNSAFE
 
         # plot
         if self.sandra_config.visualize_reach:
             util_visual.plot_scenario_with_reachable_sets(
                 self.reach_interface, save_gif=True
             )
+            util_visual.plot_scenario_with_regions(self.semantic_model, "CVLN")
 
         # checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
         if not self.reach_interface.reachable_set[self.sandra_config.h]:
@@ -277,8 +291,8 @@ class ReachVerifier(VerifierBase):
         update_dict = {
             "Vehicle": {
                 0: {  # 0 means that all vehicles will be changed
-                    "a_max": 6.0,
-                    "v_max": 20.0,
+                    "a_max": 12.0,
+                    "v_max": 30.0,
                     "compute_occ_m1": True,
                     "compute_occ_m2": True,
                     "compute_occ_m3": True,
@@ -287,7 +301,7 @@ class ReachVerifier(VerifierBase):
             },
             "EgoVehicle": {
                 0: {  # ID is ignored for ego vehicle (which is created based on cr_planning problem)
-                    "a_max": 1.0,
+                    "a_max": 6.0,
                     "length": 5.0,
                     "width": 2.0,
                 }

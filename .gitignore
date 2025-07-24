@@ -178,5 +178,6 @@ sandra/highenv/run/
 test/output
 output
 */run/
-/run/
+/run*
 results*/
+scenarios/ZAM_Sandra-*

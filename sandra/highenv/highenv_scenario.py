@@ -14,6 +14,9 @@ from commonroad.scenario.state import InitialState, CustomState
 from crpred.basic_models.constant_velocity_predictor import (
     ConstantVelocityCurvilinearPredictor,
 )
+from crpred.basic_models.constant_acceleration_predictor import (
+    ConstantAccelerationLinearPredictor,
+)
 from crpred.utility.config import PredictorParams
 from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
@@ -43,20 +46,30 @@ class HighwayEnvScenario:
         horizon: int = 30,
         maximum_lanelet_length: float = 1000,
         use_sonia: bool = False,
+        video_folder: str = None,
     ):
         self.seed = seed
         if isinstance(config, dict):
             env = gymnasium.make(
                 "highway-v0", render_mode="rgb_array", config=config["highway-v0"]
             )
+            name_prefix = f"highway_{seed}"
+            if use_sonia:
+                name_prefix += "_spot"
+            if not video_folder:
+                video_folder = "run"
             self._env = RecordVideo(
-                env, video_folder="run", episode_trigger=lambda e: True
+                env,
+                video_folder=video_folder,
+                episode_trigger=lambda e: True,
+                name_prefix=name_prefix,
             )
             # self._env.unwrapped.set_record_video_wrapper(env)
             self.observation, _ = self._env.reset(seed=seed)
         else:
             self._env = config
             self.observation = None
+
         self.done = self.truncated = False
         self.use_sonia = use_sonia  # whether set-based prediction
         self.scenario: AbstractEnv = cast(AbstractEnv, self._env.unwrapped)
@@ -129,26 +142,23 @@ class HighwayEnvScenario:
         road_network = self.scenario.vehicle.road.network
         end = lane.start + lane.direction * self.maximum_lanelet_length
         # Generate lanelet vertices
-        left_vertices = self._highenv_coordinate_to_commonroad(
+        center_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(lane.start, end, lane.direction)
         )
         center_offset = lane.direction_lateral * (lane.width / 2)
-        center_vertices = self._highenv_coordinate_to_commonroad(
+        left_vertices = self._highenv_coordinate_to_commonroad(
+            self._create_vertices_along_line(
+                lane.start - center_offset, end - center_offset, lane.direction
+            )
+        )
+        right_vertices = self._highenv_coordinate_to_commonroad(
             self._create_vertices_along_line(
                 lane.start + center_offset, end + center_offset, lane.direction
             )
         )
-        right_offset = lane.direction_lateral * lane.width
-        right_vertices = self._highenv_coordinate_to_commonroad(
-            self._create_vertices_along_line(
-                lane.start + right_offset, end + right_offset, lane.direction
-            )
-        )
 
         # Generate lanelet id
-        lane_index = road_network.get_closest_lane_index(
-            lane.start + center_offset, lane.heading
-        )
+        lane_index = road_network.get_closest_lane_index(lane.start, lane.heading)
         lanelet_id = self._next_id()
         assert lanelet_id == self._convert_lane_id(
             lane_index
@@ -160,7 +170,7 @@ class HighwayEnvScenario:
         adjacent_right_same_direction = None
         if (
             adj_right := road_network.get_closest_lane_index(
-                lane.start + 3 * center_offset, lane.heading
+                lane.start + 2 * center_offset, lane.heading
             )
         ) in neighbors:
             adjacent_right = self._convert_lane_id(adj_right)
@@ -174,7 +184,7 @@ class HighwayEnvScenario:
         adjacent_left_same_direction = None
         if (
             adj_left := road_network.get_closest_lane_index(
-                lane.start - center_offset, lane.heading
+                lane.start - 2 * center_offset, lane.heading
             )
         ) in neighbors:
             adjacent_left = self._convert_lane_id(adj_left)
@@ -209,9 +219,7 @@ class HighwayEnvScenario:
         self, vehicle: MDPVehicle | IDMVehicle, obstacle_id: int
     ) -> DynamicObstacle:
         obstacle_type = ObstacleType.CAR
-        top_left_corner = vehicle.position
-        # First, transform top-left into center coordinates, then
-        center = top_left_corner + np.array([vehicle.LENGTH, vehicle.WIDTH])
+        center = vehicle.position
         center = self._highenv_coordinate_to_commonroad(center)
         obstacle_shape = Rectangle(
             vehicle.LENGTH, vehicle.WIDTH, center=np.array([0.0, 0.0]), orientation=0.0
@@ -223,7 +231,7 @@ class HighwayEnvScenario:
             acceleration=vehicle.action["acceleration"],
             time_step=0,
             slip_angle=math.atan2(vehicle.velocity[1], vehicle.velocity[0]),
-            yaw_rate=0.0,
+            yaw_rate=-vehicle.action["steering"],
         )
 
         lanelet_id = self._convert_lane_id(vehicle.lane_index)
@@ -297,6 +305,7 @@ class HighwayEnvScenario:
                 num_steps_prediction=self.prediction_length, dt=self.dt
             )
             predictor = ConstantVelocityCurvilinearPredictor(predict_config)
+            # predictor = ConstantAccelerationLinearPredictor(predict_config)
             return predictor.predict(scenario, initial_time_step=1)
 
     @property
@@ -353,7 +362,14 @@ class HighwayEnvScenario:
             )
 
         # Add all obstacle predictions
-        scenario = self._prediction(scenario)
+        try:
+            scenario = self._prediction(scenario)
+        except ValueError as e:
+            print(f"[Warning] Prediction failed due to value error: {e}")
+            pass
+        except Exception as e:
+            print(f"[Error] Unexpected prediction failure: {e}")
+            pass
 
         # Create planning problem
         planning_problem = self._make_commonroad_planning_problem(
