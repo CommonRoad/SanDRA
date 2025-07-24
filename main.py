@@ -7,6 +7,11 @@ from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.llm import get_structured_response
 from sandra.utility.general import extract_scenario_and_planning_problem
 
+import matplotlib
+
+print(matplotlib.get_backend())
+matplotlib.use("Agg")
+
 
 def main(scenario_path: str):
     config = SanDRAConfiguration()
@@ -43,6 +48,7 @@ if __name__ == "__main__":
         "DEU_LocationALower-11_10_T-1.xml",
         "DEU_Gar-1_1_T-1.xml",
         "DEU_Goeppingen-37_1_T-4.xml",
+        "DEU_MONAEast-2_14326_T-14351.xml"
     ]
 
     scenario_folder = os.path.join(PROJECT_ROOT, "scenarios")

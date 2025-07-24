@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from typing import List, Tuple
 
+import pandas as pd
 from commonroad.common.file_reader import CommonRoadFileReader
 from tqdm import tqdm
 
@@ -65,10 +66,10 @@ def batch_labelling(
 
     if role:
         safe_role = re.sub(r"[^a-zA-Z0-9_]+", "", role.replace(" ", "_").lower())
-        filename = f"batch_labelling_results_{safe_role}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"batch_labelling_results_{config.model_name}_{safe_role}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     else:
         filename = (
-            f"batch_labelling_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            f"batch_labelling_results_{config.model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         )
     csv_path = os.path.join(scenario_folder, filename)
 
@@ -104,7 +105,7 @@ def batch_labelling(
         if evaluate_llm and evaluate_safety:
             headers.extend(["Safe_Top1", "Safe_TopK"])
             if evaluate_trajectory_labels:
-                headers.extend(["highD_safe"])
+                headers.extend(["MONA_safe"])
 
         if evaluate_llm and evaluate_trajectory_labels:
             headers.extend(["Match_Top1", "Match_TopK"])
@@ -114,7 +115,9 @@ def batch_labelling(
         for i, (scenario_id, file_dir) in enumerate(
             tqdm(scenario_entries, desc="Scenarios processed", colour="red")
         ):
-            if nr > nr_scenarios:
+            # if scenario_id != "DEU_MONAEast-2_4316_T-4341": # DEU_MONAEast-2_36140_T-36165
+            #     continue
+            if nr >= nr_scenarios:
                 break
             scenario_path = os.path.join(file_dir, scenario_id + ".xml")
             print(f"\nProcessing scenario '{scenario_id}' in {file_dir}")
@@ -203,8 +206,15 @@ def batch_labelling(
                         ego_lane_network,
                         scenario_folder=scenario_folder,
                     )
+
+                    ## if initial reachable set is
+
                     print(ranking[0])
                     status = reach_ver.verify(ranking[0])
+                    # reach_ver.reach_interface.propagated_set[0]
+                    if reach_ver.reach_interface.propagated_set[0] == []:
+                        print(f"\nProcessing scenario '{scenario_id}' failed, reach empty")
+                        continue
                     llm1_verified = status == VerificationStatus.SAFE
                     if llm1_verified == True:
                         llmk_verified = True
@@ -222,6 +232,8 @@ def batch_labelling(
                     if evaluate_trajectory_labels:
                         status = reach_ver.verify(traj_actions[0])
                         highd_verified = status == VerificationStatus.SAFE
+                        if status == VerificationStatus.UNSAFE:
+                            continue
 
                     highd_safe += highd_verified
 
@@ -295,7 +307,7 @@ def batch_labelling(
             f"  Safe with k actions: {ratio_safek:.2%} ({llmk_safe}/{total_scenarios})"
         )
         print(
-            f"  highD safely labeled: {ratio_highd:.2%} ({highd_safe}/{total_scenarios})"
+            f"  MONA safely labeled: {ratio_highd:.2%} ({highd_safe}/{total_scenarios})"
         )
     else:
         print("\nNo scenarios were evaluated for matching.")
@@ -397,5 +409,7 @@ if __name__ == "__main__":
         evaluate_safety=True,
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
-        nr_scenarios=800,
+        nr_scenarios=40,
     )
+
+

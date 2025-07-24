@@ -9,8 +9,14 @@ from sandra.commonroad.plan import ReactivePlanner
 from sandra.commonroad.reach import ReachVerifier, VerificationStatus
 from sandra.actions import LongitudinalAction, LateralAction
 
+import matplotlib
+
+print(matplotlib.get_backend())
+matplotlib.use("TkAgg")
+
+
 # scenario basic information
-name_scenario = "DEU_Goeppingen-37_1_T-4"
+name_scenario = "DEU_MONAEast-2_4316_T-4341"
 path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
 scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
     lanelet_assignment=True
@@ -37,7 +43,7 @@ ego_lane_network = EgoLaneNetwork.from_route_planner(
 reach_ver = ReachVerifier(scenario, planning_problem, config, ego_lane_network)
 
 status = reach_ver.verify(
-    [LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE], visualization=True
+    [LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE],
 )
 
 # plot the reachable set

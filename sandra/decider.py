@@ -19,7 +19,7 @@ class Decider:
         self,
         config: SanDRAConfiguration,
         describer: DescriberBase,
-        verifier: Optional[Union[VerifierBase, ReachVerifier]],
+        verifier: Optional[Union[VerifierBase, ReachVerifier]] = None,
         save_path: Optional[str] = None,
     ):
         self.config: SanDRAConfiguration = config
