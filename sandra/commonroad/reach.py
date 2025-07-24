@@ -69,9 +69,7 @@ class ReachVerifier(VerifierBase):
             scenario_folder + str(scenario.scenario_id) + ".xml"
         )
         self.reach_config.vehicle.ego.v_lon_min = 0
-        # fix the dimension
-        self.reach_config.vehicle.ego.length = sandra_config.length
-        self.reach_config.vehicle.ego.width = sandra_config.width
+
         self.reach_config.planning.dt = scenario.dt
         if highenv:
             self.reach_config.vehicle.ego.v_lat_max = 12
@@ -95,6 +93,11 @@ class ReachVerifier(VerifierBase):
                     ego_lane_network=ego_lane_network,
                     scenario=self.reach_config.scenario,
                 )
+            self.reach_config.vehicle.ego.length = ego_vehicle.obstacle_shape.length
+            self.reach_config.vehicle.ego.width = ego_vehicle.obstacle_shape.width
+        else:
+            self.reach_config.vehicle.ego.length = sandra_config.length
+            self.reach_config.vehicle.ego.width = sandra_config.width
 
         # initialize semantic model and traffic rule interface
         self.semantic_model = SemanticModel(self.reach_config)
@@ -208,6 +211,9 @@ class ReachVerifier(VerifierBase):
                 raise AssertionError(
                     f"No current lane assigned to ego for action {action}"
                 )
+            # fixme: reach semantic error -- no region for single lane
+            if not self.ego_lane_network.lane_left_adjacent and not self.ego_lane_network.lane_right_adjacent:
+                return "LTL true"
             clause = self._format_lane_clause([self.ego_lane_network.lane])
             return ActionLTL.from_action(action).replace("InCurrentLane", clause)
 
@@ -266,6 +272,7 @@ class ReachVerifier(VerifierBase):
             util_visual.plot_scenario_with_reachable_sets(
                 self.reach_interface, save_gif=True
             )
+            util_visual.plot_scenario_with_regions(self.semantic_model, "CVLN")
 
         # checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
         if not self.reach_interface.reachable_set[self.sandra_config.h]:
