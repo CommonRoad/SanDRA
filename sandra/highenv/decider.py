@@ -149,7 +149,6 @@ class HighEnvDecider(Decider):
                 if (
                     self.time_step
                     > self.config.highway_env.duration  # self.config.highway_env.policy_frequency *
-                    + 1
                 ):
                     break
                 if self.scenario:
