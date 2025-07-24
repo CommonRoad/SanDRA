@@ -16,8 +16,8 @@ class HighwayEnvConfig:
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
-    model_name = "gpt-4o" # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
-    use_ollama = False
+    model_name = "qwen3-8b-highD:latest" # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
+    use_ollama = True
     a_lim = 0.2
     v_err = 0.1
 

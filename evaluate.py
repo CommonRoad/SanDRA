@@ -67,12 +67,17 @@ def evaluate_highd_results():
             raise ValueError(f"Found {len(matching_rows)} matches for scenario {scenario_id}")
         lateral_label = row["Trajectory_Lateral"]
         longitudinal_label = row["Trajectory_Longitudinal"]
+        print(len(match_at))
+        found_none = True
         for i in range(k):
             lateral = result_df[f"Lateral{i+1}"]
             longitual = result_df[f"Longitudinal{i+1}"]
             if lateral == lateral_label and longitual == longitudinal_label:
                 match_at.append(i + 1)
+                found_none = False
                 break
+        if found_none:
+            match_at.append(i + 1)
 
     save_at_1 = [x == 1 for x in save_at]
     save_at_1 = (sum(save_at_1) / len(save_at_1)) * 100

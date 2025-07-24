@@ -20,6 +20,10 @@ def main():
     config = SanDRAConfiguration()
     path_to_scenarios = "/home/sebastian/Documents/Uni/Sandra/highd_scenarios/"
     path_to_results = f"results-highD-{config.model_name}/"
+
+    if not os.path.exists(path_to_results):
+        os.makedirs(path_to_results)
+
     results = [x[:-4] for x in os.listdir(path_to_results) if x.endswith(".csv")]
 
     for filename in os.listdir(path_to_scenarios):

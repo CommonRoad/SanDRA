@@ -269,7 +269,7 @@ class DescriberBase(ABC):
         role = f"{self.role}\n" if self.role else ""
         goal = f"{self.goal}\n" if self.goal else ""
 
-        return (
+        system_prompt = (
             "You are driving a car and need to make a high-level driving decision.\n"
             f"{role}"
             f"{goal}"
@@ -277,6 +277,8 @@ class DescriberBase(ABC):
             f"{self._describe_schema()}"
             f"{self._describe_past_actions(past_actions)}"
         )
+        if self.config.use_ollama:
+            system_prompt += f"\n /no_think"
         # Keep these things in mind:
         # {reminder_description}
         # """

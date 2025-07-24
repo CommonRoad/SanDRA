@@ -1,0 +1,5 @@
+accelerate
+peft
+trl
+bitsandbytes
+transformers
