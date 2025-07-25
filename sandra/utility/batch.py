@@ -57,8 +57,21 @@ def batch_labelling(
     evaluate_trajectory_labels: bool = True,
     evaluate_reachset_labels: bool = True,
     nr_scenarios: int = None,
+    given_csv: str = None
 ):
     scenario_entries = load_scenarios_recursively(scenario_folder)
+    # Load already processed scenario IDs if given_csv is provided
+
+    processed_scenario_ids = set()
+    if given_csv and os.path.exists(given_csv):
+        try:
+            df_existing = pd.read_csv(given_csv)
+            if "ScenarioID" in df_existing.columns:
+                processed_scenario_ids = set(df_existing["ScenarioID"].astype(str))
+            else:
+                print(f"Warning: 'ScenarioID' column not found in {given_csv}.")
+        except Exception as e:
+            print(f"Error reading {given_csv}: {e}")
 
     if not scenario_entries:
         print("No scenarios found to process.")
@@ -117,6 +130,11 @@ def batch_labelling(
         ):
             # if scenario_id != "DEU_MONAEast-2_4316_T-4341": # DEU_MONAEast-2_36140_T-36165
             #     continue
+            # Skip if scenario_id already processed
+            if scenario_id in processed_scenario_ids:
+                print(f"Skipping scenario {scenario_id} as it is already contained in {given_csv}.")
+                continue
+
             if nr >= nr_scenarios:
                 break
             scenario_path = os.path.join(file_dir, scenario_id + ".xml")
@@ -234,8 +252,8 @@ def batch_labelling(
                         highd_verified = status == VerificationStatus.SAFE
                         if status == VerificationStatus.UNSAFE:
                             continue
-
-                    highd_safe += highd_verified
+                    if highd_verified:
+                        highd_safe += highd_verified
 
                 match_top1 = None
                 match_topk = None
@@ -396,20 +414,23 @@ def _write_labels_row(
 
 
 if __name__ == "__main__":
-    scenarios_path = "/home/liny/Documents/commonroad/mona-update-fixed/"
+    scenarios_path = "/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/"
+    # given_csv = "/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/batch_labelling_results_gpt-4o_drive_aggressively__20250724_142056.csv"
     config = SanDRAConfiguration()
+    config.model_name = "ft:gpt-4o-2024-08-06:tum::BsuinSqR"
     config.h = 25
     config.k = 3
     batch_labelling(
         scenarios_path,
         config,
-        # role="Drive cautiously", # aggressively
+        # role="Drive aggressively. ", # Drive aggressively/ cautiously
         evaluate_prompt=True,
         evaluate_llm=True,
         evaluate_safety=True,
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
-        nr_scenarios=40,
+        nr_scenarios=801,
+        given_csv=None
     )
 
 
