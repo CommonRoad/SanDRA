@@ -30,7 +30,7 @@ from sandra.common.config import (
 from sandra.utility.vehicle import extract_ego_vehicle
 from sandra.common.road_network import EgoLaneNetwork, Lane
 from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
-from spot_interface import SPOTInterface
+from commonroad_spot.spot_interface import SPOTInterface
 
 
 class ReachVerifier(VerifierBase):
