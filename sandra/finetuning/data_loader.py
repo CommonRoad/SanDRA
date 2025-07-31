@@ -260,5 +260,13 @@ def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
 
 
 if __name__ == "__main__":
-    generate_conversations("conversations.jsonl")
-    split_fine_tuning_samples("conversations.jsonl")
+    df = pd.read_csv("labeled_highd_scenarios.csv")
+    k = 2200
+    full_df = df.sample(n=k, random_state=42)  # random_state for reproducibility
+    training_df = full_df.iloc[:2000]
+    validation_df = full_df.iloc[2000:]
+    # Save to new CSV file
+    training_df.to_csv('training.csv', index=False)
+    validation_df.to_csv('validation.csv', index=False)
+    # generate_conversations("conversations-new.jsonl")
+    # split_fine_tuning_samples("conversations-new.jsonl")

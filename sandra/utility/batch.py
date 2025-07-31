@@ -47,6 +47,18 @@ def load_scenarios_recursively(scenario_folder: str) -> List[Tuple[str, str]]:
     return scenario_ids
 
 
+def extract_first_column_csv(filename):
+    """Extract first column using Python's csv module"""
+    first_column = []
+    with open(filename, 'r', newline='', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)  # Skip header row
+        for row in reader:
+            if row:  # Check if row is not empty
+                first_column.append(str(row[0]))  # Convert to string
+    return first_column
+
+
 def batch_labelling(
     scenario_folder: str,
     config: SanDRAConfiguration,
@@ -86,6 +98,7 @@ def batch_labelling(
         )
     csv_path = os.path.join(scenario_folder, filename)
 
+    already_done = [] #extract_first_column_csv(csv_path)
     total_scenarios = 0
     top1_hits = 0
     topk_hits = 0
@@ -94,7 +107,7 @@ def batch_labelling(
     llmk_safe = 0
     highd_safe = 0
 
-    with open(csv_path, mode="w", newline="") as csvfile:
+    with open(csv_path, mode="a", newline="") as csvfile:
         writer = csv.writer(csvfile)
 
         headers = ["ScenarioID", "EgoID"]
@@ -166,12 +179,16 @@ def batch_labelling(
 
                     if evaluate_llm:
                         schema = decider.describer.schema()
-                        structured_response = get_structured_response(
-                            user_prompt, system_prompt, schema, decider.config
-                        )
-                        ranking = decider._parse_action_ranking(structured_response)
-                        ranking = [list(action_pair) for action_pair in ranking]
-                        ranking_long, ranking_lat = _split_long_lat(ranking)
+                        try:
+                            structured_response = get_structured_response(
+                                user_prompt, system_prompt, schema, decider.config
+                            )
+                            ranking = decider._parse_action_ranking(structured_response)
+                            ranking = [list(action_pair) for action_pair in ranking]
+                            ranking_long, ranking_lat = _split_long_lat(ranking)
+                        except Exception:
+                            print(f"TIMEOUT error in evaluating {scenario_id}")
+                            ranking_long, ranking_lat = ["follow_lane"] * config.k, ["decelerate"] * config.k
 
                 ego_vehicle = extract_ego_vehicle(scenario, planning_problem)
 
@@ -414,8 +431,7 @@ def _write_labels_row(
 
 
 if __name__ == "__main__":
-    scenarios_path = "/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/"
-    # given_csv = "/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/batch_labelling_results_gpt-4o_drive_aggressively__20250724_142056.csv"
+    scenarios_path = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/"
     config = SanDRAConfiguration()
     config.model_name = "ft:gpt-4o-2024-08-06:tum::BsuinSqR"
     config.h = 25
