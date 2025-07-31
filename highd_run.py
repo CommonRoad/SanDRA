@@ -20,7 +20,7 @@ matplotlib.use("TkAgg")
 
 def main():
     config = SanDRAConfiguration()
-    path_to_scenarios = "/home/sebastian/Documents/Uni/Sandra/highd_scenarios/"
+    path_to_scenarios = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/"
     path_to_results = f"results-highD-{config.model_name}/"
     results = [x[:-4] for x in os.listdir(path_to_results) if x.endswith(".csv")]
 

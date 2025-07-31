@@ -5,6 +5,7 @@ from typing import Any
 from openai import OpenAI
 from ollama import chat
 import json
+import concurrent.futures
 
 from pydantic import BaseModel
 
@@ -69,48 +70,52 @@ def get_structured_response_online(
 
 
 def get_structured_response_offline(
-    user_prompt: str,
-    system_prompt: str,
-    schema: dict[str, Any],
-    config: SanDRAConfiguration,
-    save_dir: str = None,
-    temperature: float = 0.6,
+        user_prompt: str,
+        system_prompt: str,
+        schema: dict[str, Any],
+        config: SanDRAConfiguration,
+        save_dir: str = None,
+        temperature: float = 0.6,
+        timeout: float = 30.0,
 ) -> dict[str, Any]:
-    response = chat(
-        messages=[
-            # {
-            #     'role': 'system',
-            #     'content': system_prompt,
-            # },
-            {
-                "role": "user",
-                "content": user_prompt,
+    def _chat_call():
+        return chat(
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                }
+            ],
+            model=config.model_name,
+            format=schema,
+        )
+
+    try:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(_chat_call)
+            response = future.result(timeout=timeout)
+
+        content_json = json.loads(response.message.content)
+
+        if save_dir:
+            prompt_json = {
+                "system": system_prompt,
+                "user": user_prompt,
+                "schema": json.dumps(schema),
             }
-        ],
-        # options={
-        #     'temperature': temperature,
-        # },
-        model=config.model_name,
-        format=schema,
-    )
-    content_json = json.loads(response.message.content)
-    if save_dir:
-        prompt_json = {
-            "system": system_prompt,
-            "user": user_prompt,
-            "schema": json.dumps(schema),
-        }
-        save_path = os.path.join(PROJECT_ROOT, "outputs", save_dir)
-        save_json = {
-            "input": prompt_json,
-            "output": content_json,
-        }
+            save_path = os.path.join(PROJECT_ROOT, "outputs", save_dir)
+            save_json = {
+                "input": prompt_json,
+                "output": content_json,
+            }
 
-        os.makedirs(save_path, exist_ok=True)
-        with open(os.path.join(save_path, "output.json"), "w") as file:
-            json.dump(save_json, file)
+            os.makedirs(save_path, exist_ok=True)
+            with open(os.path.join(save_path, "output.json"), "w") as file:
+                json.dump(save_json, file)
 
-    return content_json
+        return content_json
+    except Exception as e:
+        raise e
 
 
 def get_structured_response(

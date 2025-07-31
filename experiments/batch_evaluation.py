@@ -2,8 +2,8 @@ import pandas as pd
 
 if __name__ == "__main__":
 
-    batch_file = "/home/liny/Documents/commonroad/mona-update-fixed/batch_labelling_results_gpt-4o_20250724_104647.csv"
-
+    batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3:8b_20250725_115216.csv"
+    batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-8b-highD:latest_20250725_135331.csv"
     df = pd.read_csv(batch_file)
 
     # Columns to compute average TRUE rate
