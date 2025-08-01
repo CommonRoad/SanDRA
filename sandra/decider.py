@@ -72,15 +72,20 @@ class Decider:
             "ninth",
             "tenth",
         ]
-        for prefix in ranking_prefixes[:k]:
+        for i, prefix in enumerate(ranking_prefixes[:k]):
             key = f"{prefix}_best_combination" if prefix else "best_combination"
-            action = llm_response[key]
-            action_ranking.append(
-                (
-                    LongitudinalAction(action["longitudinal_action"]),
-                    LateralAction(action["lateral_action"]),
-                )
-            )
+            try:
+                action = llm_response[key]
+                long_act = LongitudinalAction(action["longitudinal_action"])
+                lat_act = LateralAction(action["lateral_action"])
+                action_ranking.append((long_act, lat_act))
+            except (KeyError, IndexError, TypeError) as e:
+                print(f"[Warning] Could not parse rank {i + 1} ({key}): {e}")
+                continue
+
+        if len(action_ranking) != k:
+            raise ValueError(f"Only {len(action_ranking)} of {k} actions could be parsed.")
+
         return action_ranking
 
     def save_iteration(self, row: dict[str, Any]):

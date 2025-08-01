@@ -274,8 +274,11 @@ class ReachVerifier(VerifierBase):
             )
             util_visual.plot_scenario_with_regions(self.semantic_model, "CVLN")
 
-        # checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
-        if not self.reach_interface.reachable_set[self.sandra_config.h]:
+        # Checks whether the last time step in the horizon is reachable, i.e., whether the reachable set is empty
+        if self.sandra_config.h >= len(self.reach_interface.reachable_set):
+            print("[Verifier] Result: UNSAFE – Horizon index out of range.")
+            return VerificationStatus.UNSAFE
+        elif not self.reach_interface.reachable_set[self.sandra_config.h]:
             print("[Verifier] Result: UNSAFE – Final reachable set is empty.")
             return VerificationStatus.UNSAFE
         else:
