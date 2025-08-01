@@ -1,6 +1,7 @@
 import csv
 import os
 import re
+import time
 from datetime import datetime
 from typing import List, Tuple
 
@@ -22,7 +23,6 @@ import matplotlib
 
 print(matplotlib.get_backend())
 matplotlib.use("Agg")
-
 
 def load_scenarios_recursively(scenario_folder: str) -> List[Tuple[str, str]]:
     """
@@ -75,21 +75,23 @@ def batch_labelling(
     # Load already processed scenario IDs if given_csv is provided
 
     processed_scenario_ids = set()
-    if given_csv and os.path.exists(given_csv):
-        try:
-            df_existing = pd.read_csv(given_csv)
-            if "ScenarioID" in df_existing.columns:
-                processed_scenario_ids = set(df_existing["ScenarioID"].astype(str))
-            else:
-                print(f"Warning: 'ScenarioID' column not found in {given_csv}.")
-        except Exception as e:
-            print(f"Error reading {given_csv}: {e}")
+    # if given_csv and os.path.exists(given_csv):
+    #     try:
+    #         df_existing = pd.read_csv(given_csv)
+    #         if "ScenarioID" in df_existing.columns:
+    #             processed_scenario_ids = set(df_existing["ScenarioID"].astype(str))
+    #         else:
+    #             print(f"Warning: 'ScenarioID' column not found in {given_csv}.")
+    #     except Exception as e:
+    #         print(f"Error reading {given_csv}: {e}")
 
     if not scenario_entries:
         print("No scenarios found to process.")
         return
 
-    if role:
+    if given_csv:
+        filename = given_csv
+    elif role:
         safe_role = re.sub(r"[^a-zA-Z0-9_]+", "", role.replace(" ", "_").lower())
         filename = f"batch_labelling_results_{config.model_name}_{safe_role}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     else:
@@ -98,7 +100,7 @@ def batch_labelling(
         )
     csv_path = os.path.join(scenario_folder, filename)
 
-    already_done = [] #extract_first_column_csv(csv_path)
+    already_done = extract_first_column_csv(csv_path)
     total_scenarios = 0
     top1_hits = 0
     topk_hits = 0
@@ -135,8 +137,9 @@ def batch_labelling(
 
         if evaluate_llm and evaluate_trajectory_labels:
             headers.extend(["Match_Top1", "Match_TopK"])
-
-        writer.writerow(headers)
+        headers.append("Duration")
+        if not already_done:
+            writer.writerow(headers)
         nr = 0
         for i, (scenario_id, file_dir) in enumerate(
             tqdm(scenario_entries, desc="Scenarios processed", colour="red")
@@ -162,9 +165,11 @@ def batch_labelling(
                 )
 
                 prompt = None
+                duration = None
                 ranking_long = []
                 ranking_lat = []
                 ranking = []
+                print("Generating prompts...")
 
                 if evaluate_prompt:
                     describer = CommonRoadDescriber(
@@ -175,18 +180,22 @@ def batch_labelling(
                     user_prompt = decider.describer.user_prompt()
                     prompt = system_prompt + user_prompt
 
-                    print(system_prompt)
+                    print("Generating response...")
 
                     if evaluate_llm:
                         schema = decider.describer.schema()
                         try:
+                            start = time.time()
                             structured_response = get_structured_response(
                                 user_prompt, system_prompt, schema, decider.config
                             )
+                            end = time.time()
+                            duration = end - start
+                            print("Generating ranking...")
                             ranking = decider._parse_action_ranking(structured_response)
                             ranking = [list(action_pair) for action_pair in ranking]
                             ranking_long, ranking_lat = _split_long_lat(ranking)
-                        except Exception:
+                        except Exception as e:
                             print(f"TIMEOUT error in evaluating {scenario_id}")
                             ranking_long, ranking_lat = ["follow_lane"] * config.k, ["decelerate"] * config.k
 
@@ -209,6 +218,7 @@ def batch_labelling(
                 reach_lat = []
 
                 if evaluate_trajectory_labels:
+                    print("Evaluating trajectory labels...")
                     traj_labeler = TrajectoryLabeler(config, scenario)
                     traj_actions = traj_labeler.label(ego_vehicle, ego_lane_network)
                     traj_long, traj_lat = _split_long_lat(traj_actions)
@@ -216,6 +226,7 @@ def batch_labelling(
                     traj_actions = []
 
                 if evaluate_reachset_labels:
+                    print("Evaluating reachset labels...")
                     if scenario.obstacle_by_id(ego_vehicle.obstacle_id):
                         scenario.remove_obstacle(
                             scenario.obstacle_by_id(ego_vehicle.obstacle_id)
@@ -234,6 +245,7 @@ def batch_labelling(
                 highd_verified = None
 
                 if evaluate_prompt and evaluate_llm and evaluate_safety:
+                    print("Evaluating llm labels...")
                     reach_ver = ReachVerifier(
                         scenario,
                         planning_problem,
@@ -245,7 +257,10 @@ def batch_labelling(
                     ## if initial reachable set is
 
                     print(ranking[0])
-                    status = reach_ver.verify(ranking[0])
+                    try:
+                        status = reach_ver.verify(ranking[0])
+                    except Exception as e:
+                        status = VerificationStatus.UNSAFE
                     # reach_ver.reach_interface.propagated_set[0]
                     if reach_ver.reach_interface.propagated_set[0] == []:
                         print(f"\nProcessing scenario '{scenario_id}' failed, reach empty")
@@ -256,8 +271,11 @@ def batch_labelling(
                     else:
                         for action_pair in ranking[1:]:
                             print(action_pair)
-                            status = reach_ver.verify(action_pair)
-                            llmk_verified = status == VerificationStatus.SAFE
+                            try:
+                                status = reach_ver.verify(action_pair)
+                                llmk_verified = status == VerificationStatus.SAFE
+                            except Exception as e:
+                                llmk_verified = False
                             if llmk_verified == True:
                                 break
 
@@ -313,6 +331,7 @@ def batch_labelling(
                     evaluate_trajectory_labels,
                     evaluate_reachset_labels,
                     config.k,
+                    duration
                 )
                 nr += 1
             except Exception as e:
@@ -391,6 +410,7 @@ def _write_labels_row(
     eval_traj: bool,
     eval_reach: bool,
     max_steps: int,
+    duration: float,
 ):
     row = [scenario_id, ego_id]
 
@@ -426,14 +446,14 @@ def _write_labels_row(
     if eval_llm and eval_traj:
         row.append(match_top1)
         row.append(match_topk)
-
+    row.append(duration)
     writer.writerow(row)
 
 
 if __name__ == "__main__":
     scenarios_path = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/"
     config = SanDRAConfiguration()
-    config.model_name = "ft:gpt-4o-2024-08-06:tum::BsuinSqR"
+    # config.model_name = "ft:gpt-4o-2024-08-06:tum::BsuinSqR"
     config.h = 25
     config.k = 3
     batch_labelling(
@@ -446,7 +466,7 @@ if __name__ == "__main__":
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
         nr_scenarios=801,
-        given_csv=None
+        given_csv="batch_labelling_results_qwen3-0.6B-16-highD:latest_20250801_165416.csv"
     )
 
 

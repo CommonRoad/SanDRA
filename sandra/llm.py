@@ -1,4 +1,5 @@
 import os
+import signal
 from json import JSONDecodeError
 from typing import Any
 
@@ -10,7 +11,6 @@ import concurrent.futures
 from pydantic import BaseModel
 
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-
 
 def ollama_client():
     client = OpenAI(
@@ -69,6 +69,10 @@ def get_structured_response_online(
     return content_json
 
 
+def timeout_handler(signum, frame):
+    raise TimeoutError("Function call timed out")
+
+
 def get_structured_response_offline(
         user_prompt: str,
         system_prompt: str,
@@ -78,22 +82,24 @@ def get_structured_response_offline(
         temperature: float = 0.6,
         timeout: float = 30.0,
 ) -> dict[str, Any]:
-    def _chat_call():
-        return chat(
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                }
-            ],
-            model=config.model_name,
-            format=schema,
-        )
+    # Set up the timeout
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(int(timeout))
 
     try:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(_chat_call)
-            response = future.result(timeout=timeout)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        response = chat(
+            messages=messages,
+            model=config.model_name,
+            format=schema,
+            # temperature=temperature,
+        )
+        # Calculate duration in seconds
+        signal.alarm(0)  # Cancel the alarm
 
         content_json = json.loads(response.message.content)
 
@@ -114,8 +120,11 @@ def get_structured_response_offline(
                 json.dump(save_json, file)
 
         return content_json
-    except Exception as e:
-        raise e
+    except TimeoutError:
+        print(f"Chat call timed out after {timeout} seconds")
+        raise
+    finally:
+        signal.alarm(0)  # Make sure alarm is cancelled
 
 
 def get_structured_response(

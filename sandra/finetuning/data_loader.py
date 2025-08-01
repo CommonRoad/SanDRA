@@ -6,6 +6,10 @@ import pandas as pd
 from openai import OpenAI
 from openai.types import Batch
 
+from sandra.common.config import SanDRAConfiguration
+from sandra.commonroad.describer import CommonRoadDescriber
+from sandra.utility.general import extract_scenario_and_planning_problem
+
 
 def instantiate_cot_output():
     example_output_cot = f"""{{
@@ -112,18 +116,20 @@ def pick_remaining_actions(
     return random.sample(remaining_combinations, n)
 
 
-def generate_conversations(save_path: str = None) -> list[list[dict]]:
+def generate_conversations(source_path: str, save_path: str = None, qwen=False) -> list[list[dict]]:
     """
     Extract prompts and labels, formulate a correct response, and save the resulting conversations as jsonl.
     """
-    df = pd.read_csv("labeled_highd_scenarios.csv")
+    df = pd.read_csv(source_path)
     conversations = []
     for row in df.itertuples():
-        full_prompt = row.Prompt
-        split_sentence = "Here is an overview of your environment:"
-        split_prompt = full_prompt.split(split_sentence)
-        system_prompt = split_prompt[0]
-        user_prompt = split_sentence + split_prompt[1]
+        # full_prompt = row.Prompt
+        # split_sentence = "Here is an overview of your environment:"
+        # split_prompt = full_prompt.split(split_sentence)
+        system_prompt = row.system_prompt
+        if not qwen:
+            system_prompt = system_prompt.rsplit('\n', 1)[0]
+        user_prompt = row.user_prompt
 
         available_longitudinal_actions, available_lateral_actions = (
             extract_available_actions(system_prompt)
@@ -260,13 +266,42 @@ def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("labeled_highd_scenarios.csv")
-    k = 2200
-    full_df = df.sample(n=k, random_state=42)  # random_state for reproducibility
-    training_df = full_df.iloc[:2000]
-    validation_df = full_df.iloc[2000:]
-    # Save to new CSV file
-    training_df.to_csv('training.csv', index=False)
-    validation_df.to_csv('validation.csv', index=False)
+    generate_conversations(
+        "validation_with_prompts.csv",
+        "finetuning_files/val-new-gpt.jsonl",
+    )
+    # df = pd.read_csv("validation.csv")
+#
+    # # Initialize lists to store the prompts
+    # system_prompts = []
+    # user_prompts = []
+#
+    # for row in df.itertuples():
+    #     scenario_id = row.ScenarioID
+    #     scenario_path = f"/home/sebastian/Documents/Uni/Sandra/highD-sandra-0.04/{scenario_id}.xml"
+    #     scenario, planning_problem = extract_scenario_and_planning_problem(
+    #         scenario_path
+    #     )
+    #     describer = CommonRoadDescriber(
+    #         scenario,
+    #         planning_problem,
+    #         0,
+    #         SanDRAConfiguration()
+    #     )
+    #     system_prompt = describer.system_prompt()
+    #     user_prompt = describer.user_prompt()
+#
+    #     # Append prompts to lists
+    #     system_prompts.append(system_prompt)
+    #     user_prompts.append(user_prompt)
+#
+    # # Add new columns to dataframe
+    # df['system_prompt'] = system_prompts
+    # df['user_prompt'] = user_prompts
+#
+    # # Save the updated dataframe
+    # df.to_csv("validation_with_prompts.csv", index=False)
+
+
     # generate_conversations("conversations-new.jsonl")
     # split_fine_tuning_samples("conversations-new.jsonl")
