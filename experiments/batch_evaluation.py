@@ -2,8 +2,10 @@ import pandas as pd
 
 if __name__ == "__main__":
 
-    batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3:8b_20250725_115216.csv"
-    batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-8b-highD:latest_20250725_135331.csv"
+    batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6b-16-highD:latest_20250801_102841.csv"
+    #batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6b:latest_20250801_111305.csv"
+    #batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6B-highD:latest_20250801_112848.csv"
+    #batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6b-16-3-highD:latest_20250801_105403.csv"
     df = pd.read_csv(batch_file)
 
     # Columns to compute average TRUE rate
