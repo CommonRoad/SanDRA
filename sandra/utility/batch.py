@@ -100,7 +100,10 @@ def batch_labelling(
         )
     csv_path = os.path.join(scenario_folder, filename)
 
-    already_done = extract_first_column_csv(csv_path)
+    if os.path.exists(csv_path):
+        already_done = extract_first_column_csv(csv_path)
+    else:
+        already_done = []
     total_scenarios = 0
     top1_hits = 0
     topk_hits = 0
@@ -137,7 +140,9 @@ def batch_labelling(
 
         if evaluate_llm and evaluate_trajectory_labels:
             headers.extend(["Match_Top1", "Match_TopK"])
-        headers.append("Duration")
+        headers.append("Inference_Duration")
+        headers.append("Reach_Duration")
+
         if not already_done:
             writer.writerow(headers)
         nr = 0
@@ -165,7 +170,9 @@ def batch_labelling(
                 )
 
                 prompt = None
-                duration = None
+                inf_duration = None
+                reach_duration = None
+
                 ranking_long = []
                 ranking_lat = []
                 ranking = []
@@ -190,7 +197,7 @@ def batch_labelling(
                                 user_prompt, system_prompt, schema, decider.config
                             )
                             end = time.time()
-                            duration = end - start
+                            inf_duration = end - start
                             print("Generating ranking...")
                             ranking = decider._parse_action_ranking(structured_response)
                             ranking = [list(action_pair) for action_pair in ranking]
@@ -257,8 +264,12 @@ def batch_labelling(
                     ## if initial reachable set is
 
                     print(ranking[0])
+                    reach_duration = 0
                     try:
+                        start = time.time()
                         status = reach_ver.verify(ranking[0])
+                        reach_duration += time.time() - start
+
                     except Exception as e:
                         status = VerificationStatus.UNSAFE
                     # reach_ver.reach_interface.propagated_set[0]
@@ -272,8 +283,11 @@ def batch_labelling(
                         for action_pair in ranking[1:]:
                             print(action_pair)
                             try:
+                                start = time.time()
                                 status = reach_ver.verify(action_pair)
                                 llmk_verified = status == VerificationStatus.SAFE
+                                reach_duration += time.time() - start
+
                             except Exception as e:
                                 llmk_verified = False
                             if llmk_verified == True:
@@ -331,7 +345,8 @@ def batch_labelling(
                     evaluate_trajectory_labels,
                     evaluate_reachset_labels,
                     config.k,
-                    duration
+                    inf_duration,
+                    reach_duration
                 )
                 nr += 1
             except Exception as e:
@@ -410,7 +425,8 @@ def _write_labels_row(
     eval_traj: bool,
     eval_reach: bool,
     max_steps: int,
-    duration: float,
+    inf_duration: float,
+    reach_duration: float
 ):
     row = [scenario_id, ego_id]
 
@@ -446,7 +462,8 @@ def _write_labels_row(
     if eval_llm and eval_traj:
         row.append(match_top1)
         row.append(match_topk)
-    row.append(duration)
+    row.append(str(inf_duration))
+    row.append(str(reach_duration))
     writer.writerow(row)
 
 
