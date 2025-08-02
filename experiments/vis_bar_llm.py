@@ -59,8 +59,9 @@ width = 0.15
 # Data
 gpt4o = [88.5, 99.88, 33.0, 76.75]
 gpt4o_ft = [99.62, 100.0, 61.5, 80.25]
-qwen = [68.88, 76.5, 16.5, 32.75]
-qwen_ft = [99.25, 99.62, 44.0, 69.12]
+qwen = [76.00, 92.12, 36.12, 54.50]
+qwen_ft = [99.12, 99.75, 55.12, 79.88]
+
 
 # Plot
 fig, ax = plt.subplots(figsize=(8, 2.5))
@@ -68,7 +69,7 @@ fig, ax = plt.subplots(figsize=(8, 2.5))
 bars1 = ax.bar(x - 1.5 * width, gpt4o, width, label='GPT-4o', color=TUMcolor.TUMlightblue.value)
 bars2 = ax.bar(x - 0.5 * width, gpt4o_ft, width, label='Finetuned GPT-4o', color=TUMcolor.TUMdarkblue.value)
 bars3 = ax.bar(x + 0.5 * width, qwen, width, label='Qwen3-8B', color=TUMcolor.TUMyellow.value)
-bars4 = ax.bar(x + 1.5 * width, qwen_ft, width, label='Finetuned Qwen3-8B', color=TUMcolor.TUMdarkyellow.value)
+bars4 = ax.bar(x + 1.5 * width, qwen_ft, width, label='Finetuned Qwen3-0.6B', color=TUMcolor.TUMdarkyellow.value)
 
 # Axis
 ax.set_xticks(x)
