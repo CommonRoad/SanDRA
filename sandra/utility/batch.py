@@ -152,7 +152,7 @@ def batch_labelling(
             # if scenario_id != "DEU_MONAEast-2_4316_T-4341": # DEU_MONAEast-2_36140_T-36165
             #     continue
             # Skip if scenario_id already processed
-            if scenario_id in processed_scenario_ids:
+            if scenario_id in already_done:
                 print(f"Skipping scenario {scenario_id} as it is already contained in {given_csv}.")
                 continue
 
@@ -483,7 +483,7 @@ if __name__ == "__main__":
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
         nr_scenarios=801,
-        given_csv="batch_labelling_results_qwen3-0.6B-16-highD:latest_20250801_165416.csv"
+        given_csv=None
     )
 
 
