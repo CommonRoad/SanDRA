@@ -266,10 +266,38 @@ def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
 
 
 if __name__ == "__main__":
-    generate_conversations(
-        "validation_with_prompts.csv",
-        "finetuning_files/val-new-gpt.jsonl",
-    )
+
+    def simple_jsonl_to_list(input_file: str, output_file: str):
+        """
+        Simple version: Read JSONL file to list and save as JSON array.
+
+        Args:
+            input_file (str): Path to input JSONL file
+            output_file (str): Path to output JSON file
+
+        Returns:
+            List[Any]: List of parsed JSON objects
+        """
+        data = []
+
+        with open(input_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    data.append(json.loads(line))
+
+        # data = data[0]
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for item in data:
+                f.write(json.dumps(item, ensure_ascii=False) + '\n')
+
+        return data
+
+    simple_jsonl_to_list("finetuning_files/train-new-gpt2.jsonl", "finetuning_files/train-new-gpt3.jsonl")
+    # generate_conversations(
+    #     "validation_with_prompts.csv",
+    #     "finetuning_files/val-new-gpt.jsonl",
+    # )
     # df = pd.read_csv("validation.csv")
 #
     # # Initialize lists to store the prompts
