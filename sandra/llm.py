@@ -6,11 +6,8 @@ from typing import Any
 from openai import OpenAI
 from ollama import chat
 import json
-import concurrent.futures
 
-from pydantic import BaseModel
-
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
+from config.sandra import SanDRAConfiguration, PROJECT_ROOT
 
 def ollama_client():
     client = OpenAI(
@@ -25,7 +22,6 @@ def get_structured_response_online(
     system_prompt: str,
     schema: dict[str, Any],
     config: SanDRAConfiguration,
-    save_dir: str = None,
     temperature: float = 0.6,
 ) -> dict[str, Any]:
     client = OpenAI(api_key=config.api_key)
@@ -50,26 +46,10 @@ def get_structured_response_online(
 
     content = response.output_text
     content_json = json.loads(content)
-    if save_dir:
-        prompt_json = {
-            "system": system_prompt,
-            "user": user_prompt,
-            "schema": json.dumps(schema_dict),
-        }
-        save_path = os.path.join(PROJECT_ROOT, "outputs", save_dir)
-        save_json = {
-            "input": prompt_json,
-            "output": content_json,
-        }
-
-        os.makedirs(save_path, exist_ok=True)
-        with open(os.path.join(save_path, "output.json"), "w") as file:
-            json.dump(save_json, file)
-
     return content_json
 
 
-def timeout_handler(signum, frame):
+def timeout_handler(_signum, _frame):
     raise TimeoutError("Function call timed out")
 
 
@@ -78,8 +58,6 @@ def get_structured_response_offline(
         system_prompt: str,
         schema: dict[str, Any],
         config: SanDRAConfiguration,
-        save_dir: str = None,
-        temperature: float = 0.6,
         timeout: float = 30.0,
 ) -> dict[str, Any]:
     # Set up the timeout
@@ -96,30 +74,12 @@ def get_structured_response_offline(
             messages=messages,
             model=config.model_name,
             format=schema,
-            # temperature=temperature,
         )
         # Calculate duration in seconds
         signal.alarm(0)  # Cancel the alarm
-
         content_json = json.loads(response.message.content)
-
-        if save_dir:
-            prompt_json = {
-                "system": system_prompt,
-                "user": user_prompt,
-                "schema": json.dumps(schema),
-            }
-            save_path = os.path.join(PROJECT_ROOT, "outputs", save_dir)
-            save_json = {
-                "input": prompt_json,
-                "output": content_json,
-            }
-
-            os.makedirs(save_path, exist_ok=True)
-            with open(os.path.join(save_path, "output.json"), "w") as file:
-                json.dump(save_json, file)
-
         return content_json
+
     except TimeoutError:
         print(f"Chat call timed out after {timeout} seconds")
         raise
@@ -147,52 +107,37 @@ def get_structured_response(
     while retries > 0:
         try:
             if config.use_ollama:
-                return get_structured_response_offline(
+                json_dict = get_structured_response_offline(
                     user_prompt,
                     system_prompt,
                     schema,
                     config,
-                    save_dir=save_dir,
-                    temperature=temperature,
                 )
             else:
-                return get_structured_response_online(
+                json_dict = get_structured_response_online(
                     user_prompt,
                     system_prompt,
                     schema,
                     config,
-                    save_dir=save_dir,
                     temperature=temperature,
                 )
+
+            if save_dir:
+                prompt_json = {
+                    "system": system_prompt,
+                    "user": user_prompt,
+                    "schema": json.dumps(schema),
+                }
+                save_path = os.path.join(PROJECT_ROOT, "outputs", save_dir)
+                save_json = {
+                    "input": prompt_json,
+                    "output": json_dict,
+                }
+                os.makedirs(save_path, exist_ok=True)
+                with open(os.path.join(save_path, "output.json"), "w") as file:
+                    json.dump(save_json, file)
+            return json_dict
+
         except JSONDecodeError:
             print(f"JSON Decode Error, trying again in {retries} retries")
-    raise JSONDecodeError("No more retries left")
-
-
-if __name__ == "__main__":
-
-    class Country(BaseModel):
-        name: str
-        capital: str
-        languages: list[str]
-
-    client = ollama_client()
-    user_prompt = "Tell me about Canada."
-    system_prompt = "Tell me about Canada."
-    config = SanDRAConfiguration()
-    config.model_name = "qwen3:14b"
-    # completion = client.beta.chat.completions.parse(
-    #     model="qwen3:14b",
-    #     messages=[
-    #         {"role": "system", "content": system_prompt},
-    #         {"role": "user", "content": user_prompt},
-    #     ],
-    #     response_format=Country,
-    # )
-    #
-    # event = completion.choices[0].message.parsed
-    # print(event)
-    response = get_structured_response(
-        user_prompt, system_prompt, Country.model_json_schema(), config
-    )
-    print(response)
+    raise JSONDecodeError("No more retries left", "", 0)

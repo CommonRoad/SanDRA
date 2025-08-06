@@ -4,15 +4,14 @@ Standalone script to create HighEnvDecider and run it.
 
 import os
 
-from sandra.common.config import SanDRAConfiguration
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from commonroad.common.file_reader import CommonRoadFileReader
+
+from config.sandra import SanDRAConfiguration
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.reach import ReachVerifier
 from sandra.decider import Decider
-from sandra.highenv.decider import HighEnvDecider
 import matplotlib
-
-from sandra.utility.general import extract_scenario_and_planning_problem
 
 print(matplotlib.get_backend())
 matplotlib.use("TkAgg")
@@ -29,9 +28,11 @@ def main():
             continue
         if filename[:-4] in results:
             continue
-
-        scenario, planning_problem = extract_scenario_and_planning_problem(
+        scenario, planning_problem_set = CommonRoadFileReader(
             path_to_scenarios + filename
+        ).open(lanelet_assignment=True)
+        planning_problem = next(
+            iter(planning_problem_set.planning_problem_dict.values())
         )
         describer = CommonRoadDescriber(
             scenario,

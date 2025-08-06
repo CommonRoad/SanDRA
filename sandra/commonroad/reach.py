@@ -2,7 +2,6 @@ from typing import Optional, Union, List
 import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
-from commonroad.scenario.state import InitialState
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
     SemanticConfigurationBuilder,
@@ -22,13 +21,13 @@ from commonroad_reach_semantic.data_structure.rule.traffic_rule_interface import
 from commonroad_reach_semantic.utility import visualization as util_visual
 
 from sandra.actions import LongitudinalAction, LateralAction
-from sandra.common.config import (
+from config.sandra import (
     SanDRAConfiguration,
     COMMONROAD_REACH_SEMANTIC_ROOT,
     PROJECT_ROOT,
 )
 from sandra.utility.vehicle import extract_ego_vehicle
-from sandra.common.road_network import EgoLaneNetwork, Lane
+from sandra.utility.road_network import EgoLaneNetwork, Lane
 from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
 from commonroad_spot.spot_interface import SPOTInterface
 
@@ -233,10 +232,12 @@ class ReachVerifier(VerifierBase):
 
     def verify(
         self,
-        actions: List[Union[LongitudinalAction, LateralAction]],
+        actions: List[Union[LongitudinalAction, LateralAction]] | tuple[LongitudinalAction, LateralAction],
         safe_distance: bool = False,
         only_in_lane: bool = False,
     ) -> VerificationStatus:
+        if isinstance(actions, tuple):
+            actions = list(actions)
         if self.sandra_config.use_sonia:
             # self.sandra_config.a_lim = 0.11
             return self.verify_sonia(actions, safe_distance, only_in_lane)

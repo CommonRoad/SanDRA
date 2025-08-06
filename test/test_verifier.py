@@ -7,8 +7,8 @@ import unittest
 
 from commonroad.common.file_reader import CommonRoadFileReader
 
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from config.sandra import SanDRAConfiguration, PROJECT_ROOT
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.commonroad.reach import ReachVerifier, VerificationStatus
 from sandra.commonroad.plan import ReactivePlanner
 from sandra.actions import LongitudinalAction, LateralAction

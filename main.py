@@ -1,11 +1,12 @@
 import os.path
 
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
+from commonroad.common.file_reader import CommonRoadFileReader
+
+from config.sandra import SanDRAConfiguration, PROJECT_ROOT
 from sandra.commonroad.reach import ReachVerifier
 from sandra.decider import Decider
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.llm import get_structured_response
-from sandra.utility.general import extract_scenario_and_planning_problem
 
 import matplotlib
 
@@ -16,7 +17,13 @@ matplotlib.use("Agg")
 def main(scenario_path: str):
     config = SanDRAConfiguration()
     save_path = scenario_path
-    scenario, planning_problem = extract_scenario_and_planning_problem(scenario_path)
+
+    scenario, planning_problem_set = CommonRoadFileReader(
+        scenario_path
+    ).open(lanelet_assignment=True)
+    planning_problem = next(
+        iter(planning_problem_set.planning_problem_dict.values())
+    )
     describer = CommonRoadDescriber(
         scenario, planning_problem, 0, config, goal="Drive faster.", describe_ttc=False
     )

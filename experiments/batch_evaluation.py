@@ -4,7 +4,7 @@ if __name__ == "__main__":
     prefix = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/"
     batch_file = "batch_labelling_results_qwen3-0.6b:latest_20250801_155446.csv"
     batch_file = "batch_labelling_results_qwen3-0.6B-highD:latest_20250801_162507.csv"
-    batch_file = "batch_labelling_results_qwen3-0.6B-16-highD:latest_20250801_165416.csv"
+    batch_file = "batch_labelling_results_qwen3-0.6b-highD:latest_20250802_143223.csv"
     #batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6b-16-3-highD:latest_20250801_105403.csv"
     df = pd.read_csv(prefix + batch_file)
 
@@ -18,8 +18,12 @@ if __name__ == "__main__":
 
     # Compute average TRUE rate for each column
     true_rates = df[target_columns].mean()
+    inference_duration = df["Inference_Duration"].mean()
+    reach_duration = df["Reach_Duration"].mean()
 
     # Display result as percentages
     print("Average TRUE rates (%):")
+    print(f"Inference duration: {inference_duration:.2f} seconds")
+    print(f"Reach duration: {reach_duration:.2f} seconds")
     for col, rate in true_rates.items():
         print(f"{col}: {rate * 100:.2f}%")

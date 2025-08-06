@@ -14,9 +14,6 @@ from commonroad.scenario.state import InitialState, CustomState
 from crpred.basic_models.constant_velocity_predictor import (
     ConstantVelocityCurvilinearPredictor,
 )
-from crpred.basic_models.constant_acceleration_predictor import (
-    ConstantAccelerationLinearPredictor,
-)
 from crpred.utility.config import PredictorParams
 from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
@@ -31,8 +28,8 @@ from commonroad.common.file_writer import CommonRoadFileWriter
 from commonroad.common.file_writer import OverwriteExistingFile
 from commonroad.scenario.scenario import Tag
 
-from sandra.common.config import PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from config.sandra import PROJECT_ROOT
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.utility.visualization import plot_scenario
 
 

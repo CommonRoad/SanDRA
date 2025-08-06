@@ -4,9 +4,9 @@ from tqdm import tqdm
 from commonroad.common.file_reader import CommonRoadFileReader
 
 from sandra.utility.vehicle import extract_ego_vehicle
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.labeler import TrajectoryLabeler
-from sandra.common.config import SanDRAConfiguration
+from config.sandra import SanDRAConfiguration
 from sandra.actions import LongitudinalAction, LateralAction
 
 def _split_long_lat(actions):

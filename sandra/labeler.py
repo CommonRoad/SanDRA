@@ -1,7 +1,6 @@
-import itertools
 import warnings
 from abc import ABC, abstractmethod
-from typing import Union, List, Optional
+from typing import Union, List
 
 import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
@@ -9,8 +8,8 @@ from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 
 from sandra.actions import LateralAction, LongitudinalAction
-from sandra.common.config import SanDRAConfiguration
-from sandra.common.road_network import EgoLaneNetwork
+from config.sandra import SanDRAConfiguration
+from sandra.utility.road_network import EgoLaneNetwork
 from sandra.commonroad.reach import ReachVerifier
 
 from commonroad_reach.utility import reach_operation as util_reach_operation
@@ -42,11 +41,11 @@ class TrajectoryLabeler(LabelerBase):
 
     def label(
         self, obstacle: DynamicObstacle, obs_lane_network: EgoLaneNetwork
-    ) -> List[List[Union[LateralAction, LongitudinalAction]]]:
+    ) -> list[tuple[LongitudinalAction, LateralAction]]:
 
         long_label = self.longitudinal_label(obstacle)
         lat_label = self.lateral_label(obstacle, obs_lane_network)
-        return [[long_label, lat_label]]
+        return [(long_label, lat_label)]
 
     @staticmethod
     def augment_state_acceleration(obstacle: DynamicObstacle, dt: float) -> List[float]:
@@ -148,7 +147,7 @@ class ReachSetLabeler(LabelerBase):
         self,
         obstacle: DynamicObstacle,
         obs_lane_network: EgoLaneNetwork,
-    ) -> List[List[Union[LateralAction, LongitudinalAction]]]:
+    ) -> list[tuple[LongitudinalAction, LateralAction]]:
         """
         label the top-m action pairs using the area of the corresponding reachable sets
         for a dynamic obstacle. Each action is a combination of one lateral and one
@@ -256,7 +255,7 @@ class ReachSetLabeler(LabelerBase):
 
         # Take top m
         top_action_list = [
-            [lon, lat] for (lat, lon) in non_zero_actions[: self.config.k]
+            (lon, lat) for (lat, lon) in non_zero_actions[: self.config.k]
         ]
 
         return top_action_list

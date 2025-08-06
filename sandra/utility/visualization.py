@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, List, Tuple
+from typing import Optional, List
 import os
 
 import numpy as np
@@ -31,8 +31,8 @@ from commonroad.visualization.mp_renderer import MPRenderer
 
 from commonroad_reach.utility import coordinate_system as util_coordinate_system
 
-from sandra.common.config import SUPPRESS_PLOTS, SanDRAConfiguration
-from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
+from config.sandra import SUPPRESS_PLOTS, SanDRAConfiguration
+from sandra.utility.road_network import EgoLaneNetwork, RoadNetwork
 
 
 class TUMcolor(tuple, Enum):

@@ -1,16 +1,15 @@
 import math
 import warnings
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Literal, overload, Union, List
+from typing import Optional, Any, Literal, Union, List
 
 from commonroad.scenario.state import InitialState, CustomState, KSState
 from commonroad.scenario.obstacle import Rectangle
-from commonroad_dc.pycrccosy import CurvilinearCoordinateSystem
 from openai import BaseModel
 import numpy as np
 
 from sandra.actions import LateralAction, LongitudinalAction
-from sandra.common.config import SanDRAConfiguration
+from config.sandra import SanDRAConfiguration
 
 
 class Thoughts(BaseModel):
@@ -224,10 +223,6 @@ class DescriberBase(ABC):
         pass
 
     @abstractmethod
-    def _describe_reminders(self) -> list[str]:
-        pass
-
-    @abstractmethod
     def _get_available_actions(
         self,
     ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
@@ -277,11 +272,6 @@ class DescriberBase(ABC):
     def system_prompt(
         self, past_actions: List[List[Union[LongitudinalAction, LateralAction]]] = None
     ) -> str:
-        # reminders = self._describe_reminders()
-        # reminder_description = "Keep these things in mind:\n"
-        # for reminder in reminders:
-        #     reminder_description += f"  - {reminder}\n"
-
         role = f"{self.role}\n" if self.role else ""
         goal = f"{self.goal}\n" if self.goal else ""
 
@@ -296,9 +286,6 @@ class DescriberBase(ABC):
         if self.config.use_ollama:
             system_prompt += f"\n /no_think"
         return system_prompt
-        # Keep these things in mind:
-        # {reminder_description}
-        # """
 
     @staticmethod
     def _describe_past_actions(

@@ -16,13 +16,12 @@ from commonroad_crime.measure import TTC
 from commonroad_crime.utility.general import check_elements_state
 
 from sandra.actions import LateralAction, LongitudinalAction
-from sandra.common.config import SanDRAConfiguration
-from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
+from config.sandra import SanDRAConfiguration
+from sandra.utility.road_network import EgoLaneNetwork, RoadNetwork
 from sandra.describer import DescriberBase, Thoughts, Action
 from sandra.utility.vehicle import (
     find_lanelet_id_from_state,
     extract_ego_vehicle,
-    calculate_relative_orientation,
 )
 from contextlib import contextmanager
 

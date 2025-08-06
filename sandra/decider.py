@@ -1,18 +1,16 @@
-import os
+import time
 from typing import Optional, Any, Union, List
 
-import pandas as pd
-
 from sandra.actions import Action, LongitudinalAction, LateralAction
-from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.reach import ReachVerifier
 from sandra.describer import DescriberBase
 from sandra.llm import get_structured_response
-from sandra.common.config import SanDRAConfiguration
+from config.sandra import SanDRAConfiguration
 from sandra.verifier import VerifierBase, DummyVerifier, VerificationStatus
-
 from highway_env.vehicle.controller import ControlledVehicle
 
+# ranking, verified_idx, inference_duration, verification_duration
+Decision = tuple[list[Action], int, float, float]
 
 class Decider:
     def __init__(
@@ -20,7 +18,6 @@ class Decider:
         config: SanDRAConfiguration,
         describer: DescriberBase,
         verifier: Optional[Union[VerifierBase, ReachVerifier]] = None,
-        save_path: Optional[str] = None,
     ):
         self.config: SanDRAConfiguration = config
         self.time_step = 0
@@ -29,33 +26,6 @@ class Decider:
         self.verifier = verifier
         if verifier is None:
             self.verifier = DummyVerifier()
-        if save_path is None or not save_path.endswith(".csv"):
-            self.save_path = "batch_results.csv"
-        else:
-            self.save_path = save_path
-
-        columns = [
-            "iteration-id",
-            "Lateral1",
-            "Longitudinal1",
-            "Lateral2",
-            "Longitudinal2",
-            "Lateral3",
-            "Longitudinal3",
-            "verified-id",
-            "user-prompt",
-            "system-prompt",
-            "schema",
-        ]
-
-        directory = os.path.dirname(self.save_path)
-        if directory and not os.path.exists(directory):
-            os.makedirs(directory)
-
-        if not os.path.exists(self.save_path):
-            empty_df = pd.DataFrame(columns=columns)
-            empty_df.to_csv(self.save_path, index=False)
-            print(f"Created new CSV file: {self.save_path}")
 
     def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []
@@ -88,61 +58,54 @@ class Decider:
 
         return action_ranking
 
-    def save_iteration(self, row: dict[str, Any]):
-        df = pd.read_csv(self.save_path)
-        new_df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-        new_df.to_csv(self.save_path, index=False)
-
     def decide(
-        self, past_action: List[List[Union[LongitudinalAction, LateralAction]]] = None
-    ) -> Optional[Action]:
+        self, past_action: List[List[Union[LongitudinalAction, LateralAction]]] = None,
+        include_metadata: bool = False,
+        verbose: bool = False,
+    ) -> Action | Decision:
         user_prompt = self.describer.user_prompt()
         system_prompt = self.describer.system_prompt(past_action)
         schema = self.describer.schema()
-        structured_response = get_structured_response(
-            user_prompt, system_prompt, schema, self.config
-        )
-        ranking = self._parse_action_ranking(structured_response)
 
-        new_row = {
-            "iteration-id": self.time_step,
-            "Lateral1": None,
-            "Longitudinal1": None,
-            "Lateral2": None,
-            "Longitudinal2": None,
-            "Lateral3": None,
-            "Longitudinal3": None,
-            "verified-id": None,
-            "user-prompt": user_prompt,
-            "system-prompt": system_prompt,
-            "schema": schema,
-        }
+        try:
+            start = time.time()
+            structured_response = get_structured_response(
+                user_prompt, system_prompt, schema, self.config
+            )
+            inference_time = time.time() - start
+            ranking = self._parse_action_ranking(structured_response)
+        except Exception as _:
+            inference_time = 30.0
+            ranking = [(LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE)] * self.config.k
 
-        print("Ranking:")
-        for i, (longitudinal, lateral) in enumerate(ranking):
-            print(f"{i + 1}. ({longitudinal}, {lateral})")
-            new_row[f"Lateral{i + 1}"] = lateral.value
-            new_row[f"Longitudinal{i + 1}"] = longitudinal.value
+        if verbose:
+            print("Ranking:")
+            for i, (longitudinal, lateral) in enumerate(ranking):
+                print(f"{i + 1}. ({longitudinal}, {lateral})")
 
+        start = time.time()
         for i, action in enumerate(ranking):
             try:
                 status = self.verifier.verify(list(action))
-            except Exception as e:
+            except Exception as _:
                 continue
             if status == VerificationStatus.SAFE:
-                print(f"Successfully verified {action}.")
-                new_row["verified-id"] = i
-                self.save_iteration(new_row)
-
+                if verbose:
+                    print(f"Successfully verified {action}.")
                 ControlledVehicle.KP_A = 1 / 0.6
                 ControlledVehicle.DELTA_SPEED = 5
 
-                return action
-            print(f"Failed to verify {action}.")
-        new_row["verified-id"] = len(ranking)
-        self.save_iteration(new_row)
+                if include_metadata:
+                    verification_time = time.time() - start
+                    return ranking, i, inference_time, verification_time
+                else:
+                    return action
+            if verbose:
+                print(f"Failed to verify {action}.")
+        verification_time = time.time() - start
 
         ControlledVehicle.KP_A = 1 / 0.2
         ControlledVehicle.DELTA_SPEED = 15
-
-        return (LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE)
+        if include_metadata:
+            return ranking, len(ranking), inference_time, verification_time
+        return LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE
