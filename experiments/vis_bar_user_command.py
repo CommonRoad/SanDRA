@@ -10,7 +10,7 @@ class TUMcolor(tuple, Enum):
 # Data
 labels = ['Safe_Top1', 'Safe_TopK', 'Match_Top1', 'Match_TopK']
 aggressive = [77.25, 99.88, 7.5, 55.5]
-no_command = [88.5, 99.88, 33.0, 76.75]
+no_command = [89.62, 99.75, 34.62, 74.75]
 cautious = [91.62, 99.75, 38.75, 78.75]
 
 print(np.mean([aggressive, no_command, cautious], axis=0))

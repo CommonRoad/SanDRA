@@ -6,33 +6,32 @@ from enum import Enum
 
 # GPT-4o
 #
-# Safe_Top1: 88.50%
-# Safe_TopK: 99.88%
-# Match_Top1: 33.00%
-# Match_TopK: 76.75%
+# Safe_Top1: 89.62%
+# Safe_TopK: 99.75%
+# Match_Top1: 34.62%
+# Match_TopK: 74.75%
 #
 #
 # Finetuned GPT-4o
 # Safe_Top1: 99.62%
 # Safe_TopK: 100.00%
-# Match_Top1: 61.50%
-# Match_TopK: 80.25%
+# Match_Top1: 61.38%
+# Match_TopK: 80.75%
 #
-# Qwen3-8B
+# Qwen3-0.6B
 #
-# Safe_Top1: 68.88%
-# Safe_TopK: 76.50%
-# MONA_safe: 100.00%
-# Match_Top1: 16.50%
-# Match_TopK: 32.75%
+# Safe_Top1: 74.50%
+# Safe_TopK: 91.88%
+# Match_Top1: 32.12%
+# Match_TopK: 49.38%
+
+# Finetuned Qwen3-0.6B
 #
-# Finetuned Qwen3-8B
-#
-# Safe_Top1: 99.25%
-# Safe_TopK: 99.62%
-# MONA_safe: 100.00%
-# Match_Top1: 44.00%
-# Match_TopK: 69.12%
+# Safe_Top1: 99.38%
+# Safe_TopK: 99.88%
+# Match_Top1: 53.25%
+# Match_TopK: 78.62%
+
 
 class TUMcolor(tuple, Enum):
     TUMblue = (0, 101 / 255, 189 / 255)
@@ -57,10 +56,10 @@ x = np.arange(len(labels))
 width = 0.15
 
 # Data
-gpt4o = [88.5, 99.88, 33.0, 76.75]
-gpt4o_ft = [99.62, 100.0, 61.5, 80.25]
-qwen = [76.00, 92.12, 36.12, 54.50]
-qwen_ft = [99.12, 99.75, 55.12, 79.88]
+gpt4o = [89.62, 99.75, 34.62, 74.75]
+gpt4o_ft = [99.62, 100.0, 61.38, 80.75]
+qwen = [74.50, 91.88, 32.12, 49.38]
+qwen_ft = [99.38, 99.88, 53.25, 78.62]
 
 
 # Plot
