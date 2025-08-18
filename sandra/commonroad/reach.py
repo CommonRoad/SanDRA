@@ -2,7 +2,7 @@ from typing import Optional, Union, List
 import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
-from commonroad.scenario.state import InitialState
+from lanelet2.traffic_rules import TrafficRules
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
     SemanticConfigurationBuilder,
@@ -30,6 +30,7 @@ from sandra.common.config import (
 from sandra.utility.vehicle import extract_ego_vehicle
 from sandra.common.road_network import EgoLaneNetwork, Lane
 from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
+from sandra.rules import InterstateRule
 from commonroad_spot.spot_interface import SPOTInterface
 
 
@@ -114,7 +115,7 @@ class ReachVerifier(VerifierBase):
         self,
         reach_config: SemanticConfiguration = None,
         actions: List[Union[LongitudinalAction, LateralAction]] = None,
-        save_distance: bool = True,
+        rules: List[Union[InterstateRule]] = None,
         ego_lane_network: EgoLaneNetwork = None,
         scenario: Scenario = None,
     ):
@@ -138,16 +139,6 @@ class ReachVerifier(VerifierBase):
 
         if actions:
             ltl_list = []
-            if save_distance:
-                assert self.initial_state is not None, "Initial state must be provided"
-                min_save_distance = 2 * self.initial_state.velocity
-                for obstacle in self.scenario.obstacles:
-                    distance = np.linalg.norm(
-                        self.initial_state.position - obstacle.initial_state.position
-                    )
-                    if distance < min_save_distance:
-                        rule = f"LTL G SafeDistance_V{obstacle.obstacle_id}"
-                        ltl_list.append(rule)
 
             # reset the specification list within the rule interface
             for action in actions:
@@ -156,6 +147,13 @@ class ReachVerifier(VerifierBase):
                 action_ltl = self.parse_action(action)
                 if action_ltl:
                     ltl_list.append(action_ltl)
+
+            # including the formalized traffic rules
+            for rule in rules:
+                rule_ltl = self.parse_traffic_rule(rule)
+                if rule_ltl:
+                    ltl_list.append(rule_ltl)
+
             self.reach_config.traffic_rule.list_traffic_rules_activated = ltl_list
 
             rule_interface = TrafficRuleInterface(
@@ -222,6 +220,52 @@ class ReachVerifier(VerifierBase):
         else:
             return ActionLTL.from_action(action)
 
+    def parse_traffic_rule(
+            self, traffic_rule: Union[InterstateRule, None]
+    ) -> str:
+        """
+        Parses the given traffic rule into its corresponding LTL formula or applies
+        modifications to the reachability configuration.
+        """
+        if traffic_rule == InterstateRule.RG_1:
+            initial_lanelet = self.scenario.lanelet_network.find_most_likely_lanelet_by_state(
+                [self.initial_state]
+            )[0]
+
+            distance_min = np.inf
+            obstacle_id = None
+
+            for obstacle in self.scenario.dynamic_obstacles:
+                # Get the lanelets the obstacle occupies
+                obstacle_lanelets = self.scenario.lanelet_network.find_lanelet_by_position(
+                    [obstacle.initial_state.position]
+                )
+
+                # Only consider if ego and obstacle share a lanelet
+                if initial_lanelet not in obstacle_lanelets:
+                    continue
+
+                # Check whether obstacle is in front of ego
+                if is_in_front(self.initial_state, obstacle.initial_state, threshold=0.0):
+                    distance = np.linalg.norm(
+                        np.array(self.initial_state.position) - np.array(obstacle.initial_state.position)
+                    )
+                    if distance < distance_min:
+                        distance_min = distance
+                        obstacle_id = obstacle.obstacle_id
+
+            if obstacle_id is not None:
+                return f"LTL G SafeDistance_V{obstacle_id}"
+            else:
+                return ""
+        elif traffic_rule == InterstateRule.RG_3:
+            return  "LTL G (KeepsBrakeSpeedLimit & KeepsFovSpeedLimit & KeepsTypeSpeedLimit & KeepsLaneSpeedLimit)"
+        elif traffic_rule == InterstateRule.RG_2:
+            self.reach_config.vehicle.ego.a_lon_min = -2.0
+            return ""
+        else:
+            raise NotImplementedError(f"The rule {traffic_rule} is not supported.")
+
     def _format_lane_clause(self, lanes: List[Lane]) -> str:
         """
         Converts a list of lanes to a disjunctive clause over lanelet IDs.
@@ -234,19 +278,22 @@ class ReachVerifier(VerifierBase):
     def verify(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        safe_distance: bool = False,
+        rules: List[Union[InterstateRule]] = None,
         only_in_lane: bool = False,
     ) -> VerificationStatus:
+        if rules is None:
+            rules = [InterstateRule.RG_1, InterstateRule.RG_2, InterstateRule.RG_3]
+
         if self.sandra_config.use_sonia:
             # self.sandra_config.a_lim = 0.11
-            return self.verify_sonia(actions, safe_distance, only_in_lane)
+            return self.verify_sonia(actions, rules, only_in_lane)
         else:
-            return self.verify_base(actions, safe_distance)
+            return self.verify_base(actions, rules)
 
     def verify_base(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        safe_distance: bool = False,
+        rules: List[Union[InterstateRule]],
     ) -> VerificationStatus:
         """
         verifies the given actions (in a list)
@@ -254,7 +301,7 @@ class ReachVerifier(VerifierBase):
         print("[Verifier] Resetting with given actions...")
         self.reset(
             actions=actions,
-            save_distance=safe_distance,
+            rules=rules,
         )
 
         print("[Verifier] Computing reachable sets...")
@@ -288,7 +335,7 @@ class ReachVerifier(VerifierBase):
     def verify_sonia(
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
-        safe_distance: bool = False,
+        rules: List[Union[InterstateRule]],
         only_in_lane: bool = False,
     ) -> VerificationStatus:
         update_dict = {
@@ -329,9 +376,31 @@ class ReachVerifier(VerifierBase):
         )
         return self.verify_base(
             actions=actions,
-            safe_distance=safe_distance,
+            rules=rules,
         )
 
     def extract_corridor(self):
         # todo: goal shape?
         return self.reach_interface.extract_driving_corridors(to_goal_region=False)[0]
+
+
+def is_in_front(ego_state, obs_state, threshold=0.0):
+    """
+    Orientation check ensures that only obstacles in the driving direction of the ego
+     are considered “in front, not just geometrically ahead along the lanelet.
+     """
+    # Ego position and heading
+    ego_pos = np.array([ego_state.position[0], ego_state.position[1]])
+    ego_heading = ego_state.orientation  # in radians
+    ego_dir = np.array([np.cos(ego_heading), np.sin(ego_heading)])
+
+    # Obstacle position
+    obs_pos = np.array([obs_state.position[0], obs_state.position[1]])
+
+    # Vector from ego to obstacle
+    v = obs_pos - ego_pos
+
+    # Projection of v onto ego's direction
+    projection = np.dot(v, ego_dir)
+
+    return projection > threshold

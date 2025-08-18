@@ -39,7 +39,6 @@ class VerifierBase(ABC):
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
         visualization=False,
-        safe_distance: bool = False,
     ) -> VerificationStatus:
         pass
 
@@ -49,6 +48,5 @@ class DummyVerifier(VerifierBase):
         self,
         actions: List[Union[LongitudinalAction, LateralAction]],
         visualization=False,
-        safe_distance: bool = False,
     ) -> VerificationStatus:
         return VerificationStatus.SAFE
