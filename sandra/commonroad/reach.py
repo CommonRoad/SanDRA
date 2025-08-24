@@ -281,7 +281,7 @@ class ReachVerifier(VerifierBase):
         rules: List[Union[InterstateRule]] = None,
         only_in_lane: bool = False,
     ) -> VerificationStatus:
-        if rules is None:
+        if self.sandra_config.use_rules and rules is None:
             rules = [InterstateRule.RG_1, InterstateRule.RG_2, InterstateRule.RG_3]
 
         if self.sandra_config.use_sonia:

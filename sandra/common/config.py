@@ -34,6 +34,7 @@ class SanDRAConfiguration:
 
     use_ollama: bool = True
     use_sonia: bool = False
+    use_rules: bool = False
     visualize_reach: bool = False
 
     a_lim = 0.2

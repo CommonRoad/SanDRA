@@ -230,7 +230,7 @@ class HighEnvDecider(Decider):
                     found_viable_action = False
                     for action in ranking:
                         if (
-                            self.verifier.verify(list(action), safe_distance=True)
+                            self.verifier.verify(list(action))
                             == VerificationStatus.SAFE
                         ):
                             try:
@@ -257,7 +257,7 @@ class HighEnvDecider(Decider):
 
                     if not found_viable_action:
                         if (
-                            self.verifier.verify([None], safe_distance=False)
+                            self.verifier.verify([None])
                             == VerificationStatus.SAFE
                         ):
                             try:
