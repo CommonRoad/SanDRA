@@ -389,7 +389,7 @@ class HighwayEnvScenario:
             PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
         )
         fw.write_to_file(path_scenario, OverwriteExistingFile.ALWAYS)
-        return scenario, scenario.obstacle_by_id(ego_obstacle_id), planning_problem
+        return scenario, ego_vehicle_commonroad, planning_problem
 
     @property
     def highway_env_representation(self) -> Env:
