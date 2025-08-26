@@ -24,6 +24,7 @@ from sandra.utility.vehicle import (
     extract_ego_vehicle,
     calculate_relative_orientation,
 )
+from sandra.rules import InterstateRule
 from contextlib import contextmanager
 
 
@@ -141,7 +142,26 @@ class CommonRoadDescriber(DescriberBase):
         except (TypeError, ValueError):
             return None
 
-    def _describe_traffic_signs(self) -> str:
+    def _describe_traffic_rules(self) -> str:
+        """Concrete German traffic rule descriptions."""
+        traffic_rules_description = (
+            f"Please adhere to the traffic regulations in {self.country}:"
+        )
+
+        # R_G1
+        traffic_rules_description += (
+            f"\n1) Safe distance to preceding vehicle: {InterstateRule.RG_1.value}"
+        )
+
+        # R_G2
+        traffic_rules_description += (
+            f"\n2) Unnecessary braking: {InterstateRule.RG_2.value}"
+        )
+
+        # R_G3
+        traffic_rules_description += (
+            f"\n3) Maximum speed limit: {InterstateRule.RG_3.value}"
+        )
         max_speed = None
         for traffic_sign in self.scenario.lanelet_network.traffic_signs:
             for traffic_sign_element in traffic_sign.traffic_sign_elements:
@@ -150,19 +170,14 @@ class CommonRoadDescriber(DescriberBase):
                     == TrafficSignIDGermany.MAX_SPEED
                 ):
                     max_speed = float(traffic_sign_element.additional_values[0])
-
-        # TODO: Add support for more traffic rules
-        traffic_signs_description = (
-            f"Please adhere to the traffic regulations in {self.country}:"
-        )
-        initial_len = len(traffic_signs_description)
-        if max_speed is not None:
-            traffic_signs_description += (
-                f"\nThe maximum speed is {self.velocity_descr(velocity=max_speed)}."
+        if max_speed is None:
+            max_speed = 43
+        traffic_rules_description += (
+                f" The maximum speed is {self.velocity_descr(velocity=max_speed)}."
             )
+        return traffic_rules_description
 
-        if len(traffic_signs_description) > initial_len:
-            return traffic_signs_description
+    def _describe_traffic_signs(self) -> str:
         return ""
 
     def _describe_traffic_lights(self) -> str:
