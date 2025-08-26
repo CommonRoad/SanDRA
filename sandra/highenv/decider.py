@@ -2,6 +2,7 @@ import math
 import os
 import random
 import sys
+from pathlib import Path
 from typing import cast, Optional, List, Union
 
 import gymnasium
@@ -76,6 +77,9 @@ class HighEnvDecider(Decider):
         self.seed = seed
         # entire commonroad scenario
         self.cr_scenario_whole, self.cr_ego_whole, self.planning_problem = self.update(env_config)
+        for obs in self.cr_scenario_whole.dynamic_obstacles:
+            obs.prediction = None
+        self.cr_ego_whole.prediction = None
 
         # Initialize the past_action list
         self.past_actions: list = []
@@ -358,9 +362,17 @@ class HighEnvDecider(Decider):
             self.cr_scenario_whole, planning_problem_set, author, affiliation, source, tags
         )
         self.cr_scenario_whole.scenario_id = str(self.cr_scenario_whole.scenario_id) + "001"
-        path_scenario = (
-            PROJECT_ROOT + "/scenarios_monitoring/" + str(self.cr_scenario_whole.scenario_id) + ".xml"
+        # build path
+        path_dir = (
+                PROJECT_ROOT
+                + f"/scenarios_monitoring_{self.config.highway_env.lanes_count}-"
+                  f"{self.config.highway_env.vehicles_density}_reach_rule_{self.config.use_rules_in_reach}/"
         )
+        path_scenario = os.path.join(path_dir, str(self.cr_scenario_whole.scenario_id) + ".xml")
+
+        # ensure directory exists
+        Path(path_dir).mkdir(parents=True, exist_ok=True)
+
         fw.write_to_file(path_scenario, OverwriteExistingFile.ALWAYS)
 
     @staticmethod

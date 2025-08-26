@@ -339,7 +339,6 @@ class HighwayEnvScenario:
         ego_vehicle_commonroad = self._make_commonroad_obstacle(
             ego_vehicle, self._next_id()
         )
-        ego_obstacle_id = ego_vehicle_commonroad.obstacle_id
         if add_ego:
             scenario.add_objects(ego_vehicle_commonroad)
 

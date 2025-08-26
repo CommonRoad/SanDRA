@@ -43,7 +43,7 @@ class ReachVerifier(VerifierBase):
         planning_problem: PlanningProblem,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
-        verbose: bool = False,
+        verbose: bool = True,
         scenario_folder: str = None,
         highenv: bool = False,
     ):
@@ -149,10 +149,11 @@ class ReachVerifier(VerifierBase):
                     ltl_list.append(action_ltl)
 
             # including the formalized traffic rules
-            for rule in rules:
-                rule_ltl = self.parse_traffic_rule(rule)
-                if rule_ltl:
-                    ltl_list.append(rule_ltl)
+            if rules:
+                for rule in rules:
+                    rule_ltl = self.parse_traffic_rule(rule)
+                    if rule_ltl:
+                        ltl_list.append(rule_ltl)
 
             self.reach_config.traffic_rule.list_traffic_rules_activated = ltl_list
 

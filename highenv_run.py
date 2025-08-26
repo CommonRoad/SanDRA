@@ -23,6 +23,9 @@ matplotlib.use("TkAgg")
 def main():
     config = SanDRAConfiguration()
 
+    config.use_rules_in_reach = True
+    config.use_rules_in_prompt = True
+
     config.use_sonia = True
     config.h = 8 # spot
 
@@ -33,16 +36,16 @@ def main():
     config.highway_env.vehicles_density = 3.0
 
     seeds = [
-        # 5838,
-        # 2421,
+        5838,
+        2421,
         7294,
-        # 9650,
-        # 4176,
-        # 6382,
-        # 8765,
-        # 1348, # initial spot fail
-        # 4213,
-        # 2572, # initial spot fail
+        9650,
+        4176,
+        6382,
+        8765,
+        1348, # initial spot fail
+        4213,
+        2572, # initial spot fail
         # 5678, # collision
         # 8587, # -
         # 512,
