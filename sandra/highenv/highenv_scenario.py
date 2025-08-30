@@ -302,7 +302,7 @@ class HighwayEnvScenario:
     def _prediction(self, scenario: Scenario) -> Scenario:
         if self.use_sonia:
             state_list = []
-            for ts in range(1, self.prediction_length + 1):
+            for ts in range(1, self.prediction_length):
                 state_list.append(CustomState(position=np.array([0, 0]), velocity=0, time_step=ts, orientation=0.0))
             phantom_obstacle = DynamicObstacle(
                 obstacle_id=85748,
