@@ -7,10 +7,13 @@ from commonroad.common.util import AngleInterval, Interval
 from commonroad.geometry.shape import Rectangle
 from commonroad.planning.goal import GoalRegion
 from commonroad.planning.planning_problem import PlanningProblem, PlanningProblemSet
+from commonroad.prediction.prediction import TrajectoryPrediction
 from commonroad.scenario.lanelet import Lanelet, LaneletNetwork
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.scenario import Scenario, ScenarioID
 from commonroad.scenario.state import InitialState, CustomState
+from commonroad.scenario.trajectory import Trajectory
+
 from crpred.basic_models.constant_velocity_predictor import (
     ConstantVelocityCurvilinearPredictor,
 )
@@ -298,6 +301,19 @@ class HighwayEnvScenario:
 
     def _prediction(self, scenario: Scenario) -> Scenario:
         if self.use_sonia:
+            state_list = []
+            for ts in range(1, self.prediction_length + 1):
+                state_list.append(CustomState(position=np.array([0, 0]), velocity=0, time_step=ts, orientation=0.0))
+            phantom_obstacle = DynamicObstacle(
+                obstacle_id=85748,
+                obstacle_type=ObstacleType.CAR,
+                obstacle_shape=Rectangle(5, 2),
+                initial_state=InitialState(position=np.array([0.0, 0.0]), orientation=0.0, velocity=0.0,
+                                           acceleration=0.0, yaw_rate=0.0, slip_angle=0.0),
+                prediction=TrajectoryPrediction(trajectory=Trajectory(1, state_list),
+                                                shape=Rectangle(5, 2)),
+            )
+            scenario.add_objects(phantom_obstacle)
             return scenario
         else:
             # Add all obstacle predictions

@@ -277,6 +277,7 @@ class ReachVerifier(VerifierBase):
             # fixme: workaround for safety distance rule with set-based prediction
             elif self.sandra_config.use_rules_in_reach and self.sandra_config.use_sonia and self._preceding_veh_id is not None:
                 pre_obs = self.reach_config.scenario.obstacle_by_id(self._preceding_veh_id)
+                phantom_obs = self.reach_config.scenario.obstacle_by_id(85748)
                 state_list = []
                 for ts in range(1, self.sandra_config.h + 1):
                     min_vel = max(0.0,
@@ -292,7 +293,8 @@ class ReachVerifier(VerifierBase):
                                                   time_step=ts,
                                                   orientation=0.0, #todo
                                                   velocity=min_vel))
-                pre_obs.prediction = TrajectoryPrediction(
+                phantom_obs.initial_state = pre_obs.initial_state
+                phantom_obs.prediction = TrajectoryPrediction(
                     Trajectory(1, state_list), shape=pre_obs.obstacle_shape
                 )
 
