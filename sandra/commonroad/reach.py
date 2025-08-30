@@ -1,7 +1,13 @@
+import copy
 from typing import Optional, Union, List
 import numpy as np
+from commonroad.geometry.shape import ShapeGroup
 from commonroad.planning.planning_problem import PlanningProblem
+from commonroad.prediction.prediction import TrajectoryPrediction
+from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
+from commonroad.scenario.state import CustomState
+from commonroad.scenario.trajectory import Trajectory
 from lanelet2.traffic_rules import TrafficRules
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
@@ -111,6 +117,10 @@ class ReachVerifier(VerifierBase):
         self._default_a_lon_max = self.reach_config.vehicle.ego.a_lon_max
         self._default_a_lon_min = self.reach_config.vehicle.ego.a_lon_min
 
+        # vehicle id for the preceding vehicle
+        self._preceding_veh_id = None
+        self._other_a_max = 12. # m/s^2
+
     def reset(
         self,
         reach_config: SemanticConfiguration = None,
@@ -162,7 +172,9 @@ class ReachVerifier(VerifierBase):
             )
             for item in self.reach_config.traffic_rule.list_traffic_rules_activated:
                 rule_interface._parse_traffic_rule(item, allow_abstract_rules=True)
+
             rule_interface.print_summary()
+            self.reach_config.print_configuration_summary()
 
             # reset the interface
             self.reach_interface.reset(
@@ -234,13 +246,13 @@ class ReachVerifier(VerifierBase):
             )[0]
 
             distance_min = np.inf
-            obstacle_id = None
+            self._preceding_veh_id = None
 
             for obstacle in self.scenario.dynamic_obstacles:
                 # Get the lanelets the obstacle occupies
                 obstacle_lanelets = self.scenario.lanelet_network.find_lanelet_by_position(
                     [obstacle.initial_state.position]
-                )
+                )[0]
 
                 # Only consider if ego and obstacle share a lanelet
                 if initial_lanelet not in obstacle_lanelets:
@@ -253,10 +265,33 @@ class ReachVerifier(VerifierBase):
                     )
                     if distance < distance_min:
                         distance_min = distance
-                        obstacle_id = obstacle.obstacle_id
+                        self._preceding_veh_id = obstacle.obstacle_id
 
-            if obstacle_id is not None:
-                return f"LTL G SafeDistance_V{obstacle_id}"
+            if self._preceding_veh_id is not None and not self.sandra_config.use_sonia:
+                return f"LTL G (SafeDistance_V{self._preceding_veh_id})"
+            # fixme: workaround for safety distance rule with set-based prediction
+            elif self.sandra_config.use_rules_in_reach and self.sandra_config.use_sonia and self._preceding_veh_id is not None:
+                pre_obs = self.reach_config.scenario.obstacle_by_id(self._preceding_veh_id)
+                state_list = []
+                for ts in range(1, self.sandra_config.h + 1):
+                    min_vel = max(0.0,
+                                  pre_obs.initial_state.velocity - ts * self.reach_config.scenario.dt * self._other_a_max)
+                    if isinstance(pre_obs.occupancy_at_time(ts).shape, ShapeGroup):
+                        min_rear_s = np.inf
+                        for shape in pre_obs.occupancy_at_time(ts).shape.shapes:
+                            min_rear_s = min(min_rear_s, shape.shapely_object.bounds[0])
+                    else:
+                        min_rear_s = pre_obs.occupancy_at_time(ts).shape.shapely_object.bounds[0]
+                    min_center_s = min_rear_s + pre_obs.obstacle_shape.length / 2.0
+                    state_list.append(CustomState(position=np.array([min_center_s, pre_obs.initial_state.position[1]]),
+                                                  time_step=ts,
+                                                  orientation=0.0, #todo
+                                                  velocity=min_vel))
+                pre_obs.prediction = TrajectoryPrediction(
+                    Trajectory(1, state_list), shape=pre_obs.obstacle_shape
+                )
+
+                return f"LTL G (SafeDistance_V{pre_obs.obstacle_id})"
             else:
                 return ""
         elif traffic_rule == InterstateRule.RG_3:
@@ -342,7 +377,7 @@ class ReachVerifier(VerifierBase):
         update_dict = {
             "Vehicle": {
                 0: {  # 0 means that all vehicles will be changed
-                    "a_max": 12.0,
+                    "a_max": self._other_a_max,
                     "v_max": 30.0,
                     "compute_occ_m1": True,
                     "compute_occ_m2": True,
@@ -375,6 +410,7 @@ class ReachVerifier(VerifierBase):
         sonia_interface.update_scenario_with_results(
             set_based_prediction_dict, scenario_to_update=self.reach_config.scenario
         )
+
         return self.verify_base(
             actions=actions,
             rules=rules,
