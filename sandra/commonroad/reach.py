@@ -75,17 +75,22 @@ class ReachVerifier(VerifierBase):
         self.reach_config.general.path_scenario = (
             scenario_folder + str(scenario.scenario_id) + ".xml"
         )
-        self.reach_config.vehicle.ego.v_lon_min = 0
+        self.reach_config.vehicle.ego.v_lon_min = 0.
+        self.reach_config.vehicle.ego.t_react = 0.4
+        self.reach_config.reachable_set.mode_computation = 8
 
         self.reach_config.planning.dt = scenario.dt
         if highenv:
-            self.reach_config.vehicle.ego.v_lat_max = 12
-            self.reach_config.vehicle.ego.v_lat_min = -12
-            self.reach_config.vehicle.ego.a_lat_max = 4
-            self.reach_config.vehicle.ego.a_lat_min = -4
+            self.reach_config.vehicle.ego.v_lat_max = 12.
+            self.reach_config.vehicle.ego.v_lat_min = -12.
+            self.reach_config.vehicle.ego.a_lat_max = 4.
+            self.reach_config.vehicle.ego.a_lat_min = -4.
 
-            self.reach_config.vehicle.ego.a_lon_max = 6
-            self.reach_config.vehicle.ego.a_lon_min = -6
+            self.reach_config.vehicle.ego.a_lon_max = 6.
+            self.reach_config.vehicle.ego.a_lon_min = -6.
+
+            self.reach_config.vehicle.other.a_lon_min = -12.
+            self.reach_config.vehicle.other.a_lon_max = 12.
         self.reach_config.planning.steps_computation = self.sandra_config.h
         self.reach_config.update()
 
@@ -119,7 +124,7 @@ class ReachVerifier(VerifierBase):
 
         # vehicle id for the preceding vehicle
         self._preceding_veh_id = None
-        self._other_a_max = 12. # m/s^2
+        self._other_a_max = self.reach_config.vehicle.other.a_lon_min # m/s^2
 
     def reset(
         self,
