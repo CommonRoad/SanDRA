@@ -124,7 +124,7 @@ class ReachVerifier(VerifierBase):
 
         # vehicle id for the preceding vehicle
         self._preceding_veh_id = None
-        self._other_a_max = self.reach_config.vehicle.other.a_lon_min # m/s^2
+        self._other_a_max = 12. # m/s^2
 
     def reset(
         self,
@@ -298,7 +298,7 @@ class ReachVerifier(VerifierBase):
                     Trajectory(1, state_list), shape=pre_obs.obstacle_shape
                 )
 
-                return f"LTL G (SafeDistance_V{pre_obs.obstacle_id})"
+                return f"LTL G (!Behind_V{phantom_obs.obstacle_id} | SafeDistance_V{phantom_obs.obstacle_id})"
             else:
                 return ""
         elif traffic_rule == InterstateRule.RG_3:
