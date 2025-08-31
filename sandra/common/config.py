@@ -19,20 +19,20 @@ class HighwayEnvConfig:
     save_frame: bool = False
 
     def get_save_folder(
-        self, model_name: str, seed: int, use_sonia: bool = False, rule_in_reach: bool = False,
+        self, model_name: str, seed: int, use_sonia: bool = False, rule_in_prompt: bool = False, rule_in_reach: bool = False,
     ) -> str:
         if use_sonia:
-            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot-rule_{rule_in_reach}"
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot-rule_prompt_{rule_in_prompt}-reach_{rule_in_reach}"
         else:
-            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-rule_{rule_in_reach}"
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-rule_prompt_{rule_in_prompt}-reach_{rule_in_reach}"
 
 
 @dataclass
 class SanDRAConfiguration:
     api_key = os.getenv("OPENAI_API_KEY")
-    model_name = "qwen3-0.6B-16-highD:latest"  # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
+    model_name = "gpt-4o"  # "ft:gpt-4o-2024-08-06:tum::BsuinSqR" #"gpt-4o" # "qwen3:14b"  # systemctl stop ollama
 
-    use_ollama: bool = True
+    use_ollama: bool = False
     use_sonia: bool = False
     use_rules_in_prompt: bool = False
     use_rules_in_reach: bool = False
