@@ -106,7 +106,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
-                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
+                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}-{self.config.use_rules_in_reach}"
             )
         else:
             self.scenario = HighwayEnvScenario(
@@ -116,7 +116,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
-                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
+                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}-{self.config.use_rules_in_reach}"
             )
         self.scenario.time_step = self.time_step
         cr_scenario, cr_ego_vehicle, cr_planning_problem = self.scenario.commonroad_representation
@@ -181,7 +181,7 @@ class HighEnvDecider(Decider):
         if self.config.highway_env.action_input:
             done = truncated = False
             svg_save_folder = self.config.highway_env.get_save_folder(
-                self.config.model_name, self.seed, self.config.use_sonia
+                self.config.model_name, self.seed, self.config.use_sonia, self.config.use_rules_in_reach
             )
             os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):

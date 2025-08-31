@@ -34,8 +34,17 @@ def main():
     # config.use_sonia = False
     # config.h = 15 # most-likely
 
+    # ----- setting 1
     config.highway_env.lanes_count = 4
-    config.highway_env.vehicles_density = 3.0
+    config.highway_env.vehicles_density = 2.0
+
+    # # ----- setting 2
+    # config.highway_env.lanes_count = 4
+    # config.highway_env.vehicles_density = 3.0
+    #
+    # # ----- setting 3
+    # config.highway_env.lanes_count = 5
+    # config.highway_env.vehicles_density = 3.0
 
     seeds = [
         5838,
@@ -62,7 +71,7 @@ def main():
         decider = HighEnvDecider.configure(
             config=config,
             save_path=config.highway_env.get_save_folder(
-                config.model_name, seed, config.use_sonia
+                config.model_name, seed, config.use_sonia, config.use_rules_in_reach
             )
             + "/evaluation.csv",
         )

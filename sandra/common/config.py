@@ -19,12 +19,12 @@ class HighwayEnvConfig:
     save_frame: bool = False
 
     def get_save_folder(
-        self, model_name: str, seed: int, use_sonia: bool = False
+        self, model_name: str, seed: int, use_sonia: bool = False, rule_in_reach: bool = False,
     ) -> str:
         if use_sonia:
-            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot"
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot-rule_{rule_in_reach}"
         else:
-            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}"
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-rule_{rule_in_reach}"
 
 
 @dataclass
