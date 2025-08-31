@@ -78,7 +78,7 @@ def main():
         decider = HighEnvDecider.configure(
             config=config,
             save_path=config.highway_env.get_save_folder(
-                config.model_name, seed, config.use_sonia, config.use_rules_in_reach
+                config.model_name, seed, config.use_sonia, config.use_rules_in_prompt, config.use_rules_in_reach
             )
             + "/evaluation.csv",
         )
