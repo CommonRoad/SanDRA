@@ -6,6 +6,7 @@ from crmonitor.evaluation.evaluation import RuleEvaluator
 
 # Folder containing scenarios
 scenario_folder = "../scenarios_monitoring_5-3.0_reach_rule_True"
+scenario_folder = "../scenarios_monitoring_4-3.0_reach_rule_True"
 scenario_folder = "../scenarios_monitoring_4-3.0_reach_rule_False"
 SKIP_FIRST_STEP = False
 
@@ -13,7 +14,10 @@ SKIP_FIRST_STEP = False
 rules = ["R_G1", "R_G2", "R_G3"]
 
 # Stats per rule
-stats = {rule: {"total": 0, "violated": 0} for rule in rules}
+stats = {
+    rule: {"total": 0, "violated": 0, "steps_total": 0, "steps_violated": 0}
+    for rule in rules
+}
 
 for file_name in os.listdir(scenario_folder):
     if not file_name.endswith(".xml"):
@@ -44,16 +48,25 @@ for file_name in os.listdir(scenario_folder):
         # Evaluate all rules for this ego
         for rule in rules:
             rule_evaluator = RuleEvaluator.create_from_config(world, ego_vehicle, rule)
-            robustness_array = rule_evaluator.evaluate()
+            robustness_array = rule_evaluator.evaluate()[:-1]
 
             stats[rule]["total"] += 1
 
             if robustness_array.shape[0] > 0:
-                if SKIP_FIRST_STEP and robustness_array[0] < 0:
-                    # First negative is fine → ignore
-                    continue
-                elif np.any(robustness_array[1:] < 0):
-                    # Later negative values count as violation
+                # Step counts
+                stats[rule]["steps_total"] += robustness_array.shape[0]
+
+                if SKIP_FIRST_STEP:
+                    neg_steps = np.sum(robustness_array[1:] < 0)
+                    if robustness_array[0] < 0:
+                        # ignore first step if negative
+                        pass
+                else:
+                    neg_steps = np.sum(robustness_array < 0)
+
+                stats[rule]["steps_violated"] += neg_steps
+
+                if neg_steps > 0:
                     stats[rule]["violated"] += 1
 
     except Exception as e:
@@ -64,8 +77,15 @@ print("\n=== Summary per rule ===")
 for rule in rules:
     total = stats[rule]["total"]
     violated = stats[rule]["violated"]
+    steps_total = stats[rule]["steps_total"]
+    steps_violated = stats[rule]["steps_violated"]
+
     if total > 0:
-        ratio = violated / total
-        print(f"{rule}: total={total}, violated={violated}, violation ratio={ratio:.2f}")
+        scenario_ratio = violated / total
+        print(f"{rule}: total={total}, violated={violated}, violation ratio={scenario_ratio:.2f}")
+
+        if steps_total > 0:
+            step_ratio = steps_violated / steps_total
+            print(f"   time steps: total={steps_total}, violated={steps_violated}, violation ratio={step_ratio:.2f}")
     else:
         print(f"{rule}: no cases evaluated.")

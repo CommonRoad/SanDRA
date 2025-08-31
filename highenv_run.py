@@ -26,6 +26,8 @@ def main():
     config.use_rules_in_reach = True
     config.use_rules_in_prompt = True
 
+    config.visualize_reach = False
+
     config.use_sonia = True
     config.h = 8 # spot
 
