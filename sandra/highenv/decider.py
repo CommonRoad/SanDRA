@@ -366,7 +366,7 @@ class HighEnvDecider(Decider):
         path_dir = (
                 PROJECT_ROOT
                 + f"/scenarios_monitoring_{self.config.highway_env.lanes_count}-"
-                  f"{self.config.highway_env.vehicles_density}_reach_rule_{self.config.use_rules_in_reach}/"
+                  f"{self.config.highway_env.vehicles_density}_sonia-{self.config.use_sonia}_prompt_rule-{self.config.use_rules_in_prompt}_reach_rule-{self.config.use_rules_in_reach}/"
         )
         path_scenario = os.path.join(path_dir, str(self.cr_scenario_whole.scenario_id) + ".xml")
 
