@@ -8,7 +8,6 @@ from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 from commonroad.scenario.state import CustomState
 from commonroad.scenario.trajectory import Trajectory
-from lanelet2.traffic_rules import TrafficRules
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
     SemanticConfigurationBuilder,

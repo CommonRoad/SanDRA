@@ -1,6 +1,7 @@
 """
 Standalone script to create HighEnvDecider and run it for all combinations.
 """
+import os
 
 from highway_env.vehicle.behavior import IDMVehicle
 from sandra.common.config import SanDRAConfiguration
@@ -33,15 +34,14 @@ def main():
         (5, 3.0),  # setting 3
     ]
 
-    # Cartesian product of configs
-    configs = itertools.product(
-        [True, False],   # use_rules_in_reach
-        [True, False],   # use_rules_in_prompt
-        ["set-based", "most-likely"],  # prediction type
-        scenario_settings
-    )
-
     for seed in seeds:
+        # Cartesian product of configs
+        configs = itertools.product(
+            [True, False],  # use_rules_in_reach
+            [True, False],  # use_rules_in_prompt
+            ["set-based", "most-likely"],  # prediction type
+            scenario_settings
+        )
         for use_rules_in_reach, use_rules_in_prompt, pred_type, (lanes, density) in configs:
             config = SanDRAConfiguration()
 
