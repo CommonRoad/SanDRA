@@ -3,9 +3,8 @@ from enum import Enum
 
 class InterstateRule(Enum):
     # Safe distance to preceding vehicle
-    RG_1 = ("The ego vehicle following vehicles within the same lane must "
-            "maintain a safe distance to ensure collision freedom for all "
-            "of them, even if one or several vehicles suddenly stop.")
+    RG_1 = ("The distance to a vehicle ahead must generally be large enough "
+            "that one can stop safely even if that vehicle brakes suddenly.")
     # Unnecessary braking
     RG_2 = "The ego vehicle is not allowed to brake abruptly without reason."
     # Maximum speed limit
