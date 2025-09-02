@@ -75,7 +75,17 @@ def main():
                 config.use_sonia,
                 config.use_rules_in_prompt,
                 config.use_rules_in_reach
-            ) + "/evaluation.csv"
+            )
+
+            if os.path.exists(save_path + "/evaluation.csv"):
+                print(
+                    f"\n=== Skipping seed {seed}, "
+                    f"reach={use_rules_in_reach}, "
+                    f"prompt={use_rules_in_prompt}, "
+                    f"pred={pred_type}, "
+                    f"lanes={lanes}, density={density} ==="
+                )
+                continue
 
             print(
                 f"\n=== Running seed {seed}, "
