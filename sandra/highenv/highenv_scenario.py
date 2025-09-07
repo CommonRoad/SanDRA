@@ -79,7 +79,7 @@ class HighwayEnvScenario:
         self.dt = dt
         self.time_step = start_time
 
-        self.prediction_length = horizon
+        self.prediction_length = horizon + 1
         self.minimum_interval = 1.0
         self._commonroad_ids: set[int] = {0}
         self._lanelet_ids: dict[LaneIndex, dict[float, int]] = {}

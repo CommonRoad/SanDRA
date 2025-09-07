@@ -309,7 +309,7 @@ class ReachVerifier(VerifierBase):
 
                 # --- most likely prediction
                 predict_config = PredictorParams(
-                    num_steps_prediction=self.sandra_config.h, dt=self.sandra_config.dt
+                    num_steps_prediction=self.sandra_config.h + 1, dt=self.sandra_config.dt
                 )
                 predictor = ConstantVelocityCurvilinearPredictor(predict_config)
                 # predictor = ConstantAccelerationLinearPredictor(predict_config)
