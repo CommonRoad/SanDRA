@@ -29,7 +29,7 @@ class Decider:
         self.verifier = verifier
         if verifier is None:
             self.verifier = DummyVerifier()
-        if save_path is None or not save_path.endswith(".csv"):
+        if save_path is None:
             self.save_path = "batch_results.csv"
         else:
             self.save_path = save_path
@@ -48,14 +48,10 @@ class Decider:
             "schema",
         ]
 
-        directory = os.path.dirname(self.save_path)
-        if directory and not os.path.exists(directory):
-            os.makedirs(directory)
-
-        if not os.path.exists(self.save_path):
+        if not os.path.exists(self.save_path + "/evaluation.csv"):
             empty_df = pd.DataFrame(columns=columns)
-            empty_df.to_csv(self.save_path, index=False)
-            print(f"Created new CSV file: {self.save_path}")
+            empty_df.to_csv(self.save_path + "/evaluation.csv", index=False)
+            print(f"Created new CSV file: {self.save_path + '/evaluation.csv'}")
 
     def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []
@@ -89,9 +85,9 @@ class Decider:
         return action_ranking
 
     def save_iteration(self, row: dict[str, Any]):
-        df = pd.read_csv(self.save_path)
+        df = pd.read_csv(self.save_path + "/evaluation.csv")
         new_df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-        new_df.to_csv(self.save_path, index=False)
+        new_df.to_csv(self.save_path + "/evaluation.csv", index=False)
 
     def decide(
         self, past_action: List[List[Union[LongitudinalAction, LateralAction]]] = None

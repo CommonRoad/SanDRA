@@ -63,7 +63,11 @@ class HighEnvDecider(Decider):
         config: SanDRAConfiguration,
         save_path: str = None,
     ):
+        if not os.path.exists(save_path + "/run/"):
+            os.makedirs(save_path + "/run/", exist_ok=True)
+
         super().__init__(config, None, None, save_path=save_path)
+
         self.lateral_action_to_id: dict[LateralAction, int] = {
             LateralAction.CHANGE_LEFT: 0,
             LateralAction.FOLLOW_LANE: 1,
@@ -106,7 +110,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
-                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}-rule_prompt_{self.config.use_rules_in_prompt}-reach_{self.config.use_rules_in_reach}"
+                video_folder=f"{self.save_path}/run"
             )
         else:
             self.scenario = HighwayEnvScenario(
@@ -116,7 +120,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
-                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}-rule_prompt_{self.config.use_rules_in_prompt}-reach_{self.config.use_rules_in_reach}"
+                video_folder=f"{self.save_path}/run"
             )
         self.scenario.time_step = self.time_step
         cr_scenario, cr_ego_vehicle, cr_planning_problem = self.scenario.commonroad_representation
@@ -368,10 +372,10 @@ class HighEnvDecider(Decider):
                 + f"/scenarios_monitoring_{self.config.highway_env.lanes_count}-"
                   f"{self.config.highway_env.vehicles_density}_sonia-{self.config.use_sonia}_prompt_rule-{self.config.use_rules_in_prompt}_reach_rule-{self.config.use_rules_in_reach}/"
         )
-        path_scenario = os.path.join(path_dir, str(self.cr_scenario_whole.scenario_id) + ".xml")
+        path_scenario = os.path.join(self.save_path, str(self.cr_scenario_whole.scenario_id) + ".xml")
 
         # ensure directory exists
-        Path(path_dir).mkdir(parents=True, exist_ok=True)
+        # Path(path_dir).mkdir(parents=True, exist_ok=True)
 
         fw.write_to_file(path_scenario, OverwriteExistingFile.ALWAYS)
 

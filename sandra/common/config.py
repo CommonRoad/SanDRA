@@ -22,9 +22,9 @@ class HighwayEnvConfig:
         self, model_name: str, seed: int, use_sonia: bool = False, rule_in_prompt: bool = False, rule_in_reach: bool = False,
     ) -> str:
         if use_sonia:
-            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot-rule_prompt_{rule_in_prompt}-reach_{rule_in_reach}"
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-spot-rule_prompt-{rule_in_prompt}-reach-{rule_in_reach}"
         else:
-            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-rule_prompt_{rule_in_prompt}-reach_{rule_in_reach}"
+            return f"results-{self.action_input}-{model_name}-{self.lanes_count}-{self.vehicles_density}-{seed}-rule_prompt-{rule_in_prompt}-reach-{rule_in_reach}"
 
 
 @dataclass
