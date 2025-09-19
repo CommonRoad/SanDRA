@@ -22,12 +22,12 @@ seeds = [
 config_combinations = [
     (True, True, "set-based"),
     (False, True, "set-based"),
-    (True, False, "set-based"),
-    (False, False, "set-based"),
-    (True, True, "most-likely"),
-    (False, True, "most-likely"),
-    (True, False, "most-likely"),
-    (False, False, "most-likely")
+    # (True, False, "set-based"),
+    # (False, False, "set-based"),
+    # (True, True, "most-likely"),
+    # (False, True, "most-likely"),
+    # (True, False, "most-likely"),
+    # (False, False, "most-likely")
 ]
 
 # Model name (adjust as needed)
@@ -37,7 +37,7 @@ SKIP_FIRST_STEP = False
 rules = ["R_G1", "R_G2", "R_G3"]
 
 # Base directory where seed folders are located
-base_dir = "/home/liny/Documents/commonroad/results-sandra/new-results"
+base_dir = "/home/liny/Documents/commonroad/results-sandra/new-results-updated"
 
 # Dictionary to store all results
 all_results = {}
