@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+
+  <title>SanDRA</title>
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <!-- <script defer src="static/js/fontawesome.all.min.js"></script> -->
+  <script src="static/js/bulma-carousel.min.js"></script>
+  <script src="static/js/bulma-slider.min.js"></script>
+  <script src="static/js/index.js"></script>
+  <script src="https://kit.fontawesome.com/dcd6d05807.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.0/marked.min.js"></script>
+</head>
+
+<body>
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">  <span class="sandra-gradient">SanDRA</span>: Safe Large-Language-Model-Based<br> Decision Making for Automated Vehicles <br> Using Reachability Analysis</h1>
+            <div class="is-size-5 publication-authors">
+              <!-- Paper authors -->
+              <span class="author-block">
+                <a href="https://yuanfei-lin.github.io/" target="_blank">Yuanfei Lin</a><sup>1,<i
+                    class="fa-solid fa-scale-balanced fa-xs"></i>,<i class="fa-regular fa-envelope fa-shake"></i></sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://www.linkedin.com/in/sebastian-illing-6099a4336/" target="_blank">Sebastian Illing</a><sup>1,<i class="fa-solid fa-scale-balanced fa-xs"></i></sup>,
+              </span>
+              <span>
+                <a href="https://scholar.google.com/citations?user=E3zazJAAAAAJ" target="_blank">Matthias Althoff</a><sup>1</sup>
+              </span>
+            </div>
+
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><sup>1</sup> Technical University of Munich <br>
+              </span>
+              <span class="eql-cntrb">
+                <small>
+                  <br><sup><i class="fa-solid fa-scale-balanced fa-sm"></i></sup> Equal Contribution
+                  , <sup><i class="fa-regular fa-envelope fa-shake"></i></sup> Corresponding author
+                </small>
+              </span>
+            </div>
+
+            <div class="column has-text-centered">
+              <div class="publication-links">
+
+                <!-- Github link -->
+                <span class="link-block">
+                  <a href="https://github.com/CommonRoad/" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fab fa-github"></i>
+                    </span>
+                    <span>Code</span>
+                  </a>
+                </span>
+
+                <!-- ArXiv abstract Link -->
+                <span class="link-block">
+                  <a href="https://yuanfei-lin.github.io/" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                    </span>
+                    <span>arXiv</span>
+                  </a>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Teaser video-->
+  <section class="hero teaser">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <center>
+          <video poster="" id="tree" autoplay controls muted loop height="100%" width="80%">
+            <!-- Your video here -->
+            <source src="static/videos/sandra_animation.mp4" type="video/mp4">
+          </video>
+          <h2 class="subtitle has-text-centered">
+            The first framework for integrating LLMs safely into decision making for automated vehicles through <br> reachability analysis, combining the strengths of machine learning and formal methods.
+          </h2>
+      </div>
+    </div>
+  </section>
+  <!-- End teaser video -->
+
+
+
+
+  <!-- Paper abstract -->
+  <section class="section hero is-light">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">Abstract</h2>
+          <div class="content has-text-justified">
+            <p>
+              <b>
+                Large language models have been widely applied to
+knowledge-driven decision-making for automated vehicles due to
+their strong generalization and reasoning capabilities. However,
+the safety of the resulting decisions cannot be ensured due
+to possible hallucinations and the lack of integrated vehicle
+dynamics. To address this issue, we propose S AN DRA, the first
+safe large-language-model-based decision making framework for
+automated vehicles using reachability analysis. Our approach
+starts with a comprehensive description of the driving scenario
+to prompt large language models to generate and rank feasible
+driving actions. These actions are then translated into temporal logic formulas, incorporating formalized traffic rules, and
+subsequently integrated into reachability analysis to eliminate
+unsafe action pairs. We validate our approach in both open-loop and closed-loop driving environments using off-the-shelf and
+finetuned large language models, showing that it can provide
+provably safe and legally compliant driving actions without
+leading to overly conservative behavior.
+              </b>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- End paper abstract -->
+
+
+
+  <section class="section" id="Paradigm">
+    <div class="container is-max-desktop">
+      <h2 class="title">SanDRA overview diagram</h2>
+      <div class="hero-body">
+        <center>
+          <embed type="image/svg+xml" src="static/images/sandra.svg" width="80%" />
+        </center>
+        <h2 class="subtitle has-text-justified" style="padding-top: 1rem;">
+          Our tool SanDRA takes planning and environmental information as inputs and processes them to generate a structured
+description of the current scenario. The description is then used to prompt the LLM to produce a <span style="color: rgb(0,101,189);">ranked sequence of longitudinal and lateral action pairs</span>,
+ordered from best to worst. After converting the actions and traffic rules into 
+<span style="color: rgb(254,215,2);">LTL<sub>f</sub></span> formulas, we conjunct them and apply reachability analysis to verify the
+safety of the resulting behavior.
+        </h2>
+      </div>
+    </div>
+  </section>
+  
+<section class="section" id="Paradigm">
+  <div class="container is-max-desktop">
+
+    <!-- Section Title -->
+    <h2 class="title">
+      Verification of <a href="https://commonroad.github.io/" target="_blank">CommonRoad</a> scenarios
+    </h2>
+
+    <!-- Subcaption -->
+    <p" style="font-size: 1.2rem; color: #444; margin-top: 0.5rem;">
+Please refer to the example in Sec. IV.A of the paper.
+    </p>
+
+    <!-- GIFs as looping videos in one column -->
+    <div class="column has-text-centered">
+
+      <!-- GIF 1 -->
+      <div style="margin-bottom: 2rem;">
+       <h3 class="subtitle"> 1. The reachable sets corresponding to the actions ACCELERATE and RIGHT-LANE end up empty and are therefore considered unsafe.</h3>
+        <video autoplay loop muted playsinline style="width: 80%; height: auto;">
+          <source src="static/images/cr_unsafe.mp4" type="video/mp4">
+        </video>
+       
+      </div>
+
+      <!-- GIF 2 -->
+      <div style="margin-bottom: 2rem;">
+      <h3 class="subtitle">2. The reachable sets for the actions DECELERATE and FOLLOW-LANE are safe, based on the <span style="color: rgb(0,101,189);">most likely</span>  predictions of other obstacles.</h3>
+        <video autoplay loop muted playsinline style="width: 80%; height: auto;">
+          <source src="static/images/cr_safe.mp4" type="video/mp4">
+        </video>
+        
+      </div>
+
+      <!-- GIF 3 -->
+      <div style="margin-bottom: 2rem;">
+      <h3 class="subtitle">3. The reachable sets for the actions DECELERATE and FOLLOW-LANE are safe, based on the <span style="color: rgb(254,215,2);">set-based</span> predictions of other obstacles.</h3>
+        <video autoplay loop muted playsinline style="width: 80%; height: auto;">
+          <source src="static/images/cr_safe_spot.mp4" type="video/mp4">
+        </video>
+        
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+
+
+
+  <section class="section" id="Paradigm">
+    <div class="container is-max-desktop">
+      <h2 class="title">Closed-Loop Simulation</h2>
+    <div class="columns is-multiline is-variable is-4">
+      
+      <!-- Video 1 -->
+      <div class="column is-one-third">
+        <video poster="" id="v1" autoplay controls muted loop width="100%">
+          <source src="static/videos/DiLu1.mp4" type="video/mp4">
+        </video>
+      </div>
+
+      <!-- Video 2 -->
+      <div class="column is-one-third">
+        <video poster="" id="v2" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA1.mp4" type="video/mp4">
+        </video>
+      </div>
+
+      <!-- Video 3 -->
+      <div class="column is-one-third">
+        <video poster="" id="v3" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA1_rule.mp4" type="video/mp4">
+        </video>
+      </div>
+
+    </div>
+    <div class="columns is-multiline is-variable is-4">
+      
+      <!-- Video 1 -->
+      <div class="column is-one-third">
+        <video poster="" id="v1" autoplay controls muted loop width="100%">
+          <source src="static/videos/DiLu2_8765.mp4" type="video/mp4">
+        </video>
+      </div>
+
+      <!-- Video 2 -->
+      <div class="column is-one-third">
+        <video poster="" id="v2" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA2.mp4" type="video/mp4">
+        </video>
+      </div>
+
+      <!-- Video 3 -->
+      <div class="column is-one-third">
+        <video poster="" id="v3" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA2_rule.mp4" type="video/mp4">
+        </video>
+      </div>
+
+    </div>
+    <div class="columns is-multiline is-variable is-4">
+      
+      <!-- Video 1 -->
+      <div class="column is-one-third">
+        <video poster="" id="v1" autoplay controls muted loop width="100%">
+          <source src="static/videos/DiLu3_9650.mp4" type="video/mp4">
+        </video>
+      </div>
+
+      <!-- Video 2 -->
+      <div class="column is-one-third">
+        <video poster="" id="v2" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA3.mp4" type="video/mp4">
+        </video>
+      </div>
+
+      <!-- Video 3 -->
+      <div class="column is-one-third">
+        <video poster="" id="v3" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA3_rule.mp4" type="video/mp4">
+        </video>
+      </div>
+
+    </div>
+        <div class="columns is-multiline is-variable is-4">
+      
+      <!-- Video 1 -->
+      <div class="column is-one-third">
+        <video poster="" id="v1" autoplay controls muted loop width="100%">
+          <source src="static/videos/DiLu4_1348.mp4" type="video/mp4">
+        </video>
+        <h2 class="subtitle has-text-centered">
+          <a href="https://pjlab-adg.github.io/DiLu/">DiLu</a> 
+        </h2>
+      </div>
+
+      <!-- Video 2 -->
+      <div class="column is-one-third">
+        <video poster="" id="v2" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA4.mp4" type="video/mp4">
+        </video>
+        <h2 class="subtitle has-text-centered">
+          SanDRA without rules
+        </h2>
+      </div>
+
+      <!-- Video 3 -->
+      <div class="column is-one-third">
+        <video poster="" id="v3" autoplay controls muted loop width="100%">
+          <source src="static/videos/SanDRA4_rule.mp4" type="video/mp4">
+        </video>
+        <h2 class="subtitle has-text-centered">
+          SanDRA with rules
+        </h2>
+      </div>
+
+    </div>
+            <h2 class="subtitle has-text-justified" style="padding-top: 1rem;">
+      The <b>closed-loop</b> driving task in <a href="http://highway-env.farama.org/">Highway-env</a> under different
+      settings. The <span style="color:green;">ego car</span> is controlled by LLM-based agents and the decision-making processes are fully
+      text-based. Our approach improves the safety of the agent by incorporating verified actions before execution, together with formalized traffic rules,
+  enabling the vehicle to reliably follow regulations and safely navigate complex scenarios.
+
+    </h2>
+
+
+  </div>
+</section>
+
+
+  
+  <!--BibTex citation -->
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title">BibTeX</h2>
+      <div style="position: relative;">
+        <button id="copyButton" style="position: absolute; top: 0; right: 0;">Copy</button>
+        <pre><code id="bibtexCode">@misc{lin2025sandra,
+    title={SanDRA: Safe Large-Language-Model-Based Decision Making for Automated Vehicles Using Reachability Analysis}, 
+    author={Yuanfei Lin and Sebastian Illing and Matthias Althoff},
+    year={2025},
+    archivePrefix={arXiv},
+    primaryClass={cs.RO}
+}
+      </code></pre>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    var copyButton = document.getElementById("copyButton");
+
+    copyButton.addEventListener("click", function () {
+      var codeElement = document.getElementById("bibtexCode");
+      var textToCopy = codeElement.textContent;
+
+      var textarea = document.createElement("textarea");
+      textarea.value = textToCopy;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+
+      copyButton.textContent = "✓ Copied!";
+
+      setTimeout(function () {
+        copyButton.textContent = "Copy";
+      }, 2000); // Reset the button text after 2 seconds (adjust as needed)
+    });
+  </script>
+  <!--End BibTex citation -->
+
+
+  <footer class="footer">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content">
+
+            <p style="text-align: center; margin-top: 2rem;">
+  This page was built using the 
+  <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">
+    Academic Project Page Template
+  </a>
+  adapted based on   <a href="https://pjlab-adg.github.io/DiLu/" target="_blank">
+DiLu.
+  </a>
+</p>
+
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Statcounter tracking code -->
+
+  <!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
+
+  <!-- End of Statcounter Code -->
+
+</body>
+<script>
+  function getText(url, callback) {
+    $.get(url, function (data) {
+      callback(data);
+    })
+  }
+  function isDecisionFrameValid(value) {
+    if (value === '') {
+      alert('Please input a Decision Frame.')
+      return false;
+    }
+
+    var intValue = parseInt(value, 10);
+    if (intValue >= 0 && intValue <= 29 && value == intValue) {
+      return true;
+    } else {
+      alert('The Decision Frame should be an integer between 0 and 29.')
+      return false;
+    }
+  }
+  function viewFrame() {
+    var currentDecisionFrame = $('#decisionFrameValue').val();
+    if (isDecisionFrameValid(currentDecisionFrame)) {
+      var imagePath = 'static/images/decisionFrame_' + currentDecisionFrame + '.png';
+      $('#frameImage').attr('src', imagePath);
+      var SDPath = 'static/text/scenarioDescription_' + currentDecisionFrame + '.txt';
+      getText(SDPath, function (data) {
+        var htmlText = marked.parse(data);
+        $('#showDescription').html(htmlText);
+      });
+      var TDPath = 'static/text/thoughtsDecision_' + currentDecisionFrame + '.txt';
+      getText(TDPath, function (data) {
+        var htmlText = marked.parse(data);
+        $('#showThoughtsDecision').html(htmlText);
+      });
+    }
+  }
+  function lastFrame() {
+    var currentDecisionFrame = parseInt($('#decisionFrameValue').val(), 10);
+    if (isDecisionFrameValid(currentDecisionFrame)) {
+      var lastDecisionFrame = currentDecisionFrame - 1;
+      if (isDecisionFrameValid(lastDecisionFrame)) {
+        $("#decisionFrameValue").val(lastDecisionFrame);
+        viewFrame();
+      }
+    }
+  }
+  function nextFrame() {
+    var currentDecisionFrame = parseInt($('#decisionFrameValue').val(), 10);
+    if (isDecisionFrameValid(currentDecisionFrame)) {
+      var nextDecisionFrame = currentDecisionFrame + 1;
+      if (isDecisionFrameValid(nextDecisionFrame)) {
+        $("#decisionFrameValue").val(nextDecisionFrame);
+        viewFrame();
+      }
+    }
+  }
+  $(document).ready(function () {
+    $("#dropdownList li").click(function () {
+      var number = parseInt($(this).text(), 10);
+      $("#decisionFrameValue").val(number);
+    });
+    getText('static/text/scenarioDescription_0.txt', function (data) {
+      var htmlText = marked.parse(data);
+      $('#showDescription').html(htmlText);
+    });
+    getText('static/text/thoughtsDecision_0.txt', function (data) {
+      var htmlText = marked.parse(data);
+      $('#showThoughtsDecision').html(htmlText);
+    })
+  });
+
+</script>
+
+</html>
