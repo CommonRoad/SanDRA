@@ -184,10 +184,6 @@ class HighEnvDecider(Decider):
     def run(self):
         if self.config.highway_env.action_input:
             done = truncated = False
-            svg_save_folder = self.config.highway_env.get_save_folder(
-                self.config.model_name, self.seed, self.config.use_sonia, self.config.use_rules_in_prompt, self.config.use_rules_in_reach
-            )
-            os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):
                 print(f"***** Simulation frame {self.time_step}: ...")
                 if (
@@ -227,8 +223,9 @@ class HighEnvDecider(Decider):
                     ax.set_aspect("equal")
                     fig.savefig(
                         os.path.join(
-                            svg_save_folder, f"frame_{self.time_step:04d}.svg"
+                            self.save_path, f"frame_{self.time_step:04d}.svg"
                         ),
+                        dpi=300,
                         format="svg",
                         bbox_inches="tight",
                         pad_inches=0,
@@ -366,12 +363,7 @@ class HighEnvDecider(Decider):
             self.cr_scenario_whole, planning_problem_set, author, affiliation, source, tags
         )
         self.cr_scenario_whole.scenario_id = str(self.cr_scenario_whole.scenario_id) + "001"
-        # build path
-        path_dir = (
-                PROJECT_ROOT
-                + f"/scenarios_monitoring_{self.config.highway_env.lanes_count}-"
-                  f"{self.config.highway_env.vehicles_density}_sonia-{self.config.use_sonia}_prompt_rule-{self.config.use_rules_in_prompt}_reach_rule-{self.config.use_rules_in_reach}/"
-        )
+
         path_scenario = os.path.join(self.save_path, str(self.cr_scenario_whole.scenario_id) + ".xml")
 
         # ensure directory exists
@@ -451,6 +443,10 @@ class HighEnvDecider(Decider):
                 "ego_spacing": 4,
                 "simulation_frequency": config.highway_env.simulation_frequency,
                 "policy_frequency": config.highway_env.policy_frequency,
+
+                # 👇 Add these for higher resolution
+                "screen_width": 800,   # default ~600
+                "screen_height": 300,   # default ~400
             }
         }
         seed = random.choice(seeds)
