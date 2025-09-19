@@ -3,6 +3,7 @@ import signal
 from json import JSONDecodeError
 from typing import Any
 
+import openai
 from openai import OpenAI
 from ollama import chat
 import json
@@ -166,7 +167,9 @@ def get_structured_response(
                 )
         except JSONDecodeError:
             print(f"JSON Decode Error, trying again in {retries} retries")
-    raise JSONDecodeError("No more retries left")
+        except openai.APIConnectionError:
+            print(f"API Connection Error, trying again in {retries} retries")
+    raise ValueError("No more retries left")
 
 
 if __name__ == "__main__":

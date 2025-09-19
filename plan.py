@@ -4,6 +4,7 @@ from commonroad_reach.utility import visualization as util_visual
 
 from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.rules import InterstateRule
 from sandra.utility.visualization import plot_reachable_sets
 from sandra.commonroad.plan import ReactivePlanner
 from sandra.commonroad.reach import ReachVerifier, VerificationStatus
@@ -16,16 +17,23 @@ matplotlib.use("TkAgg")
 
 
 # scenario basic information
-name_scenario = "DEU_MONAEast-2_4316_T-4341"
+name_scenario = "DEU_Goeppingen-37_1_T-4"
+name_scenario = "DEU_Goeppingen-37_1_T-5" # for set + rules
+
 path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
 scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
     lanelet_assignment=True
 )
-planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
+planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 
 # configuration
 config = SanDRAConfiguration()
+config.a_lim = 0.2
+config.h = 25
+config.use_sonia = True
+config.dt = 0.1
+config.use_rules_in_reach = True
 
 # road network
 road_network = RoadNetwork.from_lanelet_network_and_position(
@@ -44,10 +52,16 @@ reach_ver = ReachVerifier(scenario, planning_problem, config, ego_lane_network)
 
 status = reach_ver.verify(
     [LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE],
+    rules=[InterstateRule.RG_1, InterstateRule.RG_3],
 )
 
 # plot the reachable set
-# plot_reachable_sets(reach_ver.reach_interface, plot_limits=config.plot_limits)
+
+util_visual.plot_scenario_with_reachable_sets(
+    reach_ver.reach_interface, save_gif=True, plot_limits=config.plot_limits
+)
+
+plot_reachable_sets(reach_ver.reach_interface, plot_limits=config.plot_limits)
 
 
 # planning

@@ -220,6 +220,10 @@ class DescriberBase(ABC):
         pass
 
     @abstractmethod
+    def _describe_traffic_rules(self) -> str:
+        pass
+
+    @abstractmethod
     def _describe_schema(self) -> str:
         pass
 
@@ -260,6 +264,7 @@ class DescriberBase(ABC):
     def user_prompt(self) -> str:
         parts = [
             self._describe_ego_state(),
+            self._describe_traffic_rules() if self.config.use_rules_in_prompt else None,
             self._describe_traffic_signs(),
             self._describe_traffic_lights(),
             self._describe_obstacles(),

@@ -2,10 +2,19 @@ import math
 import os
 import random
 import sys
+from pathlib import Path
 from typing import cast, Optional, List, Union
 
 import gymnasium
 import numpy as np
+from commonroad.common.file_writer import CommonRoadFileWriter
+from commonroad.common.writer.file_writer_interface import OverwriteExistingFile
+from commonroad.planning.planning_problem import PlanningProblemSet
+from commonroad.scenario.obstacle import DynamicObstacle
+from commonroad.scenario.scenario import Scenario, Tag
+from commonroad.scenario.state import CustomState
+from commonroad.scenario.trajectory import Trajectory
+from commonroad.prediction.prediction import TrajectoryPrediction
 from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
 from highway_env.envs.common.observation import TimeToCollisionObservation
@@ -21,7 +30,7 @@ from highway_env.vehicle.controller import ControlledVehicle
 ControlledVehicle.TAU_LATERAL = 2.0
 
 from sandra.actions import LateralAction, LongitudinalAction
-from sandra.common.config import SanDRAConfiguration
+from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.plan import ReactivePlanner
@@ -54,7 +63,11 @@ class HighEnvDecider(Decider):
         config: SanDRAConfiguration,
         save_path: str = None,
     ):
+        if not os.path.exists(save_path + "/run/"):
+            os.makedirs(save_path + "/run/", exist_ok=True)
+
         super().__init__(config, None, None, save_path=save_path)
+
         self.lateral_action_to_id: dict[LateralAction, int] = {
             LateralAction.CHANGE_LEFT: 0,
             LateralAction.FOLLOW_LANE: 1,
@@ -66,13 +79,17 @@ class HighEnvDecider(Decider):
             LongitudinalAction.DECELERATE: 4,
         }
         self.seed = seed
-        _, planning_problem = self.update(env_config)
+        # entire commonroad scenario
+        self.cr_scenario_whole, self.cr_ego_whole, self.planning_problem = self.update(env_config)
+        for obs in self.cr_scenario_whole.dynamic_obstacles:
+            obs.prediction = None
+        self.cr_ego_whole.prediction = None
 
         # Initialize the past_action list
         self.past_actions: list = []
 
         # record the initial position
-        self.initial_position = planning_problem.initial_state.position
+        self.initial_position = self.planning_problem.initial_state.position
 
     def record_action(
         self,
@@ -93,7 +110,7 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
-                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
+                video_folder=f"{self.save_path}/run"
             )
         else:
             self.scenario = HighwayEnvScenario(
@@ -103,10 +120,10 @@ class HighEnvDecider(Decider):
                 horizon=self.config.h,
                 use_sonia=self.config.use_sonia,
                 maximum_lanelet_length=self.config.highway_env.maximum_lanelet_length,
-                video_folder=f"run-{self.config.model_name}-{self.config.highway_env.lanes_count}-{self.config.highway_env.vehicles_density}"
+                video_folder=f"{self.save_path}/run"
             )
         self.scenario.time_step = self.time_step
-        cr_scenario, _, cr_planning_problem = self.scenario.commonroad_representation
+        cr_scenario, cr_ego_vehicle, cr_planning_problem = self.scenario.commonroad_representation
         self.describer = CommonRoadDescriber(
             cr_scenario,
             cr_planning_problem,
@@ -135,15 +152,38 @@ class HighEnvDecider(Decider):
                 ego_lane_network=ego_lane_network,
                 highenv=True,
             )
-        return cr_scenario, cr_planning_problem
+        return cr_scenario, cr_ego_vehicle, cr_planning_problem
+
+    def record(self, scenario: Scenario, ego_vehicle: DynamicObstacle) -> None:
+        """Append the current states of obstacles and ego to their trajectories."""
+
+        def append_from_initial(cr_obs, new_initial, time_step):
+            """Append the given initial state as the next trajectory state."""
+            new_state = CustomState(
+                position=new_initial.position,
+                velocity=new_initial.velocity,
+                orientation=new_initial.orientation,
+                acceleration=new_initial.acceleration,
+                time_step=time_step,
+            )
+            if cr_obs.prediction is None:
+                trajectory = Trajectory(1, [new_state])
+                cr_obs.prediction = TrajectoryPrediction(trajectory, cr_obs.obstacle_shape)
+            else:
+                cr_obs.prediction.trajectory.append_state(new_state)
+
+        # Update dynamic obstacles
+        for obs in scenario.dynamic_obstacles:
+            cr_obs = self.cr_scenario_whole.obstacle_by_id(obs.obstacle_id)
+            if cr_obs is not None:
+                append_from_initial(cr_obs, obs.initial_state, self.time_step + 1)
+
+        # Update ego vehicle
+        append_from_initial(self.cr_ego_whole, ego_vehicle.initial_state, self.time_step + 1)
 
     def run(self):
         if self.config.highway_env.action_input:
             done = truncated = False
-            svg_save_folder = self.config.highway_env.get_save_folder(
-                self.config.model_name, self.seed, self.config.use_sonia
-            )
-            os.makedirs(svg_save_folder, exist_ok=True)
             while not (done or truncated):
                 print(f"***** Simulation frame {self.time_step}: ...")
                 if (
@@ -152,9 +192,9 @@ class HighEnvDecider(Decider):
                 ):
                     break
                 if self.scenario:
-                    self.update(self.scenario._env)
+                    cr_scenario, cr_ego, _ = self.update(self.scenario._env)
                 else:
-                    self.update(None)
+                    cr_scenario, cr_ego, _ = self.update(None)
 
                 longitudinal_action, lateral_action = self.decide(self.past_actions)
 
@@ -169,6 +209,9 @@ class HighEnvDecider(Decider):
                 else:
                     action = self.longitudinal_action_to_id[longitudinal_action]
                 obs, reward, done, truncated, info = self.scenario._env.step(action)
+
+                self.record(cr_scenario, cr_ego)
+
                 # self.describer.update_with_observation(obs)
                 # Render frame
                 frame = self.scenario._env.render()  # RGB NumPy array
@@ -180,8 +223,9 @@ class HighEnvDecider(Decider):
                     ax.set_aspect("equal")
                     fig.savefig(
                         os.path.join(
-                            svg_save_folder, f"frame_{self.time_step:04d}.svg"
+                            self.save_path, f"frame_{self.time_step:04d}.svg"
                         ),
+                        dpi=300,
                         format="svg",
                         bbox_inches="tight",
                         pad_inches=0,
@@ -215,7 +259,7 @@ class HighEnvDecider(Decider):
             for i in range(simulation_length):
                 print(f"STEP ID: {self.scenario._env.step_id}")
                 if i % replanning_frequency == 0:
-                    cr_scenario, cr_planning_problem = self.update(None)
+                    cr_scenario, cr_ego, cr_planning_problem = self.update(None)
                     user_prompt = self.describer.user_prompt()
                     system_prompt = self.describer.system_prompt()
                     schema = self.describer.schema()
@@ -230,7 +274,7 @@ class HighEnvDecider(Decider):
                     found_viable_action = False
                     for action in ranking:
                         if (
-                            self.verifier.verify(list(action), safe_distance=True)
+                            self.verifier.verify(list(action))
                             == VerificationStatus.SAFE
                         ):
                             try:
@@ -257,7 +301,7 @@ class HighEnvDecider(Decider):
 
                     if not found_viable_action:
                         if (
-                            self.verifier.verify([None], safe_distance=False)
+                            self.verifier.verify([None])
                             == VerificationStatus.SAFE
                         ):
                             try:
@@ -296,12 +340,36 @@ class HighEnvDecider(Decider):
                 self.scenario._env.close()
 
         # store the travelled distance
-        _, planning_problem = self.update(None)
+        _, _, planning_problem = self.update(None)
         travelled_distance = (
             planning_problem.initial_state.position[0] - self.initial_position[0]
         )
         new_row = {"iteration-id": "Travelled", "Lateral1": travelled_distance}
         self.save_iteration(new_row)
+
+        # save the scenario for monitoring
+        self.save_scenario_whole()
+
+
+    def save_scenario_whole(self):
+        author = "Sandra Lin"
+        affiliation = "Technical University of Munich, Germany"
+        source = ""
+        tags = {Tag.HIGHWAY}
+        self.cr_scenario_whole.add_objects(self.cr_ego_whole)
+
+        planning_problem_set = PlanningProblemSet([self.planning_problem])
+        fw = CommonRoadFileWriter(
+            self.cr_scenario_whole, planning_problem_set, author, affiliation, source, tags
+        )
+        self.cr_scenario_whole.scenario_id = str(self.cr_scenario_whole.scenario_id) + "001"
+
+        path_scenario = os.path.join(self.save_path, str(self.cr_scenario_whole.scenario_id) + ".xml")
+
+        # ensure directory exists
+        # Path(path_dir).mkdir(parents=True, exist_ok=True)
+
+        fw.write_to_file(path_scenario, OverwriteExistingFile.ALWAYS)
 
     @staticmethod
     def configure(
@@ -375,6 +443,10 @@ class HighEnvDecider(Decider):
                 "ego_spacing": 4,
                 "simulation_frequency": config.highway_env.simulation_frequency,
                 "policy_frequency": config.highway_env.policy_frequency,
+
+                # 👇 Add these for higher resolution
+                "screen_width": 800,   # default ~600
+                "screen_height": 300,   # default ~400
             }
         }
         seed = random.choice(seeds)

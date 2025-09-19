@@ -75,15 +75,15 @@ def batch_labelling(
     # Load already processed scenario IDs if given_csv is provided
 
     processed_scenario_ids = set()
-    # if given_csv and os.path.exists(given_csv):
-    #     try:
-    #         df_existing = pd.read_csv(given_csv)
-    #         if "ScenarioID" in df_existing.columns:
-    #             processed_scenario_ids = set(df_existing["ScenarioID"].astype(str))
-    #         else:
-    #             print(f"Warning: 'ScenarioID' column not found in {given_csv}.")
-    #     except Exception as e:
-    #         print(f"Error reading {given_csv}: {e}")
+    if given_csv and os.path.exists(given_csv):
+        try:
+            df_existing = pd.read_csv(given_csv)
+            if "ScenarioID" in df_existing.columns:
+                processed_scenario_ids = set(df_existing["ScenarioID"].astype(str))
+            else:
+                print(f"Warning: 'ScenarioID' column not found in {given_csv}.")
+        except Exception as e:
+            print(f"Error reading {given_csv}: {e}")
 
     if not scenario_entries:
         print("No scenarios found to process.")
@@ -93,10 +93,10 @@ def batch_labelling(
         filename = given_csv
     elif role:
         safe_role = re.sub(r"[^a-zA-Z0-9_]+", "", role.replace(" ", "_").lower())
-        filename = f"batch_labelling_results_{config.model_name}_{safe_role}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"batch_labelling_results_{config.model_name}_{safe_role}_{datetime.now().strftime('%Y%m%d_%H%M%S')}-rule_{config.use_rules_in_prompt}.csv"
     else:
         filename = (
-            f"batch_labelling_results_{config.model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            f"batch_labelling_results_{config.model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}-rule_{config.use_rules_in_prompt}.csv"
         )
     csv_path = os.path.join(scenario_folder, filename)
 
@@ -112,6 +112,7 @@ def batch_labelling(
     llmk_safe = 0
     highd_safe = 0
 
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     with open(csv_path, mode="a", newline="") as csvfile:
         writer = csv.writer(csvfile)
 
@@ -182,7 +183,7 @@ def batch_labelling(
                     describer = CommonRoadDescriber(
                         scenario, planning_problem, 0, config, role=role
                     )
-                    decider = Decider(config, describer)
+                    decider = Decider(config, describer, save_path=os.path.dirname(scenario_path))
                     system_prompt = decider.describer.system_prompt()
                     user_prompt = decider.describer.user_prompt()
                     prompt = system_prompt + user_prompt
@@ -469,7 +470,9 @@ def _write_labels_row(
 
 if __name__ == "__main__":
     scenarios_path = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/"
+    scenarios_path = "/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/"
     config = SanDRAConfiguration()
+    config.use_rules_in_prompt = False
     # config.model_name = "ft:gpt-4o-2024-08-06:tum::BsuinSqR"
     config.h = 25
     config.k = 3
@@ -483,7 +486,7 @@ if __name__ == "__main__":
         evaluate_trajectory_labels=True,
         evaluate_reachset_labels=False,
         nr_scenarios=801,
-        given_csv="batch_labelling_results_qwen3-0.6B-16-highD:latest_20250801_165416.csv"
+        given_csv="/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/batch_labelling_results_gpt-4o_20250912_123945-rule_False.csv" #"/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/batch_labelling_results_gpt-4o_20250912_102453-rule_True.csv"
     )
 
 

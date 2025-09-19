@@ -6,6 +6,8 @@ if __name__ == "__main__":
     #batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6b:latest_20250801_111305.csv"
     #batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6B-highD:latest_20250801_112848.csv"
     #batch_file = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/batch_labelling_results_qwen3-0.6b-16-3-highD:latest_20250801_105403.csv"
+    batch_file = "./data/rule_prompt/batch_labelling_results_gpt-4o_20250912_102453-rule_True.csv"
+    batch_file = "./data/rule_prompt/batch_labelling_results_gpt-4o_20250912_123945-rule_False.csv"
     df = pd.read_csv(batch_file)
 
     # Columns to compute average TRUE rate

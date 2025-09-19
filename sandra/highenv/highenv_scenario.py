@@ -7,10 +7,13 @@ from commonroad.common.util import AngleInterval, Interval
 from commonroad.geometry.shape import Rectangle
 from commonroad.planning.goal import GoalRegion
 from commonroad.planning.planning_problem import PlanningProblem, PlanningProblemSet
+from commonroad.prediction.prediction import TrajectoryPrediction
 from commonroad.scenario.lanelet import Lanelet, LaneletNetwork
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.scenario import Scenario, ScenarioID
 from commonroad.scenario.state import InitialState, CustomState
+from commonroad.scenario.trajectory import Trajectory
+
 from crpred.basic_models.constant_velocity_predictor import (
     ConstantVelocityCurvilinearPredictor,
 )
@@ -296,8 +299,40 @@ class HighwayEnvScenario:
         self._commonroad_ids.add(next_id)
         return next_id
 
-    def _prediction(self, scenario: Scenario) -> Scenario:
+    def _prediction(self, scenario: Scenario, preceding_obs: DynamicObstacle) -> Scenario:
         if self.use_sonia:
+            state_list = []
+            for ts in range(1, self.prediction_length):
+                if preceding_obs is not None and preceding_obs.prediction is not None:
+                    preceding_state = preceding_obs.state_at_time(ts)
+                    state_list.append(CustomState(
+                        position=preceding_state.position,
+                        velocity=preceding_state.velocity,
+                        orientation=preceding_state.orientation,
+                        time_step=ts,
+                    ))
+                else:
+                    state_list.append(CustomState(position=np.array([0, 0]), velocity=0, time_step=ts, orientation=0.0))
+            if preceding_obs is not None:
+                phantom_obstacle = DynamicObstacle(
+                    obstacle_id=85748,
+                    obstacle_type=ObstacleType.CAR,
+                    obstacle_shape=preceding_obs.obstacle_shape,
+                    initial_state=preceding_obs.initial_state,
+                    prediction=TrajectoryPrediction(trajectory=Trajectory(1, state_list),
+                                                    shape=preceding_obs.obstacle_shape)
+                )
+            else:
+                phantom_obstacle = DynamicObstacle(
+                    obstacle_id=85748,
+                    obstacle_type=ObstacleType.CAR,
+                    obstacle_shape=Rectangle(5, 2),
+                    initial_state=InitialState(position=np.array([0.0, 0.0]), orientation=0.0, velocity=0.0,
+                                               acceleration=0.0, yaw_rate=0.0, slip_angle=0.0),
+                    prediction=TrajectoryPrediction(trajectory=Trajectory(1, state_list),
+                                                    shape=Rectangle(5, 2)),
+                )
+            scenario.add_objects(phantom_obstacle)
             return scenario
         else:
             # Add all obstacle predictions
@@ -339,7 +374,6 @@ class HighwayEnvScenario:
         ego_vehicle_commonroad = self._make_commonroad_obstacle(
             ego_vehicle, self._next_id()
         )
-        ego_obstacle_id = ego_vehicle_commonroad.obstacle_id
         if add_ego:
             scenario.add_objects(ego_vehicle_commonroad)
 
@@ -352,18 +386,43 @@ class HighwayEnvScenario:
                 sort=True,
             ),
         )
+
+        preceding_vehicle = None
+        distance_min = np.inf
+
+        initial_lanelet = scenario.lanelet_network.find_most_likely_lanelet_by_state(
+            [ego_vehicle_commonroad.initial_state]
+        )[0]
         for vehicle in road.vehicles:
             vehicle_lane = road.network.get_lane(vehicle.lane_index)
             s, _ = vehicle_lane.local_coordinates(vehicle.position)
             if s > self.maximum_lanelet_length or vehicle not in obstacles:
                 continue
+            commonroad_obs = self._make_commonroad_obstacle(vehicle, self._next_id())
             scenario.add_objects(
-                self._make_commonroad_obstacle(vehicle, self._next_id())
+                commonroad_obs
             )
+
+            # find preceding vehicle
+            obstacle_lanelets = scenario.lanelet_network.find_lanelet_by_position(
+                [commonroad_obs.initial_state.position]
+            )[0]
+
+            if initial_lanelet not in obstacle_lanelets:
+                continue
+
+            # Check whether obstacle is in front of ego
+            if self.is_in_front(ego_vehicle_commonroad.initial_state, commonroad_obs.initial_state, threshold=0.0):
+                distance = np.linalg.norm(
+                    np.array(commonroad_obs.initial_state.position) - np.array(commonroad_obs.initial_state.position)
+                )
+                if distance < distance_min:
+                    distance_min = distance
+                    preceding_vehicle = commonroad_obs
 
         # Add all obstacle predictions
         try:
-            scenario = self._prediction(scenario)
+            scenario = self._prediction(scenario, preceding_vehicle)
         except ValueError as e:
             print(f"[Warning] Prediction failed due to value error: {e}")
             pass
@@ -389,7 +448,28 @@ class HighwayEnvScenario:
             PROJECT_ROOT + "/scenarios/" + str(scenario.scenario_id) + ".xml"
         )
         fw.write_to_file(path_scenario, OverwriteExistingFile.ALWAYS)
-        return scenario, scenario.obstacle_by_id(ego_obstacle_id), planning_problem
+        return scenario, ego_vehicle_commonroad, planning_problem
+
+    def is_in_front(self, ego_state, obs_state, threshold=0.0):
+        """
+        Orientation check ensures that only obstacles in the driving direction of the ego
+         are considered “in front, not just geometrically ahead along the lanelet.
+         """
+        # Ego position and heading
+        ego_pos = np.array([ego_state.position[0], ego_state.position[1]])
+        ego_heading = ego_state.orientation  # in radians
+        ego_dir = np.array([np.cos(ego_heading), np.sin(ego_heading)])
+
+        # Obstacle position
+        obs_pos = np.array([obs_state.position[0], obs_state.position[1]])
+
+        # Vector from ego to obstacle
+        v = obs_pos - ego_pos
+
+        # Projection of v onto ego's direction
+        projection = np.dot(v, ego_dir)
+
+        return projection > threshold
 
     @property
     def highway_env_representation(self) -> Env:
