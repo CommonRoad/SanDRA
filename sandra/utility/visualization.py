@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, List, Tuple
+from typing import Optional, List
 import os
 
 import numpy as np
@@ -18,21 +18,18 @@ from commonroad.geometry.shape import Rectangle, Polygon
 
 from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.prediction.prediction import TrajectoryPrediction
-from commonroad.scenario.lanelet import LaneletNetwork, Lanelet
 from commonroad.scenario.obstacle import DynamicObstacle, ObstacleType
 from commonroad.scenario.scenario import Scenario
 from commonroad.visualization.draw_params import (
     MPDrawParams,
-    LaneletNetworkParams,
-    TrajectoryParams,
     ShapeParams,
 )
 from commonroad.visualization.mp_renderer import MPRenderer
 
 from commonroad_reach.utility import coordinate_system as util_coordinate_system
 
-from sandra.common.config import SUPPRESS_PLOTS, SanDRAConfiguration
-from sandra.common.road_network import EgoLaneNetwork, RoadNetwork
+from sandra.config import SUPPRESS_PLOTS, SanDRAConfiguration
+from sandra.utility.road_network import EgoLaneNetwork, RoadNetwork
 
 
 class TUMcolor(tuple, Enum):
@@ -90,56 +87,6 @@ def plot_scenario(
     params.lanelet_network.traffic_sign.draw_traffic_signs = True
     scenario.draw(rnd, draw_params=params)
     planning_problem.draw(rnd)
-    rnd.render(show=True, filename=save_path)
-
-
-def plot_predicted_trajectory(
-    scenario: Scenario, vehicle: DynamicObstacle, save_path: str = None
-):
-    assert isinstance(
-        vehicle.prediction, TrajectoryPrediction
-    ), "Can not plot a prediction which is not a TrajectoryPrediction object."
-    rnd = MPRenderer(
-        figsize=(12, 8), focus_obstacle=vehicle, plot_limits=[-30, 30, -30, 30]
-    )
-    params = LaneletNetworkParams()
-    params.traffic_sign.draw_traffic_signs = True
-    scenario.lanelet_network.draw(rnd, draw_params=params)
-    vehicle.draw(rnd)
-    params = TrajectoryParams()
-    params.draw_continuous = True
-    params.facecolor = "red"
-    params.line_width = 0.7
-    vehicle.prediction.trajectory.draw(rnd, draw_params=params)
-    rnd.render(show=True, filename=save_path)
-
-
-def plot_lanelet(
-    lanelet: Lanelet, lanelet_network: LaneletNetwork, save_path: str = None
-):
-    # draw network
-    rnd = MPRenderer(figsize=(12, 8))
-    params = LaneletNetworkParams()
-    params.traffic_sign.draw_traffic_signs = True
-    lanelet_network.draw(rnd, draw_params=params)
-
-    # draw lanelet center vertices
-    params = ShapeParams()
-    params.opacity = 1.0
-    params.edgecolor = "red"
-    params.linewidth = 0.7
-
-    rnd.draw_polygon(lanelet.center_vertices, params)
-
-    if lanelet.successor:
-        for succ in lanelet.successor:
-            ll = lanelet_network.find_lanelet_by_id(succ)
-            rnd.draw_polygon(ll.center_vertices, params)
-
-    if lanelet.predecessor:
-        for pred in lanelet.predecessor:
-            ll = lanelet_network.find_lanelet_by_id(pred)
-            rnd.draw_polygon(ll.center_vertices, params)
     rnd.render(show=True, filename=save_path)
 
 

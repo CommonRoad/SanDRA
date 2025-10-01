@@ -7,11 +7,8 @@ import openai
 from openai import OpenAI
 from ollama import chat
 import json
-import concurrent.futures
 
-from pydantic import BaseModel
-
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.config import SanDRAConfiguration, PROJECT_ROOT
 
 def ollama_client():
     client = OpenAI(
@@ -170,32 +167,3 @@ def get_structured_response(
         except openai.APIConnectionError:
             print(f"API Connection Error, trying again in {retries} retries")
     raise ValueError("No more retries left")
-
-
-if __name__ == "__main__":
-
-    class Country(BaseModel):
-        name: str
-        capital: str
-        languages: list[str]
-
-    client = ollama_client()
-    user_prompt = "Tell me about Canada."
-    system_prompt = "Tell me about Canada."
-    config = SanDRAConfiguration()
-    config.model_name = "qwen3:14b"
-    # completion = client.beta.chat.completions.parse(
-    #     model="qwen3:14b",
-    #     messages=[
-    #         {"role": "system", "content": system_prompt},
-    #         {"role": "user", "content": user_prompt},
-    #     ],
-    #     response_format=Country,
-    # )
-    #
-    # event = completion.choices[0].message.parsed
-    # print(event)
-    response = get_structured_response(
-        user_prompt, system_prompt, Country.model_json_schema(), config
-    )
-    print(response)

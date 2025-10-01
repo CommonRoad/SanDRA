@@ -2,7 +2,7 @@ import itertools
 import numpy as np
 from pathlib import Path
 from commonroad.common.file_reader import CommonRoadFileReader
-from sandra.utility.vehicle import extract_ego_vehicle
+from sandra.utility.general import extract_ego_vehicle
 
 # === CONFIGURATION ===
 model_name = "gpt-4o"

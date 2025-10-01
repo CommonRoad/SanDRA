@@ -11,8 +11,8 @@ from commonroad_dc.feasibility.vehicle_dynamics import VehicleParameterMapping
 from sandra.actions import LateralAction
 from sandra.commonroad.plan import ReactivePlanner
 from sandra.commonroad.reach import ReachVerifier
-from sandra.common.config import SanDRAConfiguration
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.config import SanDRAConfiguration
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.highenv.highenv_scenario import HighwayEnvScenario
 
 

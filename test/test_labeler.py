@@ -8,10 +8,10 @@ from pathlib import Path
 from commonroad.common.file_reader import CommonRoadFileReader
 
 from sandra.actions import LongitudinalAction, LateralAction
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.labeler import TrajectoryLabeler, ReachSetLabeler
-from sandra.utility.vehicle import extract_ego_vehicle
+from sandra.utility.general import extract_ego_vehicle
 
 
 class TestLabeler(unittest.TestCase):

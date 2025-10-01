@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-from sandra.common.config import SanDRAConfiguration
+from sandra.config import SanDRAConfiguration
 
 
 def evaluate_highenv_results():

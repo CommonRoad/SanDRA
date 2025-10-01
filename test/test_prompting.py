@@ -2,7 +2,7 @@ import unittest
 
 from commonroad.common.file_reader import CommonRoadFileReader
 
-from sandra.common.config import PROJECT_ROOT, SanDRAConfiguration
+from sandra.config import PROJECT_ROOT, SanDRAConfiguration
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.utility.visualization import plot_scenario
 

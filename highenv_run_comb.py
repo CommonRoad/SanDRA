@@ -3,8 +3,7 @@ Standalone script to create HighEnvDecider and run it for all combinations.
 """
 import os
 
-from highway_env.vehicle.behavior import IDMVehicle
-from sandra.common.config import SanDRAConfiguration
+from sandra.config import SanDRAConfiguration
 from sandra.highenv.decider import HighEnvDecider
 import matplotlib
 import itertools

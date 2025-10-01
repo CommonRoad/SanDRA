@@ -2,8 +2,8 @@ from commonroad.common.file_reader import CommonRoadFileReader
 
 from commonroad_reach.utility import visualization as util_visual
 
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.rules import InterstateRule
 from sandra.utility.visualization import plot_reachable_sets
 from sandra.commonroad.plan import ReactivePlanner

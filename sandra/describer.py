@@ -1,7 +1,7 @@
 import math
 import warnings
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Literal, overload, Union, List
+from typing import Optional, Any, Literal, Union, List
 
 from commonroad.scenario.state import InitialState, CustomState, KSState
 from commonroad.scenario.obstacle import Rectangle
@@ -10,7 +10,7 @@ from openai import BaseModel
 import numpy as np
 
 from sandra.actions import LateralAction, LongitudinalAction
-from sandra.common.config import SanDRAConfiguration
+from sandra.config import SanDRAConfiguration
 
 
 class Thoughts(BaseModel):
@@ -183,7 +183,6 @@ class DescriberBase(ABC):
             s_dist = obstacle_position_clcs[0] - ego_position_clcs[0]
             d_dist = obstacle_position_clcs[1] - ego_position_clcs[1]
             if direction == "incoming":
-                # todo: fix vehicle width
                 if d_dist > 0:
                     return f"{d_dist:.1f} meters right of you"
                 else:

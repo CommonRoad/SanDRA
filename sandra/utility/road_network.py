@@ -336,7 +336,7 @@ class EgoLaneNetwork:
 
 
 if __name__ == "__main__":
-    from sandra.common.config import PROJECT_ROOT
+    from sandra.config import PROJECT_ROOT
     from sandra.utility.general import extract_scenario_and_planning_problem
     from sandra.utility.visualization import plot_road_network, plot_scenario
 

@@ -27,13 +27,13 @@ from crpred.basic_models.constant_velocity_predictor import (
 from crpred.utility.config import PredictorParams
 
 from sandra.actions import LongitudinalAction, LateralAction
-from sandra.common.config import (
+from sandra.config import (
     SanDRAConfiguration,
     COMMONROAD_REACH_SEMANTIC_ROOT,
     PROJECT_ROOT,
 )
-from sandra.utility.vehicle import extract_ego_vehicle
-from sandra.common.road_network import EgoLaneNetwork, Lane
+from sandra.utility.general import extract_ego_vehicle
+from sandra.utility.road_network import EgoLaneNetwork, Lane
 from sandra.verifier import ActionLTL, VerifierBase, VerificationStatus
 from sandra.rules import InterstateRule
 

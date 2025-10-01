@@ -4,12 +4,11 @@ Standalone script to create HighEnvDecider and run it.
 
 import os
 
-from sandra.common.config import SanDRAConfiguration
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.config import SanDRAConfiguration
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.reach import ReachVerifier
 from sandra.decider import Decider
-from sandra.highenv.decider import HighEnvDecider
 import matplotlib
 
 from sandra.utility.general import extract_scenario_and_planning_problem

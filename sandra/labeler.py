@@ -1,7 +1,6 @@
-import itertools
 import warnings
 from abc import ABC, abstractmethod
-from typing import Union, List, Optional
+from typing import Union, List
 
 import numpy as np
 from commonroad.planning.planning_problem import PlanningProblem
@@ -9,8 +8,8 @@ from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
 
 from sandra.actions import LateralAction, LongitudinalAction
-from sandra.common.config import SanDRAConfiguration
-from sandra.common.road_network import EgoLaneNetwork
+from sandra.config import SanDRAConfiguration
+from sandra.utility.road_network import EgoLaneNetwork
 from sandra.commonroad.reach import ReachVerifier
 
 from commonroad_reach.utility import reach_operation as util_reach_operation

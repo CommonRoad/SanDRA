@@ -1,6 +1,6 @@
 import os.path
 
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
+from sandra.config import SanDRAConfiguration, PROJECT_ROOT
 from sandra.commonroad.reach import ReachVerifier
 from sandra.decider import Decider
 from sandra.commonroad.describer import CommonRoadDescriber

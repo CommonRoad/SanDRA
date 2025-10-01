@@ -1,11 +1,8 @@
-import math
 import os
 import random
 import sys
-from pathlib import Path
-from typing import cast, Optional, List, Union
+from typing import Optional, List, Union
 
-import gymnasium
 import numpy as np
 from commonroad.common.file_writer import CommonRoadFileWriter
 from commonroad.common.writer.file_writer_interface import OverwriteExistingFile
@@ -15,9 +12,6 @@ from commonroad.scenario.scenario import Scenario, Tag
 from commonroad.scenario.state import CustomState
 from commonroad.scenario.trajectory import Trajectory
 from commonroad.prediction.prediction import TrajectoryPrediction
-from gymnasium import Env
-from gymnasium.wrappers import RecordVideo
-from highway_env.envs.common.observation import TimeToCollisionObservation
 from matplotlib import pyplot as plt
 
 # todo
@@ -30,16 +24,15 @@ from highway_env.vehicle.controller import ControlledVehicle
 ControlledVehicle.TAU_LATERAL = 2.0
 
 from sandra.actions import LateralAction, LongitudinalAction
-from sandra.common.config import SanDRAConfiguration, PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.config import SanDRAConfiguration
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.plan import ReactivePlanner
 from sandra.commonroad.reach import ReachVerifier
 from sandra.decider import Decider
-from sandra.highenv.describer import HighEnvDescriber
 from sandra.highenv.highenv_scenario import HighwayEnvScenario
 from sandra.llm import get_structured_response
-from sandra.utility.vehicle import get_input_bounds
+from sandra.utility.general import get_input_bounds
 from sandra.verifier import VerificationStatus
 from contextlib import contextmanager
 

@@ -22,7 +22,7 @@ from commonroad_rp.utility.config import ReactivePlannerConfiguration
 from commonroad_rp.reactive_planner import ReactivePlanner as CRReactivePlanner
 from commonroad_rp.utility.visualization import visualize_planner_at_timestep
 
-from sandra.common.config import SanDRAConfiguration
+from sandra.config import SanDRAConfiguration
 
 
 class PlannerBase(ABC):

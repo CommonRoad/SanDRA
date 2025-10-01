@@ -17,9 +17,6 @@ from commonroad.scenario.trajectory import Trajectory
 from crpred.basic_models.constant_velocity_predictor import (
     ConstantVelocityCurvilinearPredictor,
 )
-from crpred.basic_models.constant_acceleration_predictor import (
-    ConstantAccelerationLinearPredictor,
-)
 from crpred.utility.config import PredictorParams
 from gymnasium import Env
 from gymnasium.wrappers import RecordVideo
@@ -34,8 +31,8 @@ from commonroad.common.file_writer import CommonRoadFileWriter
 from commonroad.common.file_writer import OverwriteExistingFile
 from commonroad.scenario.scenario import Tag
 
-from sandra.common.config import PROJECT_ROOT
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.config import PROJECT_ROOT
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.utility.visualization import plot_scenario
 
 
@@ -530,9 +527,7 @@ if __name__ == "__main__":
     ego_lane_network = EgoLaneNetwork.from_route_planner(
         commonrad_scenario.lanelet_network, planning_problem_, road_network
     )
-    # verifier = ReachVerifier(commonrad_scenario, SanDRAConfiguration(), ego_lane_network)
-    # verifier.verify([LongitudinalAction.KEEP, LateralAction.CHANGE_LEFT])
-    # scenario_.plot(plot_commonroad=True)
+
     scenario_.step(1)
     scenario_.plot(plot_commonroad=True)
     scenario_.highway_env_representation.close()

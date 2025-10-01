@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 from commonroad.common.file_reader import CommonRoadFileReader
-from sandra.utility.vehicle import extract_ego_vehicle
+from sandra.utility.general import extract_ego_vehicle
 from crmonitor.common.world import World
 from crmonitor.evaluation.evaluation import RuleEvaluator
 

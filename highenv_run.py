@@ -12,7 +12,7 @@ IDMVehicle.LANE_CHANGE_DELAY = 3
 
 
 
-from sandra.common.config import SanDRAConfiguration
+from sandra.config import SanDRAConfiguration
 from sandra.highenv.decider import HighEnvDecider
 import matplotlib
 

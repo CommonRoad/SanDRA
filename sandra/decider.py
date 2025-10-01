@@ -4,11 +4,10 @@ from typing import Optional, Any, Union, List
 import pandas as pd
 
 from sandra.actions import Action, LongitudinalAction, LateralAction
-from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.reach import ReachVerifier
 from sandra.describer import DescriberBase
 from sandra.llm import get_structured_response
-from sandra.common.config import SanDRAConfiguration
+from sandra.config import SanDRAConfiguration
 from sandra.verifier import VerifierBase, DummyVerifier, VerificationStatus
 
 from highway_env.vehicle.controller import ControlledVehicle
@@ -123,7 +122,7 @@ class Decider:
         for i, action in enumerate(ranking):
             try:
                 status = self.verifier.verify(list(action))
-            except Exception as e:
+            except Exception as _:
                 continue
             if status == VerificationStatus.SAFE:
                 print(f"Successfully verified {action}.")
@@ -141,4 +140,4 @@ class Decider:
         ControlledVehicle.KP_A = 1 / 0.2
         ControlledVehicle.DELTA_SPEED = 15
 
-        return (LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE)
+        return LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE

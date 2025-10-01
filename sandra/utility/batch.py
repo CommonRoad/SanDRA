@@ -9,14 +9,14 @@ import pandas as pd
 from commonroad.common.file_reader import CommonRoadFileReader
 from tqdm import tqdm
 
-from sandra.common.config import SanDRAConfiguration
-from sandra.common.road_network import RoadNetwork, EgoLaneNetwork
+from sandra.config import SanDRAConfiguration
+from sandra.utility.road_network import RoadNetwork, EgoLaneNetwork
 from sandra.commonroad.describer import CommonRoadDescriber
 from sandra.commonroad.reach import ReachVerifier
 from sandra.decider import Decider
 from sandra.labeler import TrajectoryLabeler, ReachSetLabeler
 from sandra.llm import get_structured_response
-from sandra.utility.vehicle import extract_ego_vehicle
+from sandra.utility.general import extract_ego_vehicle
 from sandra.verifier import VerificationStatus
 
 import matplotlib
