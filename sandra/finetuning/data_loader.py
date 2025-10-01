@@ -3,39 +3,6 @@ import os
 import random
 
 import pandas as pd
-from openai import OpenAI
-from openai.types import Batch
-
-from sandra.common.config import SanDRAConfiguration
-from sandra.commonroad.describer import CommonRoadDescriber
-from sandra.utility.general import extract_scenario_and_planning_problem
-
-
-def instantiate_cot_output():
-    example_output_cot = f"""{{
-  "thoughts": {{
-    "observation": [
-      "The car is currently driving on the highway at 25.0 m/s with no immediate acceleration or steering.",
-      "Three other cars (6, 9, 12) are on the same lane, with decreasing time-to-collision values, indicating potential risks ahead.",
-      "Car 13 is on the left-adjacent lane, moving slightly slower but with infinite time-to-collision, suggesting no immediate threat."
-    ],
-    "conclusion": "The primary risk comes from car 6, which is closest with a 4.3 seconds time-to-collision. Car 9 and 12 are further back but still on the same lane. Car 13 is on the left lane but not an immediate threat. The driver needs to consider lane changes or adjustments to avoid potential collisions with car 6."
-  }},
-  "best_combination": {{
-    "lateral_action": "left",
-    "longitudinal_action": "decelerate"
-  }}
-  ,
-  "second_best_combination": {{
-    "lateral_action": "left",
-    "longitudinal_action": "keep"
-  }}
-  ,
-  "third_best_combination": {{
-    "lateral_action": "left",
-    "longitudinal_action": "accelerate"
-  }}
-}}"""
 
 
 def instantiate_normal_output(lateral_actions: list[tuple[str, str]]):
@@ -123,10 +90,8 @@ def generate_conversations(source_path: str, save_path: str = None, qwen=False) 
     df = pd.read_csv(source_path)
     conversations = []
     for row in df.itertuples():
-        # full_prompt = row.Prompt
-        # split_sentence = "Here is an overview of your environment:"
-        # split_prompt = full_prompt.split(split_sentence)
         system_prompt = row.system_prompt
+        # Remove the /no_think
         if not qwen:
             system_prompt = system_prompt.rsplit('\n', 1)[0]
         user_prompt = row.user_prompt
@@ -135,7 +100,7 @@ def generate_conversations(source_path: str, save_path: str = None, qwen=False) 
             extract_available_actions(system_prompt)
         )
 
-        # remove "stop"
+        # Remove "stop"
         available_longitudinal_actions.remove("stop")
         lateral_label = row.Trajectory_Lateral
         longitudinal_label = row.Trajectory_Longitudinal
@@ -173,74 +138,10 @@ def save_jsonl(data, filepath):
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
 
-def create_batch(batch_file_name: str, api_key_name="OPENAI_API_KEY") -> Batch:
-    client = OpenAI(api_key=os.getenv(api_key_name))
-    path_to = "batch_files"
-    batch_file = client.files.create(
-        file=open(os.path.join(path_to, batch_file_name), "rb"), purpose="batch"
-    )
-    batch = client.batches.create(
-        input_file_id=batch_file.id,
-        endpoint="/v1/chat/completions",
-        completion_window="24h",
-    )
-    print(f"BATCH ID: {batch.id}")
-    # client.batches.retrieve(batch.id)
-    return batch
-
-
-def get_batch_status(batch_id: str, api_key_name="OPENAI_API_KEY"):
-    client = OpenAI(api_key=os.getenv(api_key_name))
-    batch = client.batches.retrieve(batch_id)
-
-    print(f"STATUS: {batch.status}")
-    if batch.status == "failed":
-        print(str(batch.errors))
-        # client.files.retrieve(batch.error_file_id)
-
-
-def download_batch_result(
-    batch_id: str, api_key_name="OPENAI_API_KEY", save_name="batch_result.jsonl"
-):
-    client = OpenAI(api_key=os.getenv(api_key_name))
-    batch = client.batches.retrieve(batch_id)
-    result_file = client.files.content(batch.output_file_id)
-    content = result_file.read().decode("utf-8")
-    path_to = "batch_results"
-    save_path = os.path.join(path_to, save_name)
-    with open(save_path, "w") as f:
-        f.write(content)
-
-    print(f"Batch result saved to {save_name}")
-
-
-def create_finetuning_job(
-    training_file_name: str,
-    validation_file_name: str,
-    api_key_name="OPENAI_API_KEY",
-    model="gpt-4o",
-):
-    client = OpenAI(api_key=os.getenv(api_key_name))
-    path_to = "finetuning_files"
-    training_file = client.files.create(
-        file=open(os.path.join(path_to, training_file_name), "rb"), purpose="fine-tune"
-    )
-
-    validation_file = client.files.create(
-        file=open(os.path.join(path_to, validation_file_name), "rb"),
-        purpose="fine-tune",
-    )
-    print(training_file.id)
-    print(validation_file.id)
-    fine_tuning_job = client.fine_tuning.jobs.create(
-        training_file=training_file.id,
-        validation_file=validation_file.id,  # This is where you specify the validation set
-        model=model,  # Or your base model of choice
-    )
-    print(fine_tuning_job.id)
-
-
 def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
+    """
+    Just for completeness’s sake, this is how the train/val split was done.
+    """
     save_folder = "finetuning_files"
     samples = load_jsonl(sample_path)[0]
     val_size = int(train_size * 0.1)
@@ -266,42 +167,8 @@ def split_fine_tuning_samples(sample_path: str, train_size: int = 2000):
 
 
 if __name__ == "__main__":
+    # Convert the csv data into a jsonl like this:
     generate_conversations(
-        "validation_with_prompts.csv",
+        "finetuning_files/validation_with_prompts.csv",
         "finetuning_files/val-new-gpt.jsonl",
     )
-    # df = pd.read_csv("validation.csv")
-#
-    # # Initialize lists to store the prompts
-    # system_prompts = []
-    # user_prompts = []
-#
-    # for row in df.itertuples():
-    #     scenario_id = row.ScenarioID
-    #     scenario_path = f"/home/sebastian/Documents/Uni/Sandra/highD-sandra-0.04/{scenario_id}.xml"
-    #     scenario, planning_problem = extract_scenario_and_planning_problem(
-    #         scenario_path
-    #     )
-    #     describer = CommonRoadDescriber(
-    #         scenario,
-    #         planning_problem,
-    #         0,
-    #         SanDRAConfiguration()
-    #     )
-    #     system_prompt = describer.system_prompt()
-    #     user_prompt = describer.user_prompt()
-#
-    #     # Append prompts to lists
-    #     system_prompts.append(system_prompt)
-    #     user_prompts.append(user_prompt)
-#
-    # # Add new columns to dataframe
-    # df['system_prompt'] = system_prompts
-    # df['user_prompt'] = user_prompts
-#
-    # # Save the updated dataframe
-    # df.to_csv("validation_with_prompts.csv", index=False)
-
-
-    # generate_conversations("conversations-new.jsonl")
-    # split_fine_tuning_samples("conversations-new.jsonl")

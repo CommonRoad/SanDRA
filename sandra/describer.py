@@ -228,10 +228,6 @@ class DescriberBase(ABC):
         pass
 
     @abstractmethod
-    def _describe_reminders(self) -> list[str]:
-        pass
-
-    @abstractmethod
     def _get_available_actions(
         self,
     ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
@@ -282,11 +278,6 @@ class DescriberBase(ABC):
     def system_prompt(
         self, past_actions: List[List[Union[LongitudinalAction, LateralAction]]] = None
     ) -> str:
-        # reminders = self._describe_reminders()
-        # reminder_description = "Keep these things in mind:\n"
-        # for reminder in reminders:
-        #     reminder_description += f"  - {reminder}\n"
-
         role = f"{self.role}\n" if self.role else ""
         goal = f"{self.goal}\n" if self.goal else ""
 
@@ -294,16 +285,12 @@ class DescriberBase(ABC):
             "You are driving a car and need to make a high-level driving decision.\n"
             f"{role}"
             f"{goal}"
-            # f"{reminder_description}"
             f"{self._describe_schema()}"
             f"{self._describe_past_actions(past_actions)}"
         )
         if self.config.use_ollama:
             system_prompt += f"\n /no_think"
         return system_prompt
-        # Keep these things in mind:
-        # {reminder_description}
-        # """
 
     @staticmethod
     def _describe_past_actions(

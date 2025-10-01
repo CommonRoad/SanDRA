@@ -1,13 +1,8 @@
 import copy
 from typing import Optional, Union, List
 import numpy as np
-from commonroad.geometry.shape import ShapeGroup
 from commonroad.planning.planning_problem import PlanningProblem
-from commonroad.prediction.prediction import TrajectoryPrediction
-from commonroad.scenario.obstacle import DynamicObstacle
 from commonroad.scenario.scenario import Scenario
-from commonroad.scenario.state import CustomState
-from commonroad.scenario.trajectory import Trajectory
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
     SemanticConfigurationBuilder,
@@ -232,7 +227,6 @@ class ReachVerifier(VerifierBase):
                 raise AssertionError(
                     f"No current lane assigned to ego for action {action}"
                 )
-            # fixme: reach semantic error -- no region for single lane
             if not self.ego_lane_network.lane_left_adjacent and not self.ego_lane_network.lane_right_adjacent:
                 return "LTL true"
             clause = self._format_lane_clause([self.ego_lane_network.lane])
@@ -279,40 +273,14 @@ class ReachVerifier(VerifierBase):
 
             if self._preceding_veh_id is not None and not self.sandra_config.use_sonia:
                 return f"LTL G (SafeDistance_V{self._preceding_veh_id})"
-            # fixme: workaround for safety distance rule with set-based prediction
             elif self.sandra_config.use_rules_in_reach and self.sandra_config.use_sonia and self._preceding_veh_id is not None:
                 phantom_obs = self.reach_config.scenario.obstacle_by_id(85748)
-
-                # --- set-based prediction
-                # pre_obs = self.reach_config.scenario.obstacle_by_id(self._preceding_veh_id)
-                # state_list = []
-
-                # for ts in range(1, self.sandra_config.h + 1):
-                #
-                #     min_vel = max(0.0,
-                #                   pre_obs.initial_state.velocity - ts * self.reach_config.scenario.dt * self._other_a_max)
-                #     if isinstance(pre_obs.occupancy_at_time(ts).shape, ShapeGroup):
-                #         min_rear_s = np.inf
-                #         for shape in pre_obs.occupancy_at_time(ts).shape.shapes:
-                #             min_rear_s = min(min_rear_s, shape.shapely_object.bounds[0])
-                #     else:
-                #         min_rear_s = pre_obs.occupancy_at_time(ts).shape.shapely_object.bounds[0]
-                #     min_center_s = min_rear_s + pre_obs.obstacle_shape.length / 2.0
-                #     state_list.append(CustomState(position=np.array([min_center_s, pre_obs.initial_state.position[1]]),
-                #                                   time_step=ts,
-                #                                   orientation=0.0, #todo
-                #                                   velocity=min_vel))
-                # phantom_obs.initial_state = pre_obs.initial_state
-                # phantom_obs.prediction = TrajectoryPrediction(
-                #     Trajectory(1, state_list), shape=pre_obs.obstacle_shape
-                # )
 
                 # --- most likely prediction
                 predict_config = PredictorParams(
                     num_steps_prediction=self.sandra_config.h + 1, dt=self.sandra_config.dt
                 )
                 predictor = ConstantVelocityCurvilinearPredictor(predict_config)
-                # predictor = ConstantAccelerationLinearPredictor(predict_config)
                 scenario_to_be_predicted = copy.deepcopy(self.reach_config.scenario)
                 for obstacle in scenario_to_be_predicted.dynamic_obstacles:
                     obstacle.prediction = None
@@ -349,7 +317,6 @@ class ReachVerifier(VerifierBase):
             rules = [InterstateRule.RG_1, InterstateRule.RG_2, InterstateRule.RG_3]
 
         if self.sandra_config.use_sonia:
-            # self.sandra_config.a_lim = 0.11
             return self.verify_sonia(actions, rules, only_in_lane)
         else:
             return self.verify_base(actions, rules)

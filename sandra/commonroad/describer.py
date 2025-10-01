@@ -22,7 +22,6 @@ from sandra.describer import DescriberBase, Thoughts, Action
 from sandra.utility.vehicle import (
     find_lanelet_id_from_state,
     extract_ego_vehicle,
-    calculate_relative_orientation,
 )
 from sandra.rules import InterstateRule
 from contextlib import contextmanager
@@ -181,7 +180,6 @@ class CommonRoadDescriber(DescriberBase):
         return ""
 
     def _describe_traffic_lights(self) -> str:
-        # TODO: Implement this
         return ""
 
     def _describe_lanelet(
@@ -269,7 +267,6 @@ class CommonRoadDescriber(DescriberBase):
         ]
 
     def _describe_obstacles(self) -> str:
-        # TODO: Add support for static obstacles
         obstacle_description = (
             "Here is an overview of all relevant obstacles surrounding you:\n"
         )
@@ -368,12 +365,6 @@ class CommonRoadDescriber(DescriberBase):
             f"{laterals_str}\n"
         )
 
-    def _describe_reminders(self) -> list[str]:
-        reminders = [
-            "You are currently driving in Germany and have to adhere to German traffic rules.",
-        ]
-        return reminders
-
     def _get_available_actions(
         self,
     ) -> tuple[list[LateralAction], list[LongitudinalAction]]:
@@ -428,7 +419,3 @@ class CommonRoadDescriber(DescriberBase):
 
         schema_dict["required"] = schema_dict["required"] + added_variable_names
         return schema_dict
-
-
-if __name__ == "__main__":
-    pass

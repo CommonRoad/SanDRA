@@ -1,6 +1,5 @@
-import logging
 from abc import abstractmethod, ABC
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +21,6 @@ from commonroad_reach_semantic.data_structure.driving_corridor_extractor import 
 from commonroad_rp.utility.config import ReactivePlannerConfiguration
 from commonroad_rp.reactive_planner import ReactivePlanner as CRReactivePlanner
 from commonroad_rp.utility.visualization import visualize_planner_at_timestep
-from matplotlib import pyplot as plt
 
 from sandra.common.config import SanDRAConfiguration
 
@@ -107,12 +105,9 @@ class ReactivePlanner(PlannerBase):
             driving_corridor[self.sandra_config.h]
         )
         if desired_velocity < 0.1:
-            # self.planner.config.sampling.t_min = self.sandra_config.h * self.scenario.dt
             self.planner.set_desired_velocity(
                 desired_velocity=desired_velocity, stopping=True
             )
-            # not working, no sample is found
-            # self.planner.config.sampling.longitudinal_mode = "stopping"
         else:
             self.planner.set_desired_velocity(desired_velocity=desired_velocity)
 

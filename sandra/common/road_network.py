@@ -62,7 +62,7 @@ class RoadNetwork:
     def from_lanelet_network_and_position(
         cls,
         lanelet_network: LaneletNetwork,
-        position: np.asarray,
+        position: np.ndarray,
         consider_reversed=True,
         consider_incoming=True,
     ) -> "RoadNetwork":
