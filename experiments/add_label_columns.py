@@ -93,15 +93,16 @@ def add_trajectory_labels_and_match_to_csv(existing_csv_path, scenario_folder, c
     df.to_csv(output_csv_path, index=False)
     print(f"✅ Updated CSV saved to: {output_csv_path}")
 
-# === Example usage ===
-existing_csv = "/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/batch_labelling_results_ft:gpt-4o-2024-08-06:tum::BsuinSqR_20250724_212748.csv"
-scenario_dir = "/home/liny/Documents/commonroad/mona-updated-fixed-selected-ruled/"
+if __name__ == "__main__":
+    # === Example usage ===
+    existing_csv = "PATH_TO_CSV_CONTAINING_RUN_RESULTS"
+    scenario_dir = "FOLDER_CONTAINING_ALL_RUN_SCENARIO_XMLs"
 
-output_csv = existing_csv.replace(".csv", "_with_trajectory_and_match.csv")
+    output_csv = existing_csv.replace(".csv", "_with_trajectory_and_match.csv")
 
-config = SanDRAConfiguration()
-config.h = 25
-config.k = 3
-config.model_name = "ft:gpt-4o-2024-08-06:tum::BsuinSqR"
+    config = SanDRAConfiguration()
+    config.h = 25
+    config.k = 3
+    config.model_name = "ft:gpt-4o-2024-08-06:tum::BsuinSqR"
 
-add_trajectory_labels_and_match_to_csv(existing_csv, scenario_dir, config, output_csv)
+    add_trajectory_labels_and_match_to_csv(existing_csv, scenario_dir, config, output_csv)

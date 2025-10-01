@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import itertools
 import re
 from commonroad.common.file_reader import CommonRoadFileReader
 from crmonitor.common.world import World
