@@ -47,6 +47,7 @@ class Decider:
             "schema",
         ]
 
+        os.makedirs(self.save_path, exist_ok=True)
         if not os.path.exists(self.save_path + "/evaluation.csv"):
             empty_df = pd.DataFrame(columns=columns)
             empty_df.to_csv(self.save_path + "/evaluation.csv", index=False)

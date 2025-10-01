@@ -1,5 +1,5 @@
 """
-Standalone script to create HighEnvDecider and run it.
+Standalone script to evaluate a folder containing CommonRoad scenarios.
 """
 
 import os
@@ -19,14 +19,10 @@ matplotlib.use("TkAgg")
 
 def main():
     config = SanDRAConfiguration()
-    path_to_scenarios = "/home/sebastian/Documents/Uni/Sandra/mona_scenarios/"
-    path_to_results = f"results-highD-{config.model_name}/"
-    results = [x[:-4] for x in os.listdir(path_to_results) if x.endswith(".csv")]
+    path_to_scenarios = os.path.dirname(os.path.abspath(__file__)) + "/scenarios/"
 
     for filename in os.listdir(path_to_scenarios):
         if not filename.endswith(".xml"):
-            continue
-        if filename[:-4] in results:
             continue
 
         scenario, planning_problem = extract_scenario_and_planning_problem(
@@ -74,7 +70,7 @@ def main():
             config,
             describer,
             verifier=verifier,
-            save_path=f"results-highD-{config.model_name}/{scenario.scenario_id}.csv",
+            save_path=f"results-highD-{config.model_name}",
         )
         decider.decide()
 

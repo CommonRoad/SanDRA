@@ -1,7 +1,6 @@
 import copy
 from typing import Optional, Union, List
 import numpy as np
-from commonroad.planning.planning_problem import PlanningProblem
 from commonroad.scenario.scenario import Scenario
 
 from commonroad_reach_semantic.data_structure.config.semantic_configuration_builder import (
@@ -46,7 +45,7 @@ class ReachVerifier(VerifierBase):
     def __init__(
         self,
         scenario: Scenario,
-        planning_problem: PlanningProblem,
+        planning_problem,
         sandra_config: SanDRAConfiguration,
         ego_lane_network: EgoLaneNetwork = None,
         verbose: bool = True,
