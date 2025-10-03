@@ -5,7 +5,15 @@ from typing import Any
 
 import openai
 from openai import OpenAI
-from ollama import chat
+
+try:
+    from ollama import chat
+    import ollama
+    _client = ollama.Client()
+except Exception as e:
+    print(f"Failed to initialize Ollama client: {e}")
+    chat = None  # or define a fallback/mock function
+
 import json
 
 from sandra.config import SanDRAConfiguration, PROJECT_ROOT
