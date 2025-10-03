@@ -1,5 +1,6 @@
 # 🚗💡 SanDRA
 Safe large language model-based Decision-making framework for Automated Vehicles using Reachability Analysis
+![SanDRA GIF](docs/static/videos/sandra_animation.gif)
 ## ⚙️ Setup
 For using **SanDRA** with OpenAI models, you need an OpenAI API-key. Make sure to export it as environment variable named **OPENAI_API_KEY**.
 If you'd rather use local models, you can follow the instructions in section **Run with local LLMs**.
@@ -13,7 +14,7 @@ For leveraging reachability analysis you need to install
 ##  📦 Dependencies for Set-based Predictions
 For set-based predictions, you need to install
 * [sonia (spot)](https://github.com/CommonRoad/spot-sonia): branch `master` (`python setup.py install`)
-* 
+
 ## 🔄 Roadmap  
 
 - [x] 📄 Release Paper  
