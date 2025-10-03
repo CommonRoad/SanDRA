@@ -27,8 +27,10 @@ openai = "~=1.82.0"
 pydantic = "~=2.11.5"
 gymnasium = "~=0.28.1"
 highway-env = "~=1.8.2"
+psutil = "~6.1.1"
 moviepy = ">=2.2.1"
 numpy = "<2.0.0"
+ollama = "~0.4.7"  # Add the appropriate version if known
 
 # commonroad-crime
 commonroad-io = "~2024.3"
@@ -37,6 +39,7 @@ commonroad-crime = "~=0.4.0"
 commonroad-drivability-checker = "~2024.2"
 commonroad-route-planner = "~2024.2.0"
 commonroad-reactive-planner = "~2024.1.0"
+commonroad-prediction = "~0.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
