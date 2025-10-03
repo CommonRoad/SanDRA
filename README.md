@@ -7,7 +7,7 @@ If you'd rather use local models, you can follow the instructions in section **R
 ## 📦 Dependencies for Reachability Analysis  
 For leveraging reachability analysis you need to install
 * [commonroad-reach-semantic](https://github.com/CommonRoad/commonroad-reach-semantic): branch `feature/sandra` 
-(use `export CXX=/usr/bin/g++-10` before installation to use the correct compiler, the whole installation process might take >10 minute)
+(use `export CXX=/usr/bin/g++-10` before installation to use the correct compiler, the whole installation process might take **more than 10 minutes**.)
 > **Note:** After installation, please go to `~/SanDRA/sandra/config.py` and update `COMMONROAD_REACH_SEMANTIC_ROOT` to the directory where you installed `commonroad-reach-semantic`.
 
 ##  📦 Dependencies for Set-based Predictions
@@ -18,6 +18,7 @@ For set-based predictions, you need to install
 
 - [x] 📄 Release Paper  
 - [x] 📦 Release Code
+- [x] 🌐 Release Project Page
 - [ ] 📑 Release Updated Paper  
 
 
