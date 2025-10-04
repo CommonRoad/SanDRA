@@ -1,10 +1,28 @@
 <div align="center">
-<img src="docs/static/images/sandra_logo_cut.png" width="220">
+<img src="docs/static/images/sandra_logo_cut.png" width="180">
 <h1>SanDRA</h1>
 <h3>Safe LLM-based Decision-making for Automated Vehicles</h3>
+
+[Yuanfei Lin](https://yuanfei-lin.github.io/)<sup>\*, ✉</sup>, [Sebastian Illing](https://www.linkedin.com/in/sebastian-illing-6099a4336/)<sup>\*</sup>, [Matthias Althoff](https://www.ce.cit.tum.de/cps/members/prof-dr-ing-matthias-althoff/)
+
+Technical University of Munich
+
+(\*) Equal contribution. (✉) Corresponding author.  
+
+<a href="https://commonroad.github.io/SanDRA/"><img src='https://img.shields.io/badge/Project_Page-SanDRA-blue' alt='Project Page'>
+<a href="https://www.python.org/">
+  <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python">
+</a>
+<a href="https://isocpp.org/">
+  <img src="https://img.shields.io/badge/C++-00599C?logo=cplusplus&logoColor=white" alt="C++">
+</a>
+
+<p align="center">
+  <img src="docs/static/videos/sandra_animation.gif" alt="SanDRA GIF" />
+</p>
  </div>
 
-![SanDRA GIF](docs/static/videos/sandra_animation.gif)
+
 ## ⚙️ Setup
 For using **SanDRA** with OpenAI models, you need an OpenAI API-key. Make sure to export it as environment variable named **OPENAI_API_KEY**.
 If you'd rather use local models, you can follow the instructions in section **Run with local LLMs**.
