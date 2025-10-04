@@ -9,11 +9,9 @@ Technical University of Munich
 
 (\*) Equal contribution. (✉) Corresponding author.  
 
-<a href="https://commonroad.github.io/SanDRA/"><img src='https://img.shields.io/badge/Project_Page-SanDRA-blue' alt='Project Page'>
-<a href="https://www.python.org/">
+<a href="https://commonroad.github.io/SanDRA/"><img src='https://img.shields.io/badge/Project_Page-SanDRA-blue' alt='Project Page'><a href="https://www.python.org/">
   <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python">
-</a>
-<a href="https://isocpp.org/">
+</a><a href="https://isocpp.org/">
   <img src="https://img.shields.io/badge/C++-00599C?logo=cplusplus&logoColor=white" alt="C++">
 </a>
 
@@ -25,7 +23,7 @@ Technical University of Munich
 
 ## ⚙️ Setup
 For using **SanDRA** with OpenAI models, you need an OpenAI API-key. Make sure to export it as environment variable named **OPENAI_API_KEY**.
-If you'd rather use local models, you can follow the instructions in section **Run with local LLMs**.
+If you'd rather use local models, you can follow the instructions in section [Run with local LLMs](#run-with-local-llms).
 
 ## 📦 Dependencies for Reachability Analysis  
 For leveraging reachability analysis you need to install
@@ -52,7 +50,7 @@ There are 2 ways to test SanDRA:
 
 *commonroad_run.py* and  *highwayenv_run.py* illustrate how to run SanDRA decision making in either of these cases. Please make sure to prepare the seeds for highwayenv / the scenarios for CommonRoad beforehand.
 
-## 🖥️ Run with local LLMs
+## 🖥️ Run with local LLMs <a id="run-with-local-llms"></a>
 To run SanDRA with local models, you need to follow these steps:
 1. 📥 Download [Ollama](https://ollama.com/download)
 2. ⚙️ Install Go (Recommended):
