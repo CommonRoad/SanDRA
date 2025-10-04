@@ -1,6 +1,15 @@
 <div align="center">
 <img src="docs/static/images/sandra_logo_cut.png" width="180">
-<h1>SanDRA</h1>
+  <h1 style="
+    font-size: 2.5em;
+    font-weight: bold;
+    background: linear-gradient(90deg, rgb(0,101,189), rgb(254,215,2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;">
+    SanDRA
+  </h1>
 <h3>Safe LLM-based Decision-making for Automated Vehicles</h3>
 
 [Yuanfei Lin](https://yuanfei-lin.github.io/)<sup>\*, ✉</sup>, [Sebastian Illing](https://www.linkedin.com/in/sebastian-illing-6099a4336/)<sup>\*</sup>, [Matthias Althoff](https://www.ce.cit.tum.de/cps/members/prof-dr-ing-matthias-althoff/)
