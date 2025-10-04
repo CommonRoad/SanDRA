@@ -1,5 +1,9 @@
-# 🚗💡 SanDRA
-Safe large language model-based Decision-making framework for Automated Vehicles using Reachability Analysis
+<div align="center">
+<img src="docs/static/images/sandra_logo_cut.png" width="220">
+<h1>SanDRA</h1>
+<h3>Safe LLM-based Decision-making for Automated Vehicles</h3>
+ </div>
+
 ![SanDRA GIF](docs/static/videos/sandra_animation.gif)
 ## ⚙️ Setup
 For using **SanDRA** with OpenAI models, you need an OpenAI API-key. Make sure to export it as environment variable named **OPENAI_API_KEY**.
