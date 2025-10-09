@@ -18,10 +18,17 @@ Technical University of Munich
 
 (\*) Equal contribution. (✉) Corresponding author.  
 
-<a href="https://commonroad.github.io/SanDRA/"><img src='https://img.shields.io/badge/Project_Page-SanDRA-blue' alt='Project Page'><a href="https://www.python.org/">
+<a href="https://commonroad.github.io/SanDRA/">
+  <img src="https://img.shields.io/badge/Project_Page-SanDRA-blue" alt="Project Page">
+</a>
+<a href="https://www.python.org/">
   <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python">
-</a><a href="https://isocpp.org/">
+</a>
+<a href="https://isocpp.org/">
   <img src="https://img.shields.io/badge/C++-00599C?logo=cplusplus&logoColor=white" alt="C++">
+</a>
+<a href="https://arxiv.org/abs/2510.06717">
+  <img src="https://img.shields.io/badge/arXiv-2510.06717-orange" alt="arXiv Paper">
 </a>
 
 <p align="center">
