@@ -83,6 +83,6 @@ If you use **SanDRA** in your research, please cite:
 @article{lin2025sandra,
   title     = {SanDRA: Safe Large-Language-Model-Based Decision Making for Automated Vehicles Using Reachability Analysis},
   author    = {Yuanfei Lin and Sebastian Illing and Matthias Althoff},
-  journal   = {arXiv preprint arXiv:2501.xxxxx}, 
+  journal   = {arXiv preprint arXiv:2510.06717}, 
   year      = {2025}
 }
