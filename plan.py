@@ -19,6 +19,7 @@ matplotlib.use("TkAgg")
 # scenario basic information
 name_scenario = "DEU_Goeppingen-37_1_T-4"
 name_scenario = "DEU_Goeppingen-37_1_T-5" # for set + rules
+name_scenario = "DEU_MONAEast-2_14326_T-14351"
 
 path_scenario = PROJECT_ROOT + "/scenarios/" + name_scenario + ".xml"
 scenario, planning_problem_set = CommonRoadFileReader(path_scenario).open(
@@ -30,9 +31,9 @@ planning_problem = list(planning_problem_set.planning_problem_dict.values())[0]
 # configuration
 config = SanDRAConfiguration()
 config.a_lim = 0.2
-config.h = 25
+config.h = 12
 config.use_sonia = True
-config.dt = 0.1
+config.dt = 0.04
 config.use_rules_in_reach = True
 
 # road network
@@ -52,7 +53,7 @@ reach_ver = ReachVerifier(scenario, planning_problem, config, ego_lane_network)
 
 status = reach_ver.verify(
     [LongitudinalAction.DECELERATE, LateralAction.FOLLOW_LANE],
-    rules=[InterstateRule.RG_1, InterstateRule.RG_3],
+    rules=[InterstateRule.RG_3],
 )
 
 # plot the reachable set

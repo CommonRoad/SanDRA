@@ -56,7 +56,7 @@ class ReachVerifier(VerifierBase):
         ego_lane_network: EgoLaneNetwork = None,
         verbose: bool = True,
         scenario_folder: str = None,
-        highenv: bool = False,
+            highenv: bool = False,
     ):
 
         # basic elements

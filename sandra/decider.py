@@ -48,10 +48,10 @@ class Decider:
             "schema",
         ]
 
-        if not os.path.exists(self.save_path + "/evaluation.csv"):
-            empty_df = pd.DataFrame(columns=columns)
-            empty_df.to_csv(self.save_path + "/evaluation.csv", index=False)
-            print(f"Created new CSV file: {self.save_path + '/evaluation.csv'}")
+        # if not os.path.exists(self.save_path + "/evaluation.csv"):
+        #     empty_df = pd.DataFrame(columns=columns)
+        #     empty_df.to_csv(self.save_path + "/evaluation.csv", index=False)
+        #     print(f"Created new CSV file: {self.save_path + '/evaluation.csv'}")
 
     def _parse_action_ranking(self, llm_response: dict[str, Any]) -> list[Action]:
         action_ranking = []

@@ -1,0 +1,4 @@
+Trajectory_Lateral,Safe_Top1,Safe_TopK,MONA_safe,Match_Top1,Match_TopK
+follow_lane,90.53,98.75,100.0,40.38,74.94
+left,83.93,98.21,100.0,1.79,33.93
+right,74.29,97.14,100.0,0.0,20.0

@@ -15,6 +15,8 @@ matplotlib.use("Agg")
 
 def main(scenario_path: str):
     config = SanDRAConfiguration()
+    config.visualize_reach = True
+    config.h = 12
     config.use_rules_in_prompt = True
     save_path = scenario_path
     scenario, planning_problem = extract_scenario_and_planning_problem(scenario_path)

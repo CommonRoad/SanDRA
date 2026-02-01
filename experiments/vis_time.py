@@ -2,89 +2,155 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from enum import Enum
 
-# Define TUM colors
+# =========================
+# TUM colors
+# =========================
 class TUMcolor(tuple, Enum):
     TUMblue = (0, 101 / 255, 189 / 255)
     TUMyellow = (254 / 255, 215 / 255, 2 / 255)
 
+
+# =========================
 # File paths
+# =========================
 files = {
     "qwen": [
-        "./data/batch_labelling_results_qwen3-0.6b_latest_20250802_135811.csv",
-        "./data/batch_labelling_results_qwen3-0.6b-highD_latest_20250802_143223.csv"
+        "./data/LLMs/batch_labelling_results_qwen3-0.6b_latest_20250802_135811.csv",
+        "./data/LLMs/batch_labelling_results_qwen3-0.6b-highD_latest_20250802_143223.csv"
     ],
     "gpt": [
-        "./data/batch_labelling_results_gpt-4o_20250802_103123.csv",
-        "./data/batch_labelling_results_ft_gpt-4o-2024-08-06_tum_highd_Bzt14MTi_20250802_122944.csv"
+        "./data/LLMs/batch_labelling_results_gpt-4o_20250802_103123.csv",
+        "./data/LLMs/batch_labelling_results_ft_gpt-4o-2024-08-06_tum_highd_Bzt14MTi_20250802_122944.csv"
+    ],
+    "no_LLM": [
+        "./data/LLMs/no-early-stopping.csv"
     ]
 }
 
 
-# Read and categorize
-def read_category(files_list, category_name):
+# =========================
+# Helper: read & tag
+# =========================
+def read_category(file_list, category_name):
     dfs = []
-    for file in files_list:
-        df = pd.read_csv(file)
-        df['Category'] = category_name
+    for f in file_list:
+        df = pd.read_csv(f)
+        df["Category"] = category_name
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
 
-df_qwen = read_category(files['qwen'], 'Qwen')
-df_gpt = read_category(files['gpt'], 'GPT')
+
+# =========================
+# Load data
+# =========================
+df_qwen = read_category(files["qwen"], "Qwen")
+df_gpt = read_category(files["gpt"], "GPT")
+df_no_llm = read_category(files["no_LLM"], "No-LLM")
+
+# ---- IMPORTANT ----
+# If your no_LLM csv uses a different column name, change THIS line only:
+# e.g. df_no_llm["Reach_Duration"] = df_no_llm["Duration"]
+# -------------------
+df_no_llm["Inference_Duration"] = pd.NA  # no inference for no-LLM
+
+# =========================
+# Combine
+# =========================
+df = pd.concat([df_qwen, df_gpt, df_no_llm], ignore_index=True)
+
+# =========================
+# Outlier filtering
+# - LLM runs: filter >30s
+# - no_LLM: keep ALL (important!)
+# =========================
+df = df[
+    (df["Category"] == "No-LLM") |
+    (
+        ((df["Inference_Duration"].isna()) | (df["Inference_Duration"] <= 29.9)) &
+        (df["Reach_Duration"] <= 29.9)
+    )
+]
+
+# =========================
+# Sanity check (DO NOT REMOVE)
+# =========================
+print("Counts per category:")
+print(df.groupby("Category").size())
+print("\nno_LLM Reach stats:")
+print(df[df["Category"] == "No-LLM"]["Reach_Duration"].describe())
 
 
-# Combine and filter outliers > 30
-df = pd.concat([df_qwen, df_gpt], ignore_index=True)
+# =========================
+# Prepare boxplot data (safe)
+# =========================
+def safe_series(series):
+    series = series.dropna()
+    return series if len(series) > 0 else None
 
-df = df[(df['Inference_Duration'] <= 29.9) & (df['Reach_Duration'] <= 29.9)]
+
+data = [
+    safe_series(df[df["Category"] == "Qwen"]["Reach_Duration"]),
+    safe_series(df[df["Category"] == "Qwen"]["Inference_Duration"]),
+    safe_series(df[df["Category"] == "GPT"]["Reach_Duration"]),
+    safe_series(df[df["Category"] == "GPT"]["Inference_Duration"]),
+    safe_series(df[df["Category"] == "No-LLM"]["verification-time"]),
+]
+
+labels = [
+    "Qwen Reach Duration",
+    "Qwen Inference Duration",
+    "GPT Reach Duration",
+    "GPT Inference Duration",
+    "No-LLM Reach Duration",
+]
+
+colors = [
+    TUMcolor.TUMblue.value,
+    TUMcolor.TUMblue.value,
+    TUMcolor.TUMyellow.value,
+    TUMcolor.TUMyellow.value,
+    (0.6, 0.6, 0.6),  # gray for no-LLM
+]
+
+# Remove None entries (extra safety)
+data_final, labels_final, colors_final = [], [], []
+for d, l, c in zip(data, labels, colors):
+    if d is not None:
+        data_final.append(d)
+        labels_final.append(l)
+        colors_final.append(c)
+
+positions = list(range(1, len(data_final) + 1))
 
 
-for cat in ['Qwen', 'GPT']:
-    cat_df = df[df['Category'] == cat]
-    inf_avg = cat_df['Inference_Duration'].mean()
-    inf_std = cat_df['Inference_Duration'].std()
-    reach_avg = cat_df['Reach_Duration'].mean()
-    reach_std = cat_df['Reach_Duration'].std()
-    print(f"{cat} - Inference Duration: {inf_avg:.5f} ± {inf_std:.5f} s")
-    print(f"{cat} - Reach Duration:     {reach_avg:.5f} ± {reach_std:.5f} s")
-    print("-" * 50)
+# =========================
+# Plot
+# =========================
+fig, ax = plt.subplots(figsize=(8, 3))
+ax.grid(True, which="both", axis="x", linestyle="-", alpha=0.4)
 
-# Prepare data
-data_inference = [df[df['Category'] == cat]['Inference_Duration'] for cat in ['Qwen', 'GPT']]
-data_reach = [df[df['Category'] == cat]['Reach_Duration'] for cat in ['Qwen', 'GPT']]
-
-positions = [1, 2, 3, 4]
-colors = [TUMcolor.TUMblue.value, TUMcolor.TUMblue.value, TUMcolor.TUMyellow.value, TUMcolor.TUMyellow.value]
-
-fig, ax = plt.subplots(figsize=(8, 2.5))
-ax.grid(True, which='both', axis='x', linestyle='-', alpha=0.5)
-
-# Plot without outlier dots
 bp = ax.boxplot(
-    [data_reach[0], data_inference[0], data_reach[1], data_inference[1]],
+    data_final,
     positions=positions,
-    patch_artist=True,
     vert=False,
-    widths=0.8,
-    showfliers=False  # <- this removes the dots!
+    patch_artist=True,
+    widths=0.75,
+    showfliers=False
 )
 
-# Color the boxes
-for patch, color in zip(bp['boxes'], colors):
+for patch, color in zip(bp["boxes"], colors_final):
     patch.set_facecolor(color)
-    patch.set_alpha(0.7)
+    patch.set_alpha(0.75)
 
-# Y-tick labels
 ax.set_yticks(positions)
-ax.set_yticklabels([
-    'Qwen Inf Duration',
-    'Qwen Reach Duration',
-    'GPT Inf  Duration',
-    'GPT Reach Duration'
-])
+ax.set_yticklabels(labels_final)
+
 ax.set_xscale("log")
-ax.set_xlabel('Duration (seconds)')
-ax.set_title('Inference and Reach Duration by Model Category (outliers > 30 excluded, no OOD dots)')
+ax.set_xlabel("Duration (seconds)")
+ax.set_title(
+    "Inference and Reachability Runtime Comparison\n"
+    "(no-LLM = exhaustive enumeration of all 12 actions)"
+)
 
 plt.tight_layout()
 plt.show()

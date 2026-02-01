@@ -56,7 +56,7 @@ class SanDRAConfiguration:
 
 
 COMMONROAD_REACH_SEMANTIC_ROOT = (
-    "/home/sebastian/Documents/Uni/Sandra/commonroad-reach-semantic"
+    "/home/liny/repairverse/commonroad-reach-semantic"
 )
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
