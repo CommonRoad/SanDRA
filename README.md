@@ -56,7 +56,8 @@ For set-based predictions, you need to install
 - [x] 📄 Release Paper  
 - [x] 📦 Release Code
 - [x] 🌐 Release Project Page
-- [ ] 📑 Release Updated Paper  
+- [x] ✅ Paper Accepted by T-ITS
+- [x] 📑 Release [Updated Paper](https://arxiv.org/pdf/2510.06717)  
 
 
 ## ▶️ Main scripts
@@ -74,7 +75,7 @@ To run SanDRA with local models, you need to follow these steps:
 sudo apt update
 sudo apt install golang-go
 ```
-3. 🤖 Download a model (We recommend to use a model with >=8B parameters to avoid problems with structured outputs):
+3. 🤖 Download a model (We recommend using a model with >=8B parameters to avoid problems with structured outputs):
 ```bash
 ollama pull qwen3:8b
 ```
@@ -87,9 +88,10 @@ ollama serve
 If you use **SanDRA** in your research, please cite:  
 
 ```bibtex
-@article{lin2025sandra,
+@article{lin2026sandra,
   title     = {SanDRA: Safe Large-Language-Model-Based Decision Making for Automated Vehicles Using Reachability Analysis},
   author    = {Yuanfei Lin and Sebastian Illing and Matthias Althoff},
-  journal   = {arXiv preprint arXiv:2510.06717}, 
-  year      = {2025}
+  journal   = {IEEE Transactions on Intelligent Transportation Systems}, 
+  year      = {2026},
+  note      = {Also available as arXiv preprint arXiv:2510.06717}
 }
